@@ -178,7 +178,7 @@ function PremiumSidebar({
             <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden',
               opacity: collapsed ? 0 : 1, transition: 'opacity 200ms ease' }}>
               <span style={{ fontSize: 13, fontWeight: 800, color: '#fff', letterSpacing: '0.04em', lineHeight: 1.2, whiteSpace: 'nowrap' }}>
-                SMARTLIVING V2
+                SMARTLIVING <span className="brand-version" style={{ color: "#22c55e" }}>V2</span>
               </span>
               <span style={{ fontSize: 10, fontWeight: 600, color: '#a78bfa', letterSpacing: '0.1em', lineHeight: 1.2, whiteSpace: 'nowrap' }}>
                 EMPORIUM PLUS

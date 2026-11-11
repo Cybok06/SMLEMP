@@ -127,7 +127,7 @@ export default function App() {
               Secure partner portal
             </span>
             <h1>
-              Welcome to <span>SMARTLIVING V2 Emporium Plus.</span>
+              Welcome to <span>SMARTLIVING <span className="brand-version" style={{ color: "#22c55e" }}>V2</span> Emporium Plus.</span>
             </h1>
             <p>
               Your secure workspace for customers, payments and daily operations.
@@ -222,7 +222,7 @@ export default function App() {
           </div>
 
           <footer className="form-footer">
-            <span>© {new Date().getFullYear()} SMARTLIVING V2 Emporium Plus</span>
+            <span>© {new Date().getFullYear()} SMARTLIVING <span className="brand-version" style={{ color: "#22c55e" }}>V2</span> Emporium Plus</span>
           </footer>
         </div>
       </section>

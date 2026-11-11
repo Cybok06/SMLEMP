@@ -195,7 +195,7 @@ export function Sidebar({ currentPage, onNavigate, collapsed, onToggle, onLogout
         {!collapsed && (
           <div className="min-w-0">
             <div style={{ fontSize: "0.9375rem", fontWeight: 700, color: "#FFFFFF", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
-              SMARTLIVING V2
+              SMARTLIVING <span className="brand-version" style={{ color: "#22c55e" }}>V2</span>
             </div>
             <div style={{ fontSize: "0.6875rem", color: "rgba(255,255,255,0.48)", marginTop: "2px", letterSpacing: "0.08em", textTransform: "uppercase" }}>
               Customer Support Suite
