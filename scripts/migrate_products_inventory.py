@@ -13,7 +13,7 @@ from bson import json_util
 from pymongo import IndexModel, MongoClient, UpdateOne
 from pymongo.server_api import ServerApi
 
-from migrate_active_users import ROOT, config
+from migrate_active_users import APP_ROOT, ROOT, config
 
 
 COLLECTIONS = ("inventory_products", "products")
@@ -73,7 +73,7 @@ def main():
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
     old = config(ROOT / "SmartLiving-old-app")
-    new = config(ROOT / "SmartLiving--new")
+    new = config(APP_ROOT)
     if old["DEFAULT_URI"] == new["DEFAULT_URI"]:
         raise RuntimeError("Source and destination must be separate deployments")
     with MongoClient(old["DEFAULT_URI"], server_api=ServerApi("1"), serverSelectionTimeoutMS=15000) as old_client, MongoClient(

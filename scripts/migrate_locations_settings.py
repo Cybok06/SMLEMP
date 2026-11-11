@@ -12,7 +12,7 @@ from pathlib import Path
 from pymongo import IndexModel, MongoClient, UpdateOne
 from pymongo.server_api import ServerApi
 
-from migrate_active_users import ROOT, config
+from migrate_active_users import APP_ROOT, ROOT, config
 from migrate_products_inventory import comparable_indexes, digest, snapshot
 
 
@@ -45,7 +45,7 @@ def main():
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
-    old, new = config(ROOT / "SmartLiving-old-app"), config(ROOT / "SmartLiving--new")
+    old, new = config(ROOT / "SmartLiving-old-app"), config(APP_ROOT)
     if old["DEFAULT_URI"] == new["DEFAULT_URI"]:
         raise RuntimeError("Source and destination must be separate deployments")
     with MongoClient(old["DEFAULT_URI"], server_api=ServerApi("1"), serverSelectionTimeoutMS=15000) as old_client, MongoClient(

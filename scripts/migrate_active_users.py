@@ -17,7 +17,8 @@ from pymongo import MongoClient
 from pymongo.server_api import ServerApi
 
 
-ROOT = Path(__file__).resolve().parents[2]
+APP_ROOT = Path(__file__).resolve().parents[1]
+ROOT = APP_ROOT.parent
 
 
 def config(folder):
@@ -68,7 +69,7 @@ def main():
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
     old = config(ROOT / "SmartLiving-old-app")
-    new = config(ROOT / "SmartLiving--new")
+    new = config(APP_ROOT)
     if old["DEFAULT_URI"] == new["DEFAULT_URI"]:
         raise RuntimeError("Source and destination must be separate deployments")
     with MongoClient(old["DEFAULT_URI"], server_api=ServerApi("1"), serverSelectionTimeoutMS=15000) as source_client, MongoClient(
