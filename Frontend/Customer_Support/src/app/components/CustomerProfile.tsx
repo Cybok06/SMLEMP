@@ -209,7 +209,7 @@ export function CustomerProfile({ customer, onBack }: { customer: Customer; onBa
   const [documentError, setDocumentError] = useState("");
   const [followupForm, setFollowupForm] = useState({ date: "", time: "10:00", purpose: "Ticket follow-up", notes: "" });
   const [reminderChannel, setReminderChannel] = useState<"sms" | "whatsapp">("sms");
-  const [reminderMessage, setReminderMessage] = useState(`Dear ${customer.name.split(" ")[0]}, this is a reminder from Smart Living. Please contact us if you need assistance.`);
+  const [reminderMessage, setReminderMessage] = useState(`Dear ${customer.name.split(" ")[0]}, this is a reminder from SMARTLIVING V2. Please contact us if you need assistance.`);
   const [actionError, setActionError] = useState("");
   const [sendingReminder, setSendingReminder] = useState(false);
   const [activityForm, setActivityForm] = useState({ category: "Note", channel: "Field visit", branch: "", salesperson: "", delivery_status: "Unknown", feedback: "", issues: "", requested_products: "", action_taken: "", next_followup: "", next_followup_at: "", title: "", description: "", occurredAt: new Date().toISOString().slice(0, 16) });

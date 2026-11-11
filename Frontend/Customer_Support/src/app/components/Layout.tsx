@@ -73,7 +73,7 @@ export function Layout({ onLogout }: LayoutProps) {
       window.history.replaceState(null, "", nextHash);
     }
     const pageLabel = PAGE_LABELS[currentPage] ?? "Dashboard";
-    document.title = `${pageLabel} | Customer Support | Smart Living`;
+    document.title = `${pageLabel} | Customer Support | SMARTLIVING V2`;
   }, [currentPage]);
 
   const renderPage = () => {

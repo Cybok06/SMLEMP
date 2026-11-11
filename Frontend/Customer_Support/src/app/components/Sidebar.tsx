@@ -187,7 +187,7 @@ export function Sidebar({ currentPage, onNavigate, collapsed, onToggle, onLogout
         >
           <img
             src="https://imagedelivery.net/h9fmMoa1o2c2P55TcWJGOg/10283f28-b9a0-4100-b254-19a854386800/public"
-            alt="Smart Living"
+            alt="SMARTLIVING V2"
             style={{ width: "28px", height: "28px", borderRadius: "6px", objectFit: "cover" }}
           />
         </div>
@@ -195,7 +195,7 @@ export function Sidebar({ currentPage, onNavigate, collapsed, onToggle, onLogout
         {!collapsed && (
           <div className="min-w-0">
             <div style={{ fontSize: "0.9375rem", fontWeight: 700, color: "#FFFFFF", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
-              Smart Living
+              SMARTLIVING V2
             </div>
             <div style={{ fontSize: "0.6875rem", color: "rgba(255,255,255,0.48)", marginTop: "2px", letterSpacing: "0.08em", textTransform: "uppercase" }}>
               Customer Support Suite

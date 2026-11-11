@@ -20,7 +20,7 @@ function BrandMark({ compact = false }: { compact?: boolean }) {
     <div className={compact ? "brand-mark brand-mark--small" : "brand-mark"}>
       <img
         src="/static/login/smartliving-logo.png"
-        alt="SmartLiving Emporium Plus"
+        alt="SMARTLIVING V2 Emporium Plus"
       />
     </div>
   );
@@ -113,7 +113,7 @@ export default function App() {
       <div className="ambient ambient--one" />
       <div className="ambient ambient--two" />
 
-      <section className="login-card" aria-label="SmartLiving Emporium Plus login">
+      <section className="login-card" aria-label="SMARTLIVING V2 Emporium Plus login">
         <aside className="brand-panel">
           <div className="brand-panel__glow" />
           <div className="brand-panel__grid" />
@@ -127,7 +127,7 @@ export default function App() {
               Secure partner portal
             </span>
             <h1>
-              Welcome to <span>SmartLiving Emporium Plus.</span>
+              Welcome to <span>SMARTLIVING V2 Emporium Plus.</span>
             </h1>
             <p>
               Your secure workspace for customers, payments and daily operations.
@@ -222,7 +222,7 @@ export default function App() {
           </div>
 
           <footer className="form-footer">
-            <span>© {new Date().getFullYear()} SmartLiving Emporium Plus</span>
+            <span>© {new Date().getFullYear()} SMARTLIVING V2 Emporium Plus</span>
           </footer>
         </div>
       </section>

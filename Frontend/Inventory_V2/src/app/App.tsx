@@ -170,7 +170,7 @@ function PremiumSidebar({
           }}>
             <img
               src="https://res.cloudinary.com/dljpgzbto/image/upload/v1743993646/company-logo_dksb23.jpg"
-              alt="Smartliving Emporium Plus"
+              alt="SMARTLIVING V2 Emporium Plus"
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           </div>
@@ -178,7 +178,7 @@ function PremiumSidebar({
             <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden',
               opacity: collapsed ? 0 : 1, transition: 'opacity 200ms ease' }}>
               <span style={{ fontSize: 13, fontWeight: 800, color: '#fff', letterSpacing: '0.04em', lineHeight: 1.2, whiteSpace: 'nowrap' }}>
-                SMARTLIVING
+                SMARTLIVING V2
               </span>
               <span style={{ fontSize: 10, fontWeight: 600, color: '#a78bfa', letterSpacing: '0.1em', lineHeight: 1.2, whiteSpace: 'nowrap' }}>
                 EMPORIUM PLUS
@@ -574,7 +574,7 @@ export default function App() {
     const activeTitle = auditTabOverride && activeMenu === 'audit'
       ? 'Stock Taking'
       : MENU_TITLE_MAP[activeMenu] || 'Inventory Dashboard';
-    document.title = `${activeTitle} | SmartLiving`;
+    document.title = `${activeTitle} | SMARTLIVING V2`;
   }, [activeMenu, auditTabOverride]);
 
   if (sessionLoading || sessionError) {

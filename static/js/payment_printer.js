@@ -237,7 +237,7 @@ const money=value=>Number(value||0).toLocaleString("en-GH",{minimumFractionDigit
           command(ESC, 0x61, 0x01);
           command(ESC, 0x45, 0x01);
           command(GS, 0x21, 0x11);
-          text("SMART LIVING\n");
+          text("SMARTLIVING V2\n");
           command(GS, 0x21, 0x00);
           text("EMPORIUM PLUS\n");
           command(ESC, 0x45, 0x00);
@@ -270,7 +270,7 @@ const money=value=>Number(value||0).toLocaleString("en-GH",{minimumFractionDigit
         command(ESC, 0x40);                 // Initialize
         command(ESC, 0x61, 0x01);           // Center
         command(GS, 0x21, 0x11);            // Double width/height
-        text("SMART LIVING\n");
+        text("SMARTLIVING V2\n");
         command(GS, 0x21, 0x00);
         command(ESC, 0x45, 0x01);           // Bold on
         text("EMPORIUM PLUS\n");
@@ -337,7 +337,7 @@ const money=value=>Number(value||0).toLocaleString("en-GH",{minimumFractionDigit
           text(`QR unavailable\n${receipt.receiptNumber}\n${receipt.paymentId}\n`);
         }
         text(`${line}\n`);
-        text("Thank you for choosing\nSmart Living.\n");
+        text("Thank you for choosing\nSMARTLIVING V2.\n");
         command(ESC, 0x45, 0x01);
         text("0556064611/05099639836/\n0598948132\n");
         command(ESC, 0x45, 0x00);

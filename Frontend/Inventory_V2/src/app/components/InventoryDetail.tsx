@@ -473,7 +473,7 @@ export function InventoryDetail({ itemId, onBack }: InventoryDetailProps) {
       const file = new File([pdf.blob], pdf.filename, { type: 'application/pdf' });
       const shareData = {
         title: `${product.name} - ${currentTabMeta?.label || 'Details'}`,
-        text: `SmartLiving inventory ${currentTabMeta?.label || 'details'} for ${product.name}`,
+        text: `SMARTLIVING V2 inventory ${currentTabMeta?.label || 'details'} for ${product.name}`,
         files: [file],
       };
 

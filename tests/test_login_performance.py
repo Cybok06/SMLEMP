@@ -20,7 +20,7 @@ def test_login_uses_smartliving_brand_and_share_image(login_app):
     response = app.test_client().get('/login')
     assert response.status_code == 200
     html = response.get_data(as_text=True)
-    assert '<title>Sign in | SmartLiving Emporium Plus</title>' in html
+    assert '<title>Sign in | SMARTLIVING V2 Emporium Plus</title>' in html
     assert 'content="#2e0848"' in html
     assert 'property="og:image"' in html
     assert 'https://localhost/static/login/smartliving-logo.png' in html
