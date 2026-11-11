@@ -1,0 +1,283 @@
+<div class="act-shell">
+  <section class="act-hero">
+    <div class="act-hero-grid">
+      <div>
+        <span class="act-badge"><i class="bi bi-journal-richtext"></i> Daily Activity Log</span>
+        <h1>Log every meaningful activity you completed and keep the day in sequence.</h1>
+        <p>Switch between days, add structured entries, and review your timeline in order. This page is shared across roles and designed for fast daily logging.</p>
+      </div>
+      <div class="act-hero-stack">
+        <div class="act-mini">
+          <span class="label">User</span>
+          <div class="value">{{ user_name }}</div>
+        </div>
+        <div class="act-mini">
+          <span class="label">Role / Branch</span>
+          <div class="value">{{ user_role_label }}{% if user_branch %} • {{ user_branch }}{% endif %}</div>
+        </div>
+        <div class="act-mini">
+          <span class="label">Selected Date</span>
+          <div class="value" id="actSelectedDateLabel">{{ today_date }}</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="act-grid">
+    <div class="act-card">
+      <div class="act-card-head">
+        <div>
+          <h2>Activity Timeline</h2>
+          <p>Each item is appended in order so the day reads like a clean work narrative.</p>
+        </div>
+        <div class="act-day-controls">
+          <button class="btn btn-outline-secondary btn-sm rounded-pill" id="actPrevDay"><i class="bi bi-chevron-left"></i></button>
+          <input class="form-control form-control-sm" type="date" id="actDateInput" value="{{ today_date }}">
+          <button class="btn btn-outline-secondary btn-sm rounded-pill" id="actNextDay"><i class="bi bi-chevron-right"></i></button>
+          <button class="btn btn-primary btn-sm rounded-pill" id="actTodayBtn">Today</button>
+        </div>
+      </div>
+
+      <div class="act-metrics">
+        <div class="metric-box"><span>Total</span><b id="actCount">0</b></div>
+        <div class="metric-box"><span>Important</span><b id="actImportant">0</b></div>
+        <div class="metric-box"><span>Urgent</span><b id="actUrgent">0</b></div>
+        <div class="metric-box"><span>Latest</span><b id="actLatest">--</b></div>
+      </div>
+
+      <div class="act-timeline" id="actTimeline">
+        <div class="act-empty">No activities logged for this day yet.</div>
+      </div>
+    </div>
+
+    <div class="act-card">
+      <div class="act-card-head">
+        <div>
+          <h2>Log New Activity</h2>
+          <p>Add the title, details, location, and outcome so the record is useful later.</p>
+        </div>
+      </div>
+
+      <form id="actForm" class="row g-3">
+        <div class="col-12">
+          <label class="form-label small text-muted mb-1">Category</label>
+          <select class="form-select" name="category" id="actCategory">
+            {% for category in categories %}
+            <option value="{{ category }}">{{ category }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12">
+          <label class="form-label small text-muted mb-1">Activity Title</label>
+          <input class="form-control" name="title" id="actTitle" placeholder="Example: Followed up with 12 overdue customers" required>
+        </div>
+        <div class="col-12">
+          <label class="form-label small text-muted mb-1">Details</label>
+          <textarea class="form-control" rows="4" name="details" id="actDetails" placeholder="What was done, who was involved, and any useful context?"></textarea>
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label small text-muted mb-1">Location</label>
+          <input class="form-control" name="location" id="actLocation" placeholder="Branch, field, office, market, warehouse...">
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label small text-muted mb-1">Priority</label>
+          <select class="form-select" name="priority" id="actPriority">
+            {% for priority in priorities %}
+            <option value="{{ priority }}">{{ priority }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12">
+          <label class="form-label small text-muted mb-1">Outcome / Result</label>
+          <textarea class="form-control" rows="3" name="outcome" id="actOutcome" placeholder="What happened after the activity? Result, next step, or resolution."></textarea>
+        </div>
+        <div class="col-12 d-grid">
+          <button class="btn btn-primary btn-lg" type="submit" id="actSubmitBtn">
+            <span class="spinner-border spinner-border-sm me-2 d-none" id="actSubmitSpin" role="status"></span>
+            Add Activity
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
+
+<div class="act-toast" id="actToast"></div>
+
+<script>
+(function () {
+  const ACT = {
+    listUrl: "{{ url_for('activities.activities_list') }}",
+    addUrl: "{{ url_for('activities.activities_add') }}",
+    deleteUrlBase: "/activities/api/delete/",
+    today: "{{ today_date }}"
+  };
+
+  const state = { date: ACT.today, rows: [] };
+  const dateInput = document.getElementById('actDateInput');
+  const timelineEl = document.getElementById('actTimeline');
+  const selectedDateLabel = document.getElementById('actSelectedDateLabel');
+  const countEl = document.getElementById('actCount');
+  const importantEl = document.getElementById('actImportant');
+  const urgentEl = document.getElementById('actUrgent');
+  const latestEl = document.getElementById('actLatest');
+  const form = document.getElementById('actForm');
+  const submitBtn = document.getElementById('actSubmitBtn');
+  const submitSpin = document.getElementById('actSubmitSpin');
+
+  function showToast(message, isError=false){
+    const el = document.getElementById('actToast');
+    if (!el) return;
+    el.textContent = message || (isError ? 'Request failed.' : 'Saved.');
+    el.style.background = isError ? '#7f1d1d' : '#0f172a';
+    el.classList.add('show');
+    clearTimeout(window.__actToastTimer);
+    window.__actToastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+  }
+
+  function fmtDate(dateStr){
+    try { return new Date(dateStr + 'T00:00:00').toLocaleDateString([], { weekday:'long', month:'short', day:'numeric', year:'numeric' }); }
+    catch (_) { return dateStr; }
+  }
+
+  function fmtTime(value){
+    if (!value) return '--';
+    try { return new Date(value).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }); }
+    catch (_) { return value; }
+  }
+
+  function priorityBadge(priority){
+    const p = String(priority || 'Normal');
+    let cls = 'bg-secondary-subtle text-secondary-emphasis';
+    if (p === 'Important') cls = 'bg-primary-subtle text-primary-emphasis';
+    if (p === 'Urgent') cls = 'bg-danger-subtle text-danger-emphasis';
+    return `<span class="badge rounded-pill ${cls}">${p}</span>`;
+  }
+
+  function emptyState(message){
+    timelineEl.innerHTML = `<div class="act-empty">${message}</div>`;
+  }
+
+  function renderMetrics(summary){
+    countEl.textContent = summary?.count ?? 0;
+    importantEl.textContent = summary?.important ?? 0;
+    urgentEl.textContent = summary?.urgent ?? 0;
+    latestEl.textContent = summary?.latest ? fmtTime(summary.latest) : '--';
+  }
+
+  function renderTimeline(rows){
+    timelineEl.innerHTML = '';
+    if (!rows || !rows.length){
+      emptyState('No activities logged for this day yet.');
+      return;
+    }
+    rows.forEach((row, idx) => {
+      const card = document.createElement('div');
+      card.className = 'act-entry';
+      card.innerHTML = `
+        <div class="act-entry-line"><span>${idx + 1}</span></div>
+        <div class="act-entry-body">
+          <div class="act-entry-top">
+            <div>
+              <div class="act-entry-title">${row.title || 'Untitled Activity'}</div>
+              <div class="act-entry-meta">
+                <span><i class="bi bi-tag"></i> ${row.category || 'Other'}</span>
+                <span><i class="bi bi-clock"></i> ${fmtTime(row.created_at)}</span>
+                ${row.location ? `<span><i class="bi bi-geo-alt"></i> ${row.location}</span>` : ''}
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              ${priorityBadge(row.priority)}
+              <button class="btn btn-sm btn-outline-danger rounded-pill" data-delete="${row.id}"><i class="bi bi-trash3"></i></button>
+            </div>
+          </div>
+          ${row.details ? `<div class="act-entry-copy">${row.details}</div>` : ''}
+          ${row.outcome ? `<div class="act-entry-outcome"><strong>Outcome:</strong> ${row.outcome}</div>` : ''}
+        </div>
+      `;
+      timelineEl.appendChild(card);
+    });
+
+    timelineEl.querySelectorAll('[data-delete]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Remove this activity entry?')) return;
+        const resp = await fetch(ACT.deleteUrlBase + encodeURIComponent(btn.dataset.delete), { method: 'POST', headers: { 'Accept': 'application/json' } });
+        const data = await resp.json();
+        if (!resp.ok || !data.ok){
+          showToast(data.message || 'Delete failed.', true);
+          return;
+        }
+        showToast(data.message || 'Activity removed.');
+        await loadActivities();
+      });
+    });
+  }
+
+  async function loadActivities(){
+    selectedDateLabel.textContent = state.date;
+    const resp = await fetch(`${ACT.listUrl}?date=${encodeURIComponent(state.date)}`, { headers: { 'Accept': 'application/json' } });
+    const data = await resp.json();
+    if (!resp.ok || !data.ok) throw new Error(data.message || 'Failed to load activities.');
+    state.rows = data.records || [];
+    selectedDateLabel.textContent = fmtDate(data.date || state.date);
+    renderTimeline(state.rows);
+    renderMetrics(data.summary || {});
+  }
+
+  function shiftDate(days){
+    const current = new Date(state.date + 'T00:00:00');
+    current.setDate(current.getDate() + days);
+    state.date = current.toISOString().slice(0, 10);
+    dateInput.value = state.date;
+    loadActivities().catch(err => showToast(err.message || 'Failed to load activities.', true));
+  }
+
+  document.getElementById('actPrevDay')?.addEventListener('click', () => shiftDate(-1));
+  document.getElementById('actNextDay')?.addEventListener('click', () => shiftDate(1));
+  document.getElementById('actTodayBtn')?.addEventListener('click', () => {
+    state.date = ACT.today;
+    dateInput.value = state.date;
+    loadActivities().catch(err => showToast(err.message || 'Failed to load activities.', true));
+  });
+  dateInput?.addEventListener('change', () => {
+    state.date = dateInput.value || ACT.today;
+    loadActivities().catch(err => showToast(err.message || 'Failed to load activities.', true));
+  });
+
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    submitBtn.disabled = true;
+    submitSpin.classList.remove('d-none');
+    const fd = new FormData(form);
+    const payload = {
+      activity_date: state.date,
+      category: fd.get('category'),
+      title: fd.get('title'),
+      details: fd.get('details'),
+      location: fd.get('location'),
+      priority: fd.get('priority'),
+      outcome: fd.get('outcome')
+    };
+    try {
+      const resp = await fetch(ACT.addUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await resp.json();
+      if (!resp.ok || !data.ok) throw new Error(data.message || 'Unable to save activity.');
+      form.reset();
+      document.getElementById('actPriority').value = 'Normal';
+      showToast(data.message || 'Activity logged.');
+      await loadActivities();
+    } catch (err) {
+      showToast(err.message || 'Unable to save activity.', true);
+    } finally {
+      submitBtn.disabled = false;
+      submitSpin.classList.add('d-none');
+    }
+  });
+
+  loadActivities().catch(err => showToast(err.message || 'Failed to initialize activities.', true));
+})();
+</script>

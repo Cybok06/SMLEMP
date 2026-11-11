@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Supplier Delivery {{ row.ref_no }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body { background:#f8f9fa; }
+    .page-wrap{ margin-left:260px; padding:20px; }
+    @media (max-width:991px){ .page-wrap{ margin-left:0; } }
+    .card-soft{ border:1px solid rgba(226,232,240,.9); border-radius:14px; background:#fff; box-shadow:0 6px 18px rgba(15,23,42,.08); }
+    .sticky-actions{ position: sticky; top: 12px; z-index: 20; }
+    .status-badge{ font-size:.74rem; display:inline-flex; align-items:center; gap:6px; }
+    .progress{ height: 8px; }
+    .variance-missing{ color:#dc2626; font-weight:600; }
+    .variance-over{ color:#f59e0b; font-weight:600; }
+    .table tbody tr{ transition: transform .12s ease, background-color .12s ease; }
+    .table tbody tr:hover{ background:#f8fafc; transform: translateY(-1px); }
+    .top-loader{ position:fixed; top:0; left:0; height:3px; width:0; background:#0d6efd; z-index:2000; box-shadow:0 2px 8px rgba(13,110,253,.35); }
+    .top-loader.active{ animation: loadbar 1.1s ease-in-out infinite; }
+    @keyframes loadbar{ 0%{ width:0; } 50%{ width:70%; } 100%{ width:100%; opacity:.6; } }
+    .btn-loading{ opacity:.8; pointer-events:none; }
+  </style>
+</head>
+<body>
+  {% include "inventory_sidebar.html" %}
+  <div class="top-loader" id="topLoader"></div>
+
+  <div class="page-wrap">
+    <div class="card-soft p-3 mb-3">
+      <div class="d-flex justify-content-between align-items-center gap-2">
+        <div>
+          <h4 class="mb-0">{{ row.ref_no }}</h4>
+          <div class="text-muted small">Supplier delivery reconciliation</div>
+        </div>
+        <div class="d-flex gap-2 sticky-actions">
+          <a class="btn btn-outline-secondary" data-loading data-loading-text="Loading..." href="{{ url_for('supplier_deliveries.supplier_deliveries_list') }}"><i class="bi bi-arrow-left"></i> Back</a>
+          <a class="btn btn-outline-dark" data-loading data-loading-text="Generating..." href="{{ url_for('supplier_deliveries.supplier_deliveries_pdf', id=row._id) }}"><i class="bi bi-file-earmark-pdf"></i> Export PDF</a>
+          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#receiveModal"><i class="bi bi-truck"></i> Receive Delivery</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-soft p-3 mb-3">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+          <div class="text-muted small">Supplier</div>
+          <div class="fw-semibold">{{ row.supplier.name }}</div>
+          <div class="text-muted small">{{ row.supplier.phone }} {{ row.supplier.location }}</div>
+        </div>
+        <div>
+          <div class="text-muted small">Expected Date</div>
+          <div class="fw-semibold">{{ row.expected_date }}</div>
+        </div>
+        <div>
+          <div class="text-muted small">Status</div>
+          {% set st = (row.status or 'pending')|lower %}
+          <span class="badge status-badge bg-{{ status_badge(row.status) }}">
+            {% if st == 'pending' %}<i class="bi bi-exclamation-triangle"></i>{% endif %}
+            {% if st == 'partial' %}<i class="bi bi-hourglass-split"></i>{% endif %}
+            {% if st == 'completed' %}<i class="bi bi-check-circle"></i>{% endif %}
+            {% if st == 'closed' %}<i class="bi bi-lock"></i>{% endif %}
+            {{ row.status|capitalize }}
+          </span>
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="d-flex justify-content-between small text-muted">
+          <span>Delivered {{ totals.delivered }} / {{ totals.requested }}</span>
+          <span>{{ progress }}%</span>
+        </div>
+        <div class="progress">
+          <div class="progress-bar bg-success" id="progressBar" data-progress="{{ progress }}"></div>
+        </div>
+      </div>
+    </div>
+
+    <ul class="nav nav-tabs mb-3" role="tablist">
+      <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabOverview" type="button">Overview</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabItems" type="button">Items</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabHistory" type="button">Delivery History</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabAudit" type="button">Audit</button></li>
+    </ul>
+
+    <div class="tab-content">
+      <div class="tab-pane fade show active" id="tabOverview">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <div class="card-soft p-3">
+              <div class="text-muted small">Requested Units</div>
+              <div class="fw-semibold fs-5">{{ totals.requested }}</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card-soft p-3">
+              <div class="text-muted small">Delivered Units</div>
+              <div class="fw-semibold fs-5">{{ totals.delivered }}</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card-soft p-3">
+              <div class="text-muted small">Rejected Units</div>
+              <div class="fw-semibold fs-5">{{ totals.rejected }}</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card-soft p-3">
+              <div class="text-muted small">Missing Units</div>
+              <div class="fw-semibold fs-5 text-danger">{{ totals.missing }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="tabItems">
+        <div class="card-soft p-3">
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th class="text-end">Requested</th>
+                  <th class="text-end">Delivered</th>
+                  <th class="text-end">Rejected</th>
+                  <th class="text-end">Missing</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for it in items %}
+                  <tr>
+                    <td>{{ it.product_name_snapshot }}</td>
+                    <td class="text-end">{{ it.qty_requested }}</td>
+                    <td class="text-end">{{ it.qty_delivered_total }}</td>
+                    <td class="text-end">{{ it.qty_rejected_total }}</td>
+                    <td class="text-end {% if it.qty_missing > 0 %}variance-missing{% endif %}">{{ it.qty_missing }}</td>
+                    <td>
+                      {% if it.status == "Over Delivered" %}
+                        <span class="variance-over">Over Delivered</span>
+                      {% else %}
+                        {{ it.status }}
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="tabHistory">
+        <div class="card-soft p-3">
+          {% if receipts %}
+            {% for r in receipts %}
+              <div class="border rounded p-2 mb-2">
+                <div class="d-flex justify-content-between">
+                  <div class="fw-semibold">{{ r.delivery_note_no or "Delivery" }}</div>
+                  <div class="text-muted small">{{ r.received_at }}</div>
+                </div>
+                <div class="text-muted small">{{ r.comment }}</div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="text-muted">No delivery receipts yet.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="tabAudit">
+        <div class="card-soft p-3">
+          <div class="text-muted small">Created by {{ row.created_by.name }} ({{ row.created_by.role }})</div>
+          <div class="text-muted small">Created at {{ row.created_at.strftime("%Y-%m-%d %H:%M") if row.created_at }}</div>
+          <div class="text-muted small">Updated at {{ row.updated_at.strftime("%Y-%m-%d %H:%M") if row.updated_at }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="receiveModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <form class="modal-content" method="post" action="{{ url_for('supplier_deliveries.supplier_deliveries_receive', id=row._id) }}" data-loading-form>
+        <div class="modal-header">
+          <h5 class="modal-title">Receive Delivery</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-2 mb-2">
+            <div class="col-md-4">
+              <label class="form-label small">Received At</label>
+              <input type="date" name="received_at" class="form-control form-control-sm" value="{{ today }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small">Delivery Note No</label>
+              <input name="delivery_note_no" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small">Comment</label>
+              <input name="comment" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small">Update Inventory Qty?</label>
+              <select name="update_inventory" class="form-select form-select-sm">
+                <option value="yes" selected>Yes (Increase stock)</option>
+                <option value="no">No (Do not touch inventory)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th class="text-end">Deliver</th>
+                  <th class="text-end">Reject</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for it in items %}
+                  <tr>
+                    <td>
+                      {{ it.product_name_snapshot }}
+                      <input type="hidden" name="receipt_product_id[]" value="{{ it.product_id }}">
+                    </td>
+                    <td class="text-end">
+                      <input type="number" min="0" name="qty_delivered[]" class="form-control form-control-sm text-end" value="0">
+                    </td>
+                    <td class="text-end">
+                      <input type="number" min="0" name="qty_rejected[]" class="form-control form-control-sm text-end" value="0">
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+          <button class="btn btn-primary" type="submit" data-loading data-loading-text="Saving receipt..."><i class="bi bi-check2-circle"></i> Confirm Receive</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    if (window.location.hash === "#receive") {
+      const modal = new bootstrap.Modal(document.getElementById("receiveModal"));
+      modal.show();
+    }
+
+    (function(){
+      var progressEl = document.getElementById("progressBar");
+      if (progressEl) {
+        var pct = Number(progressEl.getAttribute("data-progress") || 0);
+        progressEl.style.width = pct + "%";
+      }
+      var loader = document.getElementById("topLoader");
+      function showLoader(){ if (loader) loader.classList.add("active"); }
+      function setBtnLoading(btn){
+        if (!btn) return;
+        var text = btn.getAttribute("data-loading-text") || "Loading...";
+        btn.dataset.prevHtml = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>' + text;
+        btn.classList.add("btn-loading");
+        btn.setAttribute("aria-disabled", "true");
+      }
+      document.querySelectorAll("[data-loading]").forEach(function(el){
+        el.addEventListener("click", function(){
+          showLoader();
+          setBtnLoading(el);
+        });
+      });
+      document.querySelectorAll("form[data-loading-form]").forEach(function(form){
+        form.addEventListener("submit", function(){
+          showLoader();
+          var submitBtn = form.querySelector("button[type='submit'][data-loading]");
+          setBtnLoading(submitBtn);
+        });
+      });
+      window.addEventListener("pageshow", function(){
+        if (loader) loader.classList.remove("active");
+      });
+    })();
+  </script>
+</body>
+</html>

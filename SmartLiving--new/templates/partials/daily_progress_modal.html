@@ -1,0 +1,65 @@
+{% if daily_progress_token is defined %}
+<style>
+.daily-welcome{border:1px solid #e2e8f0;border-radius:24px;padding:0;width:min(480px,calc(100vw - 32px));background:#fff;color:#172b35;box-shadow:0 30px 100px #071b3340;font-family:inherit}
+.daily-welcome::backdrop{background:#102332a8;backdrop-filter:blur(6px)}
+.daily-welcome .dw-top{padding:30px 30px 24px;background:linear-gradient(135deg,#123d3c,#09272e);color:#fff}
+.daily-welcome .dw-eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#c4e4d7;font-weight:700}
+.daily-welcome h2{font-size:25px;margin:12px 0 8px;color:inherit;font-weight:700}
+.daily-welcome .dw-time{font-size:12px;opacity:.75}.daily-welcome .dw-body{padding:26px 30px}
+.daily-welcome .dw-percent{font-size:54px;line-height:1.15;font-weight:750;letter-spacing:-2px;color:#174b43}
+.daily-welcome .dw-caption{color:#61737d;font-size:14px;margin:8px 0 22px}
+.daily-welcome .dw-track{height:12px;border-radius:20px;background:#e9efee;overflow:hidden;margin:18px 0}
+.daily-welcome .dw-fill{height:100%;width:0;background:linear-gradient(90deg,#227a65,#cfb76b);border-radius:20px;transition:width 900ms ease}
+.daily-welcome .dw-amounts{display:flex;justify-content:space-between;gap:16px;font-size:17px;font-weight:700}
+.daily-welcome .dw-amounts small{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#72808a;margin-bottom:5px;font-weight:500}
+.daily-welcome .dw-note{background:#f2f6f4;padding:12px;border-radius:10px;margin:20px 0;color:#315d50;font-size:13px}
+.daily-welcome .dw-actions{display:flex;gap:12px}.daily-welcome button{flex:1;border:1px solid #cdd9d5;border-radius:10px;padding:13px 16px;font:inherit;font-weight:700;background:#fff;color:#23463c;cursor:pointer}
+.daily-welcome button.dw-primary{background:#164a40;color:#fff;border-color:#164a40}.daily-welcome button:focus-visible{outline:3px solid #bd9f4c;outline-offset:3px}
+.daily-welcome .dw-error{color:#a12b2b;font-size:13px}.daily-welcome [hidden]{display:none!important}
+@media(prefers-reduced-motion:reduce){.daily-welcome .dw-fill{transition:none}}
+</style>
+<dialog class="daily-welcome" id="dailyWelcome" aria-labelledby="dw-title" aria-describedby="dw-caption">
+<div class="dw-top"><div class="dw-eyebrow">Daily performance snapshot</div><h2 id="dw-title">Today's collection progress</h2><div class="dw-time" id="dw-time"></div></div>
+<div class="dw-body"><div id="dw-metrics"><div class="dw-percent" id="dw-percent"></div>
+<p class="dw-caption" id="dw-caption"></p><div class="dw-track" role="progressbar" aria-label="Daily cash target progress" aria-valuemin="0" aria-valuemax="100" id="dw-track"><div class="dw-fill" id="dw-fill"></div></div>
+<div class="dw-amounts"><div><small>Collected</small><span id="dw-collected"></span></div><div style="text-align:right"><small>Daily target</small><span id="dw-target"></span></div></div></div>
+<div class="dw-note" id="dw-note"></div><p class="dw-error" id="dw-error" hidden></p>
+<div class="dw-actions"><button type="button" id="dw-okay" class="dw-primary" autofocus>OKAY</button><button type="button" id="dw-view">View Targets</button></div></div></dialog>
+<script>
+(() => {
+ const dialog = document.getElementById('dailyWelcome');
+ const byId = id => document.getElementById(id);
+ const money = value => 'GHS ' + Number(value).toLocaleString('en-GH', {minimumFractionDigits:2, maximumFractionDigits:2});
+ let destination = '', busy = false;
+ async function dismiss(view) {
+   if (busy) return; busy = true;
+   try {
+     const response = await fetch({{ url_for('daily_progress.dismiss_daily_progress')|tojson }}, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:{{ daily_progress_token|tojson }}})});
+     if (!response.ok) throw new Error('dismiss');
+     dialog.close(); if (view) window.location.assign(destination);
+   } catch (_) { byId('dw-error').textContent = 'Unable to save dismissal. Please try again.'; byId('dw-error').hidden = false; }
+   finally { busy = false; }
+ }
+ byId('dw-okay').addEventListener('click', () => dismiss(false));
+ byId('dw-view').addEventListener('click', () => dismiss(true));
+ dialog.addEventListener('cancel', event => {event.preventDefault(); dismiss(false);});
+ fetch({{ url_for('daily_progress.daily_progress')|tojson }}, {cache:'no-store'})
+ .then(response => {if (!response.ok) throw new Error('snapshot'); return response.json();})
+ .then(data => {
+   const target = Number(data.target);
+   if (!Number.isFinite(target) || target <= 0) return;
+   destination = data.targets_url;
+   byId('dw-time').textContent = 'As of ' + data.as_of;
+   byId('dw-percent').textContent = data.percent + '%';
+   byId('dw-caption').textContent = 'Collected toward ' + data.scope + '.';
+   byId('dw-collected').textContent = money(data.collected);
+   byId('dw-target').textContent = money(data.target);
+   byId('dw-note').textContent = data.percent >= 100 ? 'Target achieved! ' + (data.exceeded > 0 ? money(data.exceeded) + ' above target.' : 'Your daily cash goal is complete.') : money(data.remaining) + ' remaining to reach today?s target.';
+   byId('dw-track').setAttribute('aria-valuenow', Math.min(100,Math.max(0,data.percent)));
+   byId('dw-track').setAttribute('aria-valuetext', data.percent + '% collected');
+   dialog.showModal();
+   requestAnimationFrame(() => requestAnimationFrame(() => {byId('dw-fill').style.width = Math.min(100,Math.max(0,data.percent)) + '%';}));
+ }).catch(() => { /* Leave the session pending so the next dashboard visit retries. */ });
+})();
+</script>
+{% endif %}

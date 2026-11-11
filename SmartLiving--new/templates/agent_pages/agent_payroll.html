@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>My Payroll</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body{background:#f6f8fb;color:#0f172a}
+    .pay-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px}
+    .metric{border:1px solid #e2e8f0;border-radius:10px;padding:12px;background:#fff}
+    .metric span{display:block;color:#64748b;font-size:.78rem}.metric b{font-size:1.08rem}
+    .mono{font-variant-numeric:tabular-nums}.empty{padding:42px;text-align:center;color:#64748b}
+  </style>
+</head>
+<body>
+  {% include 'side_bar.html' %}
+  <div class="container-xxl py-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <div>
+        <h3 class="mb-1">My Payroll</h3>
+        <div class="text-muted small">{{ agent_name }} - approved payroll only</div>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <input class="form-control" type="month" id="monthPick" style="max-width:190px">
+        <button class="btn btn-outline-primary" id="btnRefresh"><i class="bi bi-arrow-repeat me-1"></i>Refresh</button>
+      </div>
+    </div>
+
+    <div id="emptyState" class="pay-card empty">Loading approved payroll...</div>
+    <div id="payrollView" class="d-none">
+      <div class="pay-card p-3 mb-3">
+        <div class="d-flex justify-content-between flex-wrap gap-2">
+          <div>
+            <div class="fw-semibold" id="payMonth">Payroll</div>
+            <div class="small text-muted" id="approvedDate">Approved date: N/A</div>
+          </div>
+          <span class="badge text-bg-success align-self-start" id="statusBadge">Approved</span>
+        </div>
+      </div>
+
+      <div class="row g-2 mb-3">
+        <div class="col-6 col-lg-2"><div class="metric"><span>Base salary</span><b class="mono" id="baseSalary">GHS 0.00</b></div></div>
+        <div class="col-6 col-lg-2"><div class="metric"><span>Commission</span><b class="mono" id="commission">GHS 0.00</b></div></div>
+        <div class="col-6 col-lg-2"><div class="metric"><span>Bonus</span><b class="mono" id="bonus">GHS 0.00</b></div></div>
+        <div class="col-6 col-lg-2"><div class="metric"><span>Allowance</span><b class="mono" id="allowance">GHS 0.00</b></div></div>
+        <div class="col-6 col-lg-2"><div class="metric"><span>Other pay</span><b class="mono" id="otherPay">GHS 0.00</b></div></div>
+        <div class="col-6 col-lg-2"><div class="metric"><span>Gross pay</span><b class="mono" id="grossPay">GHS 0.00</b></div></div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-12 col-lg-5">
+          <div class="pay-card p-3 h-100">
+            <div class="text-muted small">Deduction</div>
+            <div class="fs-4 fw-bold mono" id="deduction">GHS 0.00</div>
+            <div class="small text-muted mt-2" id="deductionReason">No deduction reason.</div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-7">
+          <div class="pay-card p-3 h-100">
+            <div class="text-muted small">Final net pay</div>
+            <div class="display-6 fw-bold mono" id="netPay">GHS 0.00</div>
+            <div class="small text-muted mt-2" id="payNote">Payroll approved by HR.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container position-fixed top-0 end-0 p-3"><div class="toast" id="appToast"><div class="d-flex"><div class="toast-body" id="toastMsg">Ready</div><button class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button></div></div></div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const $=id=>document.getElementById(id), toast=new bootstrap.Toast($("appToast"),{delay:2300});
+    function notify(m){$("toastMsg").innerText=m;toast.show();}
+    function money(n){return "GHS " + Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});}
+    function monthLabel(m){try{const [y,mo]=m.split("-");return new Date(Number(y),Number(mo)-1,1).toLocaleDateString(undefined,{month:"long",year:"numeric"});}catch(e){return m;}}
+    async function loadPayroll(){
+      const month=$("monthPick").value; $("emptyState").classList.remove("d-none"); $("payrollView").classList.add("d-none"); $("emptyState").innerText="Loading approved payroll...";
+      const res=await fetch(`/agent/payroll/month/${encodeURIComponent(month)}`); const data=await res.json();
+      if(!data.ok){$("emptyState").innerText=data.message||"Failed to load payroll.";return;}
+      if(!data.found){$("emptyState").innerText="No approved payroll for this month yet.";return;}
+      const p=data.payroll||{}, i=p.item||{};
+      $("emptyState").classList.add("d-none"); $("payrollView").classList.remove("d-none");
+      $("payMonth").innerText=monthLabel(p.payroll_month||month); $("statusBadge").innerText=p.status||i.status||"Approved";
+      $("approvedDate").innerText="Approved date: " + ((i.approved_at||p.hr_action_at||p.updated_at||"").slice(0,16).replace("T"," ") || "N/A");
+      $("baseSalary").innerText=money(i.base_salary); $("commission").innerText=money(i.commission); $("bonus").innerText=money(i.bonus); $("allowance").innerText=money(i.allowance); $("otherPay").innerText=money(i.other_pay);
+      $("grossPay").innerText=money(i.gross_pay||i.gross_final); $("deduction").innerText=money(i.deduction_amount||i.item_deductions_total); $("deductionReason").innerText=i.deduction_reason||"No deduction reason.";
+      $("netPay").innerText=money(i.net_pay||i.net_final); $("payNote").innerText=i.hr_note||i.manager_note||"Payroll approved by HR.";
+    }
+    $("btnRefresh").addEventListener("click",()=>{loadPayroll();notify("Refreshed.");}); $("monthPick").addEventListener("change",loadPayroll);
+    (function init(){const d=new Date();$("monthPick").value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;loadPayroll();})();
+  </script>
+</body>
+</html>

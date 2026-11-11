@@ -1,0 +1,30 @@
+<section aria-labelledby="hr-activity-title">
+  <h1 id="hr-activity-title" class="h4">Activity logs</h1>
+  <p class="text-muted">HR records created, updated, or deleted across all branches. Manager entries are saved directly and shown here for oversight.</p>
+  <form method="get" action="{{ url_for('hr.activity_logs') }}" class="card card-body mb-3">
+    <div class="row g-3">
+      <label class="col-md-4">Manager
+        <select class="form-select" name="manager" aria-label="Manager"><option value="">All managers and HR</option>{% for manager in managers %}<option value="{{ manager._id }}" {% if filters.get('manager') == manager._id %}selected{% endif %}>{{ manager.name }}{% if manager.branch %} · {{ manager.branch }}{% endif %}</option>{% endfor %}</select>
+      </label>
+      <label class="col-md-2">Recorded by
+        <select class="form-select" name="source" aria-label="Recorded by">{% for value, label in [('', 'Everyone'), ('manager', 'Managers'), ('hr', 'Main HR / Admin')] %}<option value="{{ value }}" {% if filters.get('source', '') == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      </label>
+      <label class="col-md-3">Branch<select class="form-select" name="branch" aria-label="Branch"><option value="">All branches</option>{% for branch in branches %}<option {% if filters.get('branch') == branch %}selected{% endif %}>{{ branch }}</option>{% endfor %}</select></label>
+      <label class="col-md-3">Change<select class="form-select" name="operation" aria-label="Change">{% for value, label in [('', 'All changes'), ('created', 'Created'), ('updated', 'Updated'), ('deleted', 'Deleted')] %}<option value="{{ value }}" {% if filters.get('operation', '') == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+      <label class="col-md-3">From<input class="form-control" type="date" name="from" value="{{ filters.get('from', '') }}"></label>
+      <label class="col-md-3">To<input class="form-control" type="date" name="to" value="{{ filters.get('to', '') }}"></label>
+      <label class="col-md-4">Search<input class="form-control" name="search" maxlength="100" value="{{ filters.get('search', '') }}" placeholder="Record, manager, or action"></label>
+      <div class="col-md-2 align-self-end"><button class="btn btn-primary" type="submit">Apply filters</button> <a href="{{ url_for('hr.activity_logs') }}">Reset</a></div>
+    </div>
+  </form>
+  <p class="text-muted small" aria-live="polite">{{ total }} activities · Page {{ page }} of {{ pages }} · Times shown in Ghana time (UTC).</p>
+  <div class="card table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Time</th><th>Recorded by</th><th>Branch</th><th>Activity</th><th>Record</th></tr></thead><tbody>
+    {% for row in rows %}
+    <tr><td class="text-nowrap">{{ row.timestamp.strftime('%d %b %Y, %H:%M:%S') }}</td>
+      <td><span class="badge {% if row.actor.role == 'manager' %}bg-info-subtle text-info-emphasis{% else %}bg-secondary-subtle text-secondary-emphasis{% endif %}">{{ 'Manager' if row.actor.role == 'manager' else 'Main HR' if row.actor.role == 'hr' else row.actor.role|title }}</span><div>{{ row.actor.name }}</div></td>
+      <td>{{ row.branch or '—' }}</td><td><strong>{{ row.operation|title }}</strong><div>{{ row.action|capitalize }}</div>{% if row.fields %}<details><summary class="small">Changed fields</summary><span class="small">{{ row.fields|join(', ') }}</span></details>{% endif %}</td>
+      <td>{{ row.record_label }}<div class="text-muted small">{{ row.collection|replace('_', ' ') }}</div>{% if row.collection in ['users', 'Exited'] %}<a href="/hr/employee/{{ row.record_id }}" target="_blank" rel="noopener">View employee</a>{% elif row.collection == 'hr_recruits' and row.operation != 'deleted' %}<a href="/hr/recruits?candidate={{ row.record_id }}">View candidate</a>{% endif %}</td></tr>
+    {% else %}<tr><td colspan="5" class="text-center py-5 text-muted">No activities match these filters. New HR changes will appear here as they are recorded.</td></tr>{% endfor %}
+  </tbody></table></div>
+  <nav class="d-flex justify-content-between mt-3" aria-label="Activity pages"><a class="btn btn-outline-secondary {% if page <= 1 %}disabled{% endif %}" href="{{ previous }}">Previous</a><a class="btn btn-outline-secondary {% if page >= pages %}disabled{% endif %}" href="{{ next_page }}">Next</a></nav>
+</section>

@@ -1,0 +1,95 @@
+{
+  "scope": "1503 synthetic tasks; isolated local MongoDB; legacy list still caps at 1000; no production traffic",
+  "results": [
+    {
+      "endpoint": "legacy_list",
+      "samples": [
+        {
+          "ms": 53.089,
+          "bytes": 699383,
+          "db_commands": 5
+        },
+        {
+          "ms": 47.498,
+          "bytes": 699383,
+          "db_commands": 5
+        },
+        {
+          "ms": 46.852,
+          "bytes": 699383,
+          "db_commands": 5
+        },
+        {
+          "ms": 48.484,
+          "bytes": 699383,
+          "db_commands": 5
+        },
+        {
+          "ms": 47.013,
+          "bytes": 699383,
+          "db_commands": 5
+        }
+      ]
+    },
+    {
+      "endpoint": "counts",
+      "samples": [
+        {
+          "ms": 32.192,
+          "bytes": 83,
+          "db_commands": 1
+        },
+        {
+          "ms": 28.254,
+          "bytes": 83,
+          "db_commands": 1
+        },
+        {
+          "ms": 31.488,
+          "bytes": 83,
+          "db_commands": 1
+        },
+        {
+          "ms": 24.826,
+          "bytes": 83,
+          "db_commands": 1
+        },
+        {
+          "ms": 27.869,
+          "bytes": 83,
+          "db_commands": 1
+        }
+      ]
+    },
+    {
+      "endpoint": "page_25",
+      "samples": [
+        {
+          "ms": 45.457,
+          "bytes": 17610,
+          "db_commands": 3
+        },
+        {
+          "ms": 46.348,
+          "bytes": 17610,
+          "db_commands": 3
+        },
+        {
+          "ms": 44.294,
+          "bytes": 17610,
+          "db_commands": 3
+        },
+        {
+          "ms": 61.071,
+          "bytes": 17610,
+          "db_commands": 3
+        },
+        {
+          "ms": 54.38,
+          "bytes": 17610,
+          "db_commands": 3
+        }
+      ]
+    }
+  ]
+}

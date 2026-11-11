@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Activation</title>
+  <link rel="icon" href="https://imagedelivery.net/h9fmMoa1o2c2P55TcWJGOg/10283f28-b9a0-4100-b254-19a854386800/public" type="image/png" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <style>
+    body { background: #f6f8fc; }
+    .page-wrap { margin-left: 260px; padding: 20px; }
+    @media (max-width: 991px) { .page-wrap { margin-left: 0; } }
+    .card-soft { border: 1px solid #e6ebf2; border-radius: 14px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05); }
+  </style>
+</head>
+<body>
+  {% include 'admin_sidebar.html' %}
+
+  <div class="page-wrap">
+    <div class="container" style="max-width: 860px;">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">Create Activation</h4>
+        <a class="btn btn-outline-secondary" href="{{ url_for('activations.admin_activations_page') }}">Back</a>
+      </div>
+
+      <div class="card card-soft">
+        <div class="card-body">
+          <form id="activationForm" novalidate>
+            <div class="row g-3">
+              <div class="col-12">
+                <label for="title" class="form-label">Title <span class="text-danger">*</span></label>
+                <input id="title" name="title" class="form-control" required maxlength="140" />
+                <div class="invalid-feedback">Title is required.</div>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="location" class="form-label">Location <span class="text-danger">*</span></label>
+                <input id="location" name="location" class="form-control" required maxlength="180" />
+                <div class="invalid-feedback">Location is required.</div>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="activationDateTime" class="form-label">Date & Time <span class="text-danger">*</span></label>
+                <input id="activationDateTime" name="activationDateTime" type="datetime-local" class="form-control" required />
+                <div class="invalid-feedback">Date/time is required.</div>
+              </div>
+              <div class="col-12">
+                <label for="notes" class="form-label">Notes</label>
+                <textarea id="notes" name="notes" rows="4" class="form-control" placeholder="Optional details..."></textarea>
+              </div>
+            </div>
+
+            {% if debug_mode %}
+            <div class="mt-3">
+              <button type="button" class="btn btn-sm btn-outline-info" id="demoBtn"><i class="bi bi-lightning"></i> Fill Demo Activation</button>
+            </div>
+            {% endif %}
+
+            <div id="errorBox" class="alert alert-danger d-none mt-3"></div>
+            <div class="mt-4 d-flex gap-2">
+              <button id="submitBtn" type="submit" class="btn btn-primary"><i class="bi bi-check2-circle"></i> Create Activation</button>
+              <a href="{{ url_for('activations.admin_activations_page') }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer"></div>
+
+  <script>
+    const form = document.getElementById('activationForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const errorBox = document.getElementById('errorBox');
+
+    function showToast(type, message){
+      const host = document.getElementById('toastContainer');
+      if(!host || !window.bootstrap) return;
+      const el = document.createElement('div');
+      el.className = `toast align-items-center text-bg-${type} border-0`;
+      el.setAttribute('role', 'alert');
+      el.setAttribute('aria-live', 'assertive');
+      el.setAttribute('aria-atomic', 'true');
+      el.innerHTML = `<div class="d-flex"><div class="toast-body">${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>`;
+      host.appendChild(el);
+      const t = bootstrap.Toast.getOrCreateInstance(el, { delay: 2800 });
+      t.show();
+      el.addEventListener('hidden.bs.toast', () => el.remove());
+    }
+
+    function payload(){
+      return {
+        title: document.getElementById('title').value.trim(),
+        location: document.getElementById('location').value.trim(),
+        activationDateTime: document.getElementById('activationDateTime').value,
+        notes: document.getElementById('notes').value.trim()
+      };
+    }
+
+    function validate(){
+      const p = payload();
+      let ok = true;
+      ['title','location','activationDateTime'].forEach(id => {
+        const input = document.getElementById(id);
+        const v = (input.value || '').trim();
+        if(!v){
+          input.classList.add('is-invalid');
+          ok = false;
+        }else{
+          input.classList.remove('is-invalid');
+        }
+      });
+      return ok && p.title && p.location && p.activationDateTime;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorBox.classList.add('d-none');
+      if(!validate()) return;
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+      try{
+        const res = await fetch('/api/activations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(payload())
+        });
+        const data = await res.json();
+        if(!res.ok || !data.ok) throw new Error(data.message || 'Failed to create activation.');
+        showToast('success', 'Activation created successfully.');
+        setTimeout(() => {
+          window.location.href = `/admin/activations/${data.activation.id}`;
+        }, 350);
+      }catch(err){
+        errorBox.textContent = err.message || 'Failed to create activation.';
+        errorBox.classList.remove('d-none');
+        showToast('danger', errorBox.textContent);
+      }finally{
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-check2-circle"></i> Create Activation';
+      }
+    });
+
+    const demoBtn = document.getElementById('demoBtn');
+    if(demoBtn){
+      demoBtn.addEventListener('click', () => {
+        const dt = new Date(Date.now() + 2 * 60 * 60 * 1000);
+        const pad = n => String(n).padStart(2, '0');
+        const local = `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+        document.getElementById('title').value = 'Branch Product Push Activation';
+        document.getElementById('location').value = 'Tema Branch';
+        document.getElementById('activationDateTime').value = local;
+        document.getElementById('notes').value = 'Demo activation for testing RSVP flow.';
+      });
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

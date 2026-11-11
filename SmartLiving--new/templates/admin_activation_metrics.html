@@ -1,0 +1,401 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Activation Metrics</title>
+  <link rel="icon" href="https://imagedelivery.net/h9fmMoa1o2c2P55TcWJGOg/10283f28-b9a0-4100-b254-19a854386800/public" type="image/png" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background: #f5f7fb; }
+    .page-wrap { margin-left: 260px; padding: 20px; }
+    @media (max-width: 991px) { .page-wrap { margin-left: 0; } }
+    .card-soft { border: 1px solid #e6ebf2; border-radius: 14px; box-shadow: 0 8px 24px rgba(15,23,42,.05); }
+    .kpi-label { color: #64748b; font-size: .8rem; }
+    .kpi-value { font-size: 1.65rem; font-weight: 800; }
+    .chart-wrap { position: relative; height: 340px; }
+    @media (max-width: 768px) { .chart-wrap { height: 260px; } }
+    .skeleton { background: linear-gradient(90deg, #eef2f7 25%, #e3e8ef 37%, #eef2f7 63%); background-size: 400% 100%; animation: shine 1.1s infinite; border-radius: 8px; }
+    .sk-h { height: 18px; }
+    @keyframes shine { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+  </style>
+</head>
+<body>
+  {% include 'admin_sidebar.html' %}
+
+  <div class="page-wrap">
+    <div class="container-fluid">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div>
+          <h4 class="mb-1">Activation Metrics</h4>
+          <div class="text-muted small">Track going people, same-day customers, products, and payments from activations.</div>
+        </div>
+      </div>
+
+      <div class="card card-soft mb-3 sticky-top" style="top:10px; z-index:100;">
+        <div class="card-body">
+          <form id="filterForm" class="row g-2 align-items-end">
+            <div class="col-12 col-md-3">
+              <label class="form-label small">Activation</label>
+              <select class="form-select" name="activation_id" id="activation_id">
+                <option value="">All activations</option>
+                {% for a in activation_options %}
+                  <option value="{{ a.id }}" {% if filters.activation_id == a.id %}selected{% endif %}>{{ a.title }} - {{ a.date }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-12 col-md-3">
+              <label class="form-label small">Agent</label>
+              <select class="form-select" name="agent_id" id="agent_id">
+                <option value="">All agents</option>
+                {% for a in agent_options %}
+                  <option value="{{ a.id }}" {% if filters.agent_id == a.id %}selected{% endif %}>{{ a.name }}{% if a.role %} ({{ a.role }}){% endif %}{% if a.branch %} - {{ a.branch }}{% endif %}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label small">Start</label>
+              <input type="date" class="form-control" name="start_date" id="start_date" value="{{ filters.start_date }}" />
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label small">End</label>
+              <input type="date" class="form-control" name="end_date" id="end_date" value="{{ filters.end_date }}" />
+            </div>
+            <div class="col-12 col-md-2 d-flex gap-2">
+              <button class="btn btn-primary w-100" type="submit">Apply</button>
+              <button class="btn btn-outline-secondary" type="button" id="resetBtn">Reset</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div id="errorBox" class="alert alert-danger d-none"></div>
+      <div id="loadingSkeleton" class="card card-soft mb-3 d-none">
+        <div class="card-body">
+          <div class="skeleton sk-h mb-2"></div>
+          <div class="skeleton sk-h mb-2"></div>
+          <div class="skeleton sk-h"></div>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3" id="kpiRow">
+        <div class="col-12 col-md-6 col-xl"><div class="card card-soft"><div class="card-body"><div class="kpi-label">Customers Registered</div><div class="kpi-value" id="kpiLeads">--</div></div></div></div>
+        <div class="col-12 col-md-6 col-xl"><div class="card card-soft"><div class="card-body"><div class="kpi-label">Converted</div><div class="kpi-value" id="kpiConverted">--</div></div></div></div>
+        <div class="col-12 col-md-6 col-xl"><div class="card card-soft"><div class="card-body"><div class="kpi-label">Conversion Rate</div><div class="kpi-value" id="kpiRate">--</div></div></div></div>
+        <div class="col-12 col-md-6 col-xl"><div class="card card-soft"><div class="card-body"><div class="kpi-label">Products Assigned</div><div class="kpi-value" id="kpiProducts">--</div></div></div></div>
+        <div class="col-12 col-md-6 col-xl"><div class="card card-soft"><div class="card-body"><div class="kpi-label">Payments Received</div><div class="kpi-value" id="kpiPayments">--</div></div></div></div>
+        <div class="col-12 col-md-6 col-xl"><div class="card card-soft"><div class="card-body"><div class="kpi-label">Payment Amount</div><div class="kpi-value" id="kpiPaymentAmount">--</div></div></div></div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-xl-6">
+          <div class="card card-soft h-100">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+                <h6 class="mb-0">Top Lead Agents</h6>
+                <div class="small text-muted">Highest lead registrations for the current filter.</div>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>#</th>
+                      <th>Agent</th>
+                      <th>Leads</th>
+                      <th>Converted</th>
+                      <th>Conv %</th>
+                    </tr>
+                  </thead>
+                  <tbody id="topAgentTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-xl-6">
+          <div class="card card-soft h-100">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-2 gap-2 flex-wrap">
+                <h6 class="mb-0">Leader Customer Gain & Runtime</h6>
+                <div class="small text-muted" id="leaderPerfMeta">Select an activation to view leader runtime.</div>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>#</th>
+                      <th>Leader</th>
+                      <th>Customers Gained</th>
+                      <th>Runtime</th>
+                      <th>Stints</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="leaderPerfTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-soft mb-3">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0">Daily Trend</h6>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="trendChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-12 col-xl-6">
+          <div class="card card-soft h-100">
+            <div class="card-body">
+              <h6 class="mb-3">By Agent</h6>
+              <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0" id="agentTable">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Agent</th>
+                      <th>Status</th>
+                      <th>Customers</th>
+                      <th>Converted</th>
+                      <th>Conv %</th>
+                      <th>Products</th>
+                      <th>Payments</th>
+                      <th>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody id="agentTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-xl-6">
+          <div class="card card-soft h-100">
+            <div class="card-body">
+              <h6 class="mb-3">Recent Activation Leads</h6>
+              <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0" id="leadTable">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Date</th>
+                      <th>Name</th>
+                      <th>Phone</th>
+                      <th>Location</th>
+                      <th>Agent</th>
+                      <th>Stage</th>
+                      <th>Products</th>
+                      <th>Payments</th>
+                      <th>View</th>
+                    </tr>
+                  </thead>
+                  <tbody id="leadTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="emptyState" class="alert alert-info mt-3 d-none">No activation leads found for this filter.</div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('filterForm');
+    const errorBox = document.getElementById('errorBox');
+    const emptyState = document.getElementById('emptyState');
+    const loadingSkeleton = document.getElementById('loadingSkeleton');
+    let trendChart = null;
+
+    function paramsFromForm(){
+      const fd = new FormData(form);
+      const qs = new URLSearchParams();
+      for(const [k,v] of fd.entries()){
+        if((v || '').toString().trim()) qs.set(k, v.toString().trim());
+      }
+      return qs;
+    }
+
+    function setKpis(k){
+      document.getElementById('kpiLeads').textContent = Number(k.totalActivationLeads || 0).toLocaleString();
+      document.getElementById('kpiConverted').textContent = Number(k.totalConverted || 0).toLocaleString();
+      document.getElementById('kpiRate').textContent = `${Number(k.conversionRate || 0).toFixed(2)}%`;
+      document.getElementById('kpiProducts').textContent = Number(k.totalProducts || 0).toLocaleString();
+      document.getElementById('kpiPayments').textContent = Number(k.totalPayments || 0).toLocaleString();
+      document.getElementById('kpiPaymentAmount').textContent = `GHS ${Number(k.totalPaymentAmount || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+    }
+
+    function setChart(rows){
+      const labels = rows.map(x => x.date);
+      const leads = rows.map(x => Number(x.leads || 0));
+      const converted = rows.map(x => Number(x.converted || 0));
+      const products = rows.map(x => Number(x.products || 0));
+      const payments = rows.map(x => Number(x.payments || 0));
+      const ctx = document.getElementById('trendChart');
+
+      if(trendChart){ trendChart.destroy(); }
+      trendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label:'Leads', data: leads, borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,.15)', tension:.3 },
+            { label:'Converted', data: converted, borderColor:'#16a34a', backgroundColor:'rgba(22,163,74,.15)', tension:.3 },
+            { label:'Products', data: products, borderColor:'#f59e0b', backgroundColor:'rgba(245,158,11,.15)', tension:.3 },
+            { label:'Payments (GHS)', data: payments, borderColor:'#9333ea', backgroundColor:'rgba(147,51,234,.12)', tension:.3 },
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          resizeDelay: 120,
+          plugins: { legend: { position: 'top' } },
+          scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+        }
+      });
+    }
+
+    function setAgentTable(rows){
+      const body = document.getElementById('agentTableBody');
+      body.innerHTML = '';
+      rows.forEach(r => {
+        const leads = Number(r.leads || 0);
+        const conv = Number(r.converted || 0);
+        const rate = leads > 0 ? ((conv / leads) * 100).toFixed(1) : '0.0';
+        const status = (r.going_status || 'activity').toString();
+        const statusLabel = status === 'approved' ? 'Going' : status.charAt(0).toUpperCase() + status.slice(1);
+        const statusClass = status === 'approved' ? 'text-bg-success' : status === 'pending' ? 'text-bg-warning' : status === 'rejected' ? 'text-bg-danger' : 'text-bg-secondary';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${r.agent_name || '--'}</td><td><span class="badge ${statusClass}">${statusLabel}</span></td><td>${leads}</td><td>${conv}</td><td>${rate}%</td><td>${Number(r.products || 0)}</td><td>${Number(r.payments || 0)}</td><td>GHS ${Number(r.payment_amount || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>`;
+        body.appendChild(tr);
+      });
+      if(!rows.length){
+        body.innerHTML = '<tr><td colspan="8"><div class="text-muted small py-2">No agent breakdown.</div></td></tr>';
+      }
+    }
+
+    function setTopAgentTable(rows){
+      const body = document.getElementById('topAgentTableBody');
+      body.innerHTML = '';
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${Number(r.rank || 0)}</td><td>${r.agent_name || '--'}</td><td>${Number(r.leads || 0)}</td><td>${Number(r.converted || 0)}</td><td>${Number(r.conversionRate || 0).toFixed(2)}%</td>`;
+        body.appendChild(tr);
+      });
+      if(!rows.length){
+        body.innerHTML = '<tr><td colspan="5"><div class="text-muted small py-2">No top agent ranking for this filter.</div></td></tr>';
+      }
+    }
+
+    function setLeaderPerformance(data){
+      const body = document.getElementById('leaderPerfTableBody');
+      const meta = document.getElementById('leaderPerfMeta');
+      body.innerHTML = '';
+
+      if(!(data || {}).hasActivation){
+        meta.textContent = 'Select a single activation to view leader runtime and customers gained.';
+        body.innerHTML = '<tr><td colspan="6"><div class="text-muted small py-2">No activation selected.</div></td></tr>';
+        return;
+      }
+
+      const rows = (data || {}).rows || [];
+      const topLeader = (data || {}).topLeader || null;
+      meta.textContent = topLeader
+        ? `${topLeader.leader_name || 'Leader'} leads with ${Number(topLeader.customersGained || 0)} customers gained.`
+        : `${(data || {}).activationTitle || 'Activation'} has no leader runtime data yet.`;
+
+      rows.forEach((r, index) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${r.leader_name || '--'}</td>
+          <td>${Number(r.customersGained || 0)}</td>
+          <td>${r.runtimeLabel || '0m'}</td>
+          <td>${Number(r.stints || 0)}</td>
+          <td><span class="badge ${r.isCurrent ? 'text-bg-success' : 'text-bg-secondary'}">${r.isCurrent ? 'Current' : 'Past'}</span></td>
+        `;
+        body.appendChild(tr);
+      });
+
+      if(!rows.length){
+        body.innerHTML = '<tr><td colspan="6"><div class="text-muted small py-2">No leader assignments or runtime recorded for this activation.</div></td></tr>';
+      }
+    }
+
+    function setLeadTable(rows){
+      const body = document.getElementById('leadTableBody');
+      body.innerHTML = '';
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${r.date_registered || '--'}</td>
+          <td>${r.name || '--'}</td>
+          <td>${r.phone_number || '--'}</td>
+          <td>${r.location || '--'}</td>
+          <td>${r.agent_name || '--'}</td>
+          <td><span class="badge ${r.lead_stage === 'customer' ? 'text-bg-success' : 'text-bg-secondary'}">${r.lead_stage || 'lead'}</span></td>
+          <td>${Number(r.products || 0)}</td>
+          <td>GHS ${Number(r.payments || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+          <td><a class="btn btn-outline-primary btn-sm" href="/admin/activation-leads/${r.customer_id}?activation_id=${encodeURIComponent(document.getElementById('activation_id').value || '')}">View</a></td>`;
+        body.appendChild(tr);
+      });
+      if(!rows.length){
+        body.innerHTML = '<tr><td colspan="9"><div class="text-muted small py-2">No leads for this filter.</div></td></tr>';
+      }
+    }
+
+    async function loadData(){
+      errorBox.classList.add('d-none');
+      emptyState.classList.add('d-none');
+      loadingSkeleton.classList.remove('d-none');
+      const qs = paramsFromForm();
+      try{
+        const res = await fetch(`/admin/activations/metrics/data?${qs.toString()}`, { credentials: 'same-origin' });
+        const data = await res.json();
+        if(!res.ok || !data.ok) throw new Error(data.message || 'Failed to load metrics.');
+
+        setKpis(data.kpis || {});
+        setChart((data.breakdown || {}).byDay || []);
+        setAgentTable((data.breakdown || {}).byAgent || []);
+        setTopAgentTable(((data.leaderboards || {}).topLeadAgents) || []);
+        setLeaderPerformance(((data.leaderboards || {}).leaderPerformance) || {});
+        setLeadTable(data.topLeads || []);
+
+        if(Number((data.kpis || {}).totalActivationLeads || 0) === 0){
+          emptyState.classList.remove('d-none');
+        }
+      }catch(err){
+        errorBox.textContent = err.message || 'Failed to load metrics.';
+        errorBox.classList.remove('d-none');
+      }finally{
+        loadingSkeleton.classList.add('d-none');
+      }
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      loadData();
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      document.getElementById('activation_id').value = '';
+      document.getElementById('agent_id').value = '';
+      document.getElementById('start_date').value = '';
+      document.getElementById('end_date').value = '';
+      loadData();
+    });
+
+    document.addEventListener('DOMContentLoaded', loadData);
+  </script>
+</body>
+</html>

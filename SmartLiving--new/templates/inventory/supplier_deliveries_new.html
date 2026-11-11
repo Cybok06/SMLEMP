@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>New Supplier Request</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body { background:#f8f9fa; }
+    .page-wrap{ margin-left:260px; padding:20px; }
+    @media (max-width:991px){ .page-wrap{ margin-left:0; } }
+    .card-soft{ border:1px solid rgba(226,232,240,.9); border-radius:14px; background:#fff; box-shadow:0 6px 18px rgba(15,23,42,.08); }
+    .item-row{ transition: transform .12s ease, background-color .12s ease; }
+    .item-row:hover{ background:#f8fafc; transform: translateY(-1px); }
+    .top-loader{ position:fixed; top:0; left:0; height:3px; width:0; background:#0d6efd; z-index:2000; box-shadow:0 2px 8px rgba(13,110,253,.35); }
+    .top-loader.active{ animation: loadbar 1.1s ease-in-out infinite; }
+    @keyframes loadbar{ 0%{ width:0; } 50%{ width:70%; } 100%{ width:100%; opacity:.6; } }
+    .overlay-loading{ position:absolute; inset:0; background:rgba(255,255,255,.75); display:none; align-items:center; justify-content:center; z-index:5; border-radius:14px; }
+    .overlay-loading.active{ display:flex; }
+    .btn-loading{ opacity:.8; pointer-events:none; }
+  </style>
+</head>
+<body>
+  {% include "inventory_sidebar.html" %}
+  <div class="top-loader" id="topLoader"></div>
+
+  <div class="page-wrap">
+    <div class="card-soft p-3 mb-3">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h4 class="mb-0">New Supplier Request</h4>
+          <div class="text-muted small">Create a request and track deliveries</div>
+        </div>
+        <a href="{{ url_for('supplier_deliveries.supplier_deliveries_list') }}" class="btn btn-outline-secondary" data-loading data-loading-text="Loading...">
+          <i class="bi bi-arrow-left"></i> Back
+        </a>
+      </div>
+    </div>
+
+    <form class="card-soft p-3 position-relative" method="post" action="{{ url_for('supplier_deliveries.supplier_deliveries_create') }}" data-loading-form>
+      <div class="overlay-loading" id="formOverlay">
+        <div class="text-center">
+          <div class="spinner-border"></div>
+          <div class="mt-2 fw-semibold">Saving...</div>
+        </div>
+      </div>
+
+      {% if not inventory_items %}
+      <div class="alert alert-warning">
+        No inventory items found for this manager. Check manager_id type in DB (ObjectId vs string) and collection name.
+      </div>
+      {% endif %}
+      <div class="text-muted small mb-2">
+        Debug: inventory_items count = {{ inventory_items|length }} | manager_id = {{ manager_id }}
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Supplier Name</label>
+          <input name="supplier_name" class="form-control" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Supplier Phone</label>
+          <input name="supplier_phone" class="form-control">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Supplier Location</label>
+          <input name="supplier_location" class="form-control">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Expected Date</label>
+          <input type="date" name="expected_date" class="form-control" value="{{ today }}">
+        </div>
+        <div class="col-md-8">
+          <label class="form-label">Notes</label>
+          <input name="notes" class="form-control">
+        </div>
+      </div>
+
+      <hr class="my-3">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="fw-semibold">Items</div>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="addRowBtn">
+          <i class="bi bi-plus-circle"></i> Add Item
+        </button>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Preview</th>
+              <th class="text-end">Qty Requested</th>
+              <th class="text-end">Unit Cost</th>
+              <th>Note</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="itemsBody"></tbody>
+        </table>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2">
+        <a href="{{ url_for('supplier_deliveries.supplier_deliveries_list') }}" class="btn btn-outline-secondary" data-loading data-loading-text="Loading...">Cancel</a>
+        <button class="btn btn-primary" type="submit" data-loading data-loading-text="Saving..."><i class="bi bi-check2-circle"></i> Save Request</button>
+      </div>
+    </form>
+  </div>
+
+  <pre id="inventoryData" class="d-none">{{ inventory_items | tojson }}</pre>
+  <script>
+    const itemsBody = document.getElementById("itemsBody");
+    const inventoryRaw = document.getElementById("inventoryData");
+    let INVENTORY_ITEMS = [];
+    try {
+      INVENTORY_ITEMS = JSON.parse(inventoryRaw ? inventoryRaw.textContent : "[]");
+    } catch (e) {
+      INVENTORY_ITEMS = [];
+    }
+
+    function escapeHtml(s) {
+      return String(s || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function optionsHtml() {
+      if (!INVENTORY_ITEMS.length) {
+        return `<option value="">No inventory found</option>`;
+      }
+      return [
+        `<option value="">Select inventory item</option>`,
+        ...INVENTORY_ITEMS.map(inv =>
+          `<option value="${inv._id}" data-name="${escapeHtml(inv.name)}">${escapeHtml(inv.name)} (Qty: ${Number(inv.qty || 0)})</option>`
+        )
+      ].join("");
+    }
+
+    function buildRow() {
+      const tr = document.createElement("tr");
+      tr.className = "item-row";
+      tr.innerHTML = `
+        <td>
+          <select name="product_id[]" class="form-select form-select-sm product-select" required>
+            ${optionsHtml()}
+          </select>
+        </td>
+        <td>
+          <input type="text" name="product_name[]" class="form-control form-control-sm product-preview" readonly>
+        </td>
+        <td class="text-end">
+          <input type="number" min="1" name="qty_requested[]" class="form-control form-control-sm text-end" required>
+        </td>
+        <td class="text-end">
+          <input type="number" step="0.01" min="0" name="unit_cost[]" class="form-control form-control-sm text-end">
+        </td>
+        <td>
+          <input type="text" name="item_note[]" class="form-control form-control-sm">
+        </td>
+        <td class="text-end">
+          <button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-x"></i></button>
+        </td>
+      `;
+      tr.querySelector(".remove-row").addEventListener("click", () => tr.remove());
+      const select = tr.querySelector(".product-select");
+      const preview = tr.querySelector(".product-preview");
+      if (select && preview) {
+        select.addEventListener("change", function(){
+          const opt = select.options[select.selectedIndex];
+          preview.value = opt ? (opt.getAttribute("data-name") || "") : "";
+        });
+      }
+      return tr;
+    }
+
+    function addRow() {
+      itemsBody.appendChild(buildRow());
+    }
+
+    document.getElementById("addRowBtn").addEventListener("click", addRow);
+    addRow();
+    console.log("INVENTORY_ITEMS:", INVENTORY_ITEMS.length, INVENTORY_ITEMS[0]);
+
+    (function(){
+      var loader = document.getElementById("topLoader");
+      var overlay = document.getElementById("formOverlay");
+      function showLoader(){ if (loader) loader.classList.add("active"); }
+      function setBtnLoading(btn){
+        if (!btn) return;
+        var text = btn.getAttribute("data-loading-text") || "Loading...";
+        btn.dataset.prevHtml = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>' + text;
+        btn.classList.add("btn-loading");
+        btn.setAttribute("aria-disabled", "true");
+      }
+      document.querySelectorAll("[data-loading]").forEach(function(el){
+        el.addEventListener("click", function(){
+          showLoader();
+          setBtnLoading(el);
+        });
+      });
+      document.querySelectorAll("form[data-loading-form]").forEach(function(form){
+        form.addEventListener("submit", function(){
+          showLoader();
+          if (overlay) overlay.classList.add("active");
+          var submitBtn = form.querySelector("button[type='submit'][data-loading]");
+          setBtnLoading(submitBtn);
+        });
+      });
+      window.addEventListener("pageshow", function(){
+        if (loader) loader.classList.remove("active");
+      });
+    })();
+  </script>
+</body>
+</html>

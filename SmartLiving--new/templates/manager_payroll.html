@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Manager Payroll</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body{background:#f6f8fb;color:#0f172a;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif}
+    .page{max-width:1320px;margin:auto;padding:18px}
+    .panel{background:#fff;border:1px solid #e2e8f0;border-radius:10px}
+    .toolbar{display:flex;gap:12px;justify-content:space-between;align-items:end;flex-wrap:wrap;padding:14px}
+    .metric{padding:12px 14px;border:1px solid #e2e8f0;background:#fff;border-radius:10px}
+    .metric span{display:block;color:#64748b;font-size:.78rem}.metric b{font-size:1.05rem}
+    .table-wrap{overflow:auto;max-height:62vh}.mono{font-variant-numeric:tabular-nums}
+    th{font-size:.74rem;text-transform:uppercase;color:#64748b;white-space:nowrap}td{vertical-align:middle}
+    .pay-input{min-width:105px}.note-input{min-width:180px}.agent-cell{min-width:190px}
+    .status-pill{border:1px solid #cbd5e1;border-radius:999px;padding:.35rem .65rem;background:#f8fafc}
+    .history-card{border:1px solid #e2e8f0;border-radius:8px;padding:10px;background:#fff}
+    @media (max-width: 800px){
+      .toolbar{align-items:stretch}.toolbar>*{width:100%}
+      .table-wrap{max-height:none} table{min-width:980px}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <div>
+        <h3 class="mb-1">Manager Payroll</h3>
+        <div class="text-muted small">{{ manager_name }} - monthly payroll submission</div>
+      </div>
+      <span class="status-pill" id="statusBadge">Draft</span>
+    </div>
+
+    <div class="panel mb-3">
+      <div class="toolbar">
+        <div class="d-flex gap-2 flex-wrap">
+          <div>
+            <label class="small text-muted">Payroll month</label>
+            <input class="form-control" type="month" id="monthSelect" value="{{ today_iso[:7] }}">
+          </div>
+          <div>
+            <label class="small text-muted">Search agents</label>
+            <input class="form-control" id="searchInput" placeholder="Name or branch">
+          </div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <button class="btn btn-outline-secondary" id="btnReload"><i class="bi bi-arrow-repeat me-1"></i>Refresh</button>
+          <button class="btn btn-outline-primary" id="btnSave"><i class="bi bi-cloud-check me-1"></i>Save Draft</button>
+          <button class="btn btn-success" id="btnSubmit"><i class="bi bi-send-check me-1"></i>Submit to HR</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-2 mb-3">
+      <div class="col-6 col-lg"><div class="metric"><span>Total agents</span><b id="mAgents">0</b></div></div>
+      <div class="col-6 col-lg"><div class="metric"><span>Gross payroll</span><b class="mono" id="mGross">GHS 0.00</b></div></div>
+      <div class="col-6 col-lg"><div class="metric"><span>Deductions</span><b class="mono text-danger" id="mDeductions">GHS 0.00</b></div></div>
+      <div class="col-6 col-lg"><div class="metric"><span>Net payroll</span><b class="mono text-success" id="mNet">GHS 0.00</b></div></div>
+      <div class="col-6 col-lg"><div class="metric"><span>Submitted month</span><b id="mMonth">N/A</b></div></div>
+    </div>
+
+    <div class="panel">
+      <div class="table-wrap">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="agent-cell">Agent</th>
+              <th class="text-end">Base salary</th>
+              <th class="text-end">Commission</th>
+              <th class="text-end">Bonus</th>
+              <th class="text-end">Allowance</th>
+              <th class="text-end">Other pay</th>
+              <th class="text-end">HR tips</th>
+              <th class="text-end">Gross</th>
+              <th class="text-end">Deduction</th>
+              <th class="text-end">Net pay</th>
+              <th>Details</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="payrollBody"><tr><td colspan="12" class="text-center text-muted py-4">Loading payroll...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0">Previous Payroll Months</h5>
+        <button class="btn btn-sm btn-outline-secondary" id="btnHistory">Refresh History</button>
+      </div>
+      <div class="row g-2" id="historyGrid"></div>
+    </div>
+  </div>
+
+  <div class="toast-container position-fixed top-0 end-0 p-3">
+    <div class="toast" id="appToast"><div class="d-flex"><div class="toast-body" id="toastMsg">Ready</div><button class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button></div></div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const $ = id => document.getElementById(id);
+    const toast = new bootstrap.Toast($("appToast"), {delay:2300});
+    let STATE = {month:"", rows:[], editable:false};
+    function notify(msg){$("toastMsg").innerText=msg;toast.show();}
+    function esc(s){return String(s??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");}
+    function money(n){return "GHS " + Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});}
+    function num(v){const n=Number(v||0);return Number.isFinite(n)&&n>0?n:0;}
+    function statusClass(s){return {"Approved":"success","Rejected":"danger","Sent Back":"warning","Pending HR Review":"primary","Under Review":"info","Paid":"success"}[s]||"secondary";}
+    function recalcRow(r){
+      r.gross_pay=num(r.base_salary)+num(r.commission)+num(r.bonus)+num(r.allowance)+num(r.other_pay)+num(r.tips_amount);
+      r.deduction_amount=num(r.deduction_amount);
+      r.net_pay=Math.max(0,r.gross_pay-r.deduction_amount);
+    }
+    function recalc(){
+      STATE.rows.forEach(recalcRow);
+      updateMetricsOnly();
+      $("mMonth").innerText=STATE.month||"N/A";
+      renderRows();
+    }
+    function renderRows(){
+      const q=($("searchInput").value||"").toLowerCase();
+      const rows=STATE.rows.filter(r=>!q||String(r.agent_name).toLowerCase().includes(q)||String(r.branch_name).toLowerCase().includes(q));
+      if(!rows.length){$("payrollBody").innerHTML=`<tr><td colspan="12" class="text-center text-muted py-4">No agents found.</td></tr>`;return;}
+      $("payrollBody").innerHTML=rows.map(r=>`
+        <tr>
+          <td><div class="fw-semibold">${esc(r.agent_name)}</div><div class="small text-muted">${esc(r.branch_name||"")}</div></td>
+          ${["base_salary","commission","bonus","allowance","other_pay"].map(f=>`<td><input class="form-control form-control-sm text-end mono pay-input" type="number" min="0" step="0.01" data-id="${esc(r.agent_id)}" data-field="${f}" value="${Number(r[f]||0).toFixed(2)}" ${STATE.editable?"":"disabled"}></td>`).join("")}
+          <td class="text-end mono text-success">${money(r.tips_amount)}</td>
+          <td class="text-end fw-semibold mono">${money(r.gross_pay)}</td>
+          <td class="text-end mono text-danger">${money(r.deduction_amount)}</td>
+          <td class="text-end fw-bold mono text-success">${money(r.net_pay)}</td>
+          <td style="min-width:220px">
+            <input class="form-control form-control-sm note-input" data-id="${esc(r.agent_id)}" data-field="manager_note" value="${esc(r.manager_note||"")}" ${STATE.editable?"":"disabled"}>
+            ${r.deduction_reason?`<div class="small text-danger mt-1"><b>Deduction:</b> ${esc(r.deduction_reason)}</div>`:""}
+            ${r.hr_note?`<div class="small text-muted mt-1"><b>HR:</b> ${esc(r.hr_note)}</div>`:""}
+          </td>
+          <td><span class="badge text-bg-${statusClass(r.status)}">${esc(r.status||"Draft")}</span></td>
+        </tr>`).join("");
+      document.querySelectorAll("[data-field]").forEach(input=>{
+        input.addEventListener("input",()=>{
+          const row=STATE.rows.find(x=>x.agent_id===input.dataset.id); if(!row) return;
+          row[input.dataset.field]=input.dataset.field==="manager_note"?input.value:num(input.value);
+          const oldScroll = document.querySelector(".table-wrap").scrollTop;
+          STATE.rows.forEach(recalcRow);
+          updateMetricsOnly(); document.querySelector(".table-wrap").scrollTop = oldScroll;
+        });
+      });
+    }
+    function updateMetricsOnly(){
+      const gross=STATE.rows.reduce((s,r)=>s+num(r.gross_pay),0);
+      const deductions=STATE.rows.reduce((s,r)=>s+num(r.deduction_amount),0);
+      const net=STATE.rows.reduce((s,r)=>s+num(r.net_pay),0);
+      $("mAgents").innerText=STATE.rows.length;$("mGross").innerText=money(gross);$("mDeductions").innerText=money(deductions);$("mNet").innerText=money(net);
+    }
+    async function loadMonth(){
+      STATE.month=$("monthSelect").value;$("payrollBody").innerHTML=`<tr><td colspan="12" class="text-center text-muted py-4">Loading payroll...</td></tr>`;
+      const res=await fetch(`/manager/payroll/month/${encodeURIComponent(STATE.month)}`); const data=await res.json();
+      if(!data.ok){notify(data.message||"Failed to load payroll.");return;}
+      STATE.rows=(data.rows||[]).map(r=>({...r,gross_pay:num(r.gross_pay)})); STATE.editable=!!data.editable;
+      $("statusBadge").innerText=data.payroll?.status||"Draft"; $("statusBadge").className="status-pill";
+      $("btnSave").disabled=!STATE.editable;$("btnSubmit").disabled=!STATE.editable;
+      recalc(); loadHistory();
+    }
+    async function saveDraft(){
+      const items=STATE.rows.map(r=>({agent_id:r.agent_id,base_salary:r.base_salary,commission:r.commission,bonus:r.bonus,allowance:r.allowance,other_pay:r.other_pay,manager_note:r.manager_note||""}));
+      const res=await fetch("/manager/payroll/save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({month:STATE.month,items})});
+      const data=await res.json(); if(!data.ok){notify(data.message||"Save failed.");return;} notify("Draft saved."); await loadMonth();
+    }
+    async function submitPayroll(){
+      if(!confirm("Submit this payroll to HR? You cannot edit again unless HR rejects or sends it back.")) return;
+      await saveDraft();
+      const res=await fetch("/manager/payroll/submit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({month:STATE.month})});
+      const data=await res.json(); if(!data.ok){notify(data.message||"Submit failed.");return;} notify("Payroll submitted to HR."); await loadMonth();
+    }
+    async function loadHistory(){
+      const res=await fetch("/manager/payroll/history"); const data=await res.json(); if(!data.ok) return;
+      const rows=data.rows||[]; $("historyGrid").innerHTML=rows.length?rows.map(r=>`
+        <div class="col-12 col-md-6 col-lg-4"><button class="history-card text-start w-100" data-month="${esc(r.month)}">
+          <div class="d-flex justify-content-between"><b>${esc(r.month_label)}</b><span class="badge text-bg-${statusClass(r.status)}">${esc(r.status)}</span></div>
+          <div class="small text-muted mt-1">${r.total_agents} agents - ${money(r.total_net_pay)}</div>
+        </button></div>`).join(""):`<div class="col-12 text-muted">No previous payroll saved yet.</div>`;
+      document.querySelectorAll("[data-month]").forEach(b=>b.onclick=()=>{$("monthSelect").value=b.dataset.month;loadMonth();});
+    }
+    $("monthSelect").addEventListener("change",loadMonth);$("searchInput").addEventListener("input",renderRows);
+    $("btnReload").addEventListener("click",loadMonth);$("btnSave").addEventListener("click",saveDraft);$("btnSubmit").addEventListener("click",submitPayroll);$("btnHistory").addEventListener("click",loadHistory);
+    loadMonth();
+  </script>
+  {% include 'app_footer.html' %}
+</body>
+</html>

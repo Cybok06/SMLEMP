@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Executive Leads</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root{
+      --ink:#0f172a;
+      --muted:#64748b;
+      --border:#e2e8f0;
+      --soft:#f8fafc;
+      --accent:#0d6efd;
+      --shadow:0 10px 24px rgba(15,23,42,.08);
+    }
+    body{ background:#f5f7fb; color:var(--ink); }
+    .page-wrap{ margin-left:260px; padding:20px; }
+    @media (max-width:991px){ .page-wrap{ margin-left:0; } }
+    .content-wrap{ max-width: 1300px; margin: 0 auto; }
+    .hero{
+      background: linear-gradient(135deg, rgba(13,110,253,0.12), rgba(14,165,233,0.10));
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:20px;
+      box-shadow:var(--shadow);
+    }
+    .hero .badge-live{
+      font-size:.72rem; text-transform:uppercase; letter-spacing:.08em;
+      background:#ecfeff; color:#0e7490; border:1px solid #cffafe;
+      border-radius:999px; padding:.2rem .55rem;
+    }
+    .filter-card{ position:sticky; top:10px; z-index:50; background:#fff; border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow); }
+    .kpi-card{ background:#fff; border:1px solid var(--border); border-radius:16px; padding:14px; box-shadow:0 6px 16px rgba(15,23,42,.06); height:100%; }
+    .kpi-label{ font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+    .kpi-value{ font-size:1.35rem; font-weight:800; }
+    .mini{ font-size:.82rem; color:var(--muted); }
+    .chart-card{ background:#fff; border:1px solid var(--border); border-radius:16px; padding:16px; box-shadow:0 6px 16px rgba(15,23,42,.06); }
+    .chart-box{ height:260px; }
+    .table-card{ background:#fff; border:1px solid var(--border); border-radius:16px; box-shadow:0 6px 16px rgba(15,23,42,.06); }
+    .table thead th{ font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); background:#f8fafc; position:sticky; top:0; z-index:1; }
+    .status-badge{ font-size:.72rem; }
+    .table-empty{ padding:40px 0; text-align:center; color:var(--muted); }
+    .tab-pill{ border-radius:999px; font-size:.78rem; padding:.35rem .8rem; border:1px solid var(--border); background:#fff; color:var(--muted); cursor:pointer; }
+    .tab-pill.active{ background:#0d6efd; color:#fff; border-color:#0d6efd; }
+  </style>
+</head>
+<body>
+  {% include 'executive_sidebar.html' %}
+
+  <main class="page-wrap">
+    <div class="content-wrap">
+      <section class="hero mb-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div>
+            <h2 class="fw-bold mb-1">Executive Leads</h2>
+            <div class="text-muted">Leads analytics with conversion ratios and filters.</div>
+          </div>
+          <div class="d-flex align-items-center gap-3">
+            <span class="badge-live"><i class="bi bi-lightning-charge"></i> Live</span>
+            <div class="small text-muted">Last updated: <span id="lastUpdated">--</span></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        <button class="tab-pill active" data-view="overview">Executive overview</button>
+        <button class="tab-pill" data-view="branch">Branch view</button>
+        <button class="tab-pill" data-view="agent">Agent view</button>
+      </div>
+
+      <section class="filter-card p-3 p-md-4 mb-3">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-md-2">
+            <label class="form-label small text-muted">Branch</label>
+            <select id="filterBranch" class="form-select">
+              <option value="">All branches</option>
+              {% for b in branches %}
+              <option value="{{ b }}">{{ b }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12 col-md-3">
+            <label class="form-label small text-muted">Manager</label>
+            <select id="filterManager" class="form-select">
+              <option value="">All managers</option>
+              {% for m in managers %}
+              <option value="{{ m.id }}" data-branch="{{ m.branch }}">{{ m.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12 col-md-3">
+            <label class="form-label small text-muted">Agent</label>
+            <select id="filterAgent" class="form-select">
+              <option value="">All agents</option>
+              {% for a in agents %}
+              <option value="{{ a.id }}" data-branch="{{ a.branch }}" data-manager="{{ a.manager_id }}">{{ a.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label small text-muted">Start</label>
+            <input id="startDate" type="date" class="form-control" value="{{ default_start }}">
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label small text-muted">End</label>
+            <input id="endDate" type="date" class="form-control" value="{{ default_end }}">
+          </div>
+          <div class="col-12 col-md-3">
+            <label class="form-label small text-muted">Search</label>
+            <input id="searchInput" type="text" class="form-control" placeholder="Search by name or phone">
+          </div>
+          <div class="col-6 col-md-2">
+            <button id="refreshBtn" class="btn btn-primary w-100"><i class="bi bi-arrow-repeat"></i> Refresh</button>
+          </div>
+          <div class="col-6 col-md-2">
+            <a id="exportBtn" class="btn btn-outline-success w-100" href="#"><i class="bi bi-download"></i> Export CSV</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="row g-3 mb-3">
+        <div class="col-6 col-md-3">
+          <div class="kpi-card">
+            <div class="kpi-label">Total Leads</div>
+            <div class="kpi-value" id="kpiTotalLeads">--</div>
+            <div class="mini">Cohort</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="kpi-card">
+            <div class="kpi-label">Converted</div>
+            <div class="kpi-value" id="kpiConverted">--</div>
+            <div class="mini">Converted leads</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="kpi-card">
+            <div class="kpi-label">Conversion Rate</div>
+            <div class="kpi-value" id="kpiConversion">--</div>
+            <div class="mini">% converted</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="kpi-card">
+            <div class="kpi-label">Top Branch</div>
+            <div class="kpi-value" id="kpiTopBranch">--</div>
+            <div class="mini">Highest volume</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="row g-3 mb-3">
+        <div class="col-12 col-lg-6">
+          <div class="chart-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="fw-semibold">Leads by Branch</div>
+            </div>
+            <div class="chart-box">
+              <canvas id="branchChart"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="chart-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="fw-semibold">Conversion Rate by Branch</div>
+            </div>
+            <div class="chart-box">
+              <canvas id="branchRateChart"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="chart-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="fw-semibold">Leads by Agent (Top 10)</div>
+            </div>
+            <div class="chart-box">
+              <canvas id="agentChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="table-card p-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+          <div class="fw-semibold">Recent Leads</div>
+          <div class="small text-muted" id="tableMeta">--</div>
+        </div>
+        <div class="table-responsive" style="max-height:520px; overflow:auto;">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Location</th>
+                <th>Agent</th>
+                <th>Branch</th>
+                <th>Stage</th>
+              </tr>
+            </thead>
+            <tbody id="leadTableBody">
+              <tr><td colspan="7" class="text-muted">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    const DATA_URL = "{{ url_for('executive_leads.executive_leads_metrics') }}";
+    const EXPORT_URL = "{{ url_for('executive_leads.executive_leads_export_csv') }}";
+
+    const managers = {{ managers|tojson }};
+    const agents = {{ agents|tojson }};
+
+    const filterBranch = document.getElementById('filterBranch');
+    const filterManager = document.getElementById('filterManager');
+    const filterAgent = document.getElementById('filterAgent');
+    const startDate = document.getElementById('startDate');
+    const endDate = document.getElementById('endDate');
+    const searchInput = document.getElementById('searchInput');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const lastUpdated = document.getElementById('lastUpdated');
+
+    const kpiTotalLeads = document.getElementById('kpiTotalLeads');
+    const kpiConverted = document.getElementById('kpiConverted');
+    const kpiConversion = document.getElementById('kpiConversion');
+    const kpiTopBranch = document.getElementById('kpiTopBranch');
+
+    const leadTableBody = document.getElementById('leadTableBody');
+    const tableMeta = document.getElementById('tableMeta');
+
+    const tabPills = document.querySelectorAll('.tab-pill');
+
+    let branchChart, branchRateChart, agentChart;
+
+    function updateManagerOptions(){
+      const branchVal = filterBranch.value;
+      const selected = filterManager.value;
+      const opts = managers.filter(m => !branchVal || m.branch === branchVal);
+      filterManager.innerHTML = '<option value="">All managers</option>' + opts.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+      if (selected) filterManager.value = selected;
+    }
+
+    function updateAgentOptions(){
+      const branchVal = filterBranch.value;
+      const managerVal = filterManager.value;
+      const selected = filterAgent.value;
+      const opts = agents.filter(a => {
+        if (branchVal && a.branch !== branchVal) return false;
+        if (managerVal && a.manager_id !== managerVal) return false;
+        return true;
+      });
+      filterAgent.innerHTML = '<option value="">All agents</option>' + opts.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+      if (selected) filterAgent.value = selected;
+    }
+
+    function buildQuery(){
+      const params = new URLSearchParams();
+      if (filterBranch.value) params.set('branch', filterBranch.value);
+      if (filterManager.value) params.set('manager_id', filterManager.value);
+      if (filterAgent.value) params.set('agent_id', filterAgent.value);
+      if (searchInput.value) params.set('q', searchInput.value.trim());
+      if (startDate.value) params.set('start', startDate.value);
+      if (endDate.value) params.set('end', endDate.value);
+      return params.toString();
+    }
+
+    function updateExportUrl(){
+      exportBtn.href = `${EXPORT_URL}?${buildQuery()}`;
+    }
+
+    function renderKPIs(data){
+      const totals = data.totals || {};
+      kpiTotalLeads.textContent = Number(totals.leads_total || 0).toLocaleString();
+      kpiConverted.textContent = Number(totals.converted || 0).toLocaleString();
+      kpiConversion.textContent = `${Number(totals.conversion_rate || 0).toFixed(1)}%`;
+      const topBranch = (data.by_branch && data.by_branch.length) ? data.by_branch[0].branch : '-';
+      kpiTopBranch.textContent = topBranch || '-';
+    }
+
+    function renderCharts(data){
+      const branchData = data.by_branch || [];
+      const agentData = data.by_agent || [];
+
+      const branchLabels = branchData.map(b => b.branch || 'Unknown');
+      const branchTotals = branchData.map(b => b.leads || 0);
+      const branchConverted = branchData.map(b => b.converted || 0);
+      const branchRates = branchData.map(b => b.conversion_rate || 0);
+
+      const topAgents = agentData.slice(0, 10);
+      const agentLabels = topAgents.map(a => a.agent_name || 'Agent');
+      const agentRates = topAgents.map(a => a.conversion_rate || 0);
+
+      if (branchChart) branchChart.destroy();
+      branchChart = new Chart(document.getElementById('branchChart'), {
+        type: 'bar',
+        data: {
+          labels: branchLabels,
+          datasets: [
+            { label: 'Leads', data: branchTotals, backgroundColor: '#0d6efd' },
+            { label: 'Converted', data: branchConverted, backgroundColor: '#22c55e' },
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+      });
+
+      if (branchRateChart) branchRateChart.destroy();
+      branchRateChart = new Chart(document.getElementById('branchRateChart'), {
+        type: 'bar',
+        data: {
+          labels: branchLabels,
+          datasets: [
+            { label: 'Conversion %', data: branchRates, backgroundColor: '#f59e0b' },
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+      });
+
+      if (agentChart) agentChart.destroy();
+      agentChart = new Chart(document.getElementById('agentChart'), {
+        type: 'bar',
+        data: {
+          labels: agentLabels,
+          datasets: [
+            { label: 'Conversion %', data: agentRates, backgroundColor: '#6366f1' },
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', scales: { x: { beginAtZero: true } } }
+      });
+    }
+
+    function renderTable(data){
+      const rows = data.recent_leads || [];
+      if (!rows.length) {
+        leadTableBody.innerHTML = '<tr><td colspan="7" class="text-muted">No leads found.</td></tr>';
+        tableMeta.textContent = '0 leads';
+        return;
+      }
+      leadTableBody.innerHTML = rows.map(r => `
+        <tr>
+          <td>${r.lead_registered_at ? new Date(r.lead_registered_at).toLocaleString() : 'N/A'}</td>
+          <td>${r.name || '-'}</td>
+          <td>${r.phone_number || '-'}</td>
+          <td>${r.location || '-'}</td>
+          <td>${r.agent_name || 'Agent'}</td>
+          <td>${r.branch || '-'}</td>
+          <td><span class="badge status-badge ${r.lead_stage === 'customer' ? 'bg-success' : 'bg-secondary'}">${r.lead_stage || 'lead'}</span></td>
+        </tr>
+      `).join('');
+      tableMeta.textContent = `${rows.length} recent leads`;
+    }
+
+    function setLastUpdated(){
+      lastUpdated.textContent = new Date().toLocaleTimeString();
+    }
+
+    async function fetchData(){
+      const qs = buildQuery();
+      updateExportUrl();
+      const res = await fetch(`${DATA_URL}?${qs}`, { credentials: 'same-origin' });
+      const data = await res.json();
+      if (!data.ok) return;
+      renderKPIs(data);
+      renderCharts(data);
+      renderTable(data);
+      setLastUpdated();
+    }
+
+    function bindEvents(){
+      filterBranch.addEventListener('change', () => { updateManagerOptions(); updateAgentOptions(); fetchData(); });
+      filterManager.addEventListener('change', () => { updateAgentOptions(); fetchData(); });
+      filterAgent.addEventListener('change', fetchData);
+      startDate.addEventListener('change', fetchData);
+      endDate.addEventListener('change', fetchData);
+      searchInput.addEventListener('input', () => { clearTimeout(window.leadTimer); window.leadTimer = setTimeout(fetchData, 250); });
+      refreshBtn.addEventListener('click', fetchData);
+
+      tabPills.forEach(btn => {
+        btn.addEventListener('click', () => {
+          tabPills.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+        });
+      });
+    }
+
+    updateManagerOptions();
+    updateAgentOptions();
+    bindEvents();
+    fetchData();
+  </script>
+  {% include 'app_footer.html' %}
+</body>
+</html>

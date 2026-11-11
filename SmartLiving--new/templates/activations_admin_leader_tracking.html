@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leader Tracking</title>
+  <link rel="icon" href="https://imagedelivery.net/h9fmMoa1o2c2P55TcWJGOg/10283f28-b9a0-4100-b254-19a854386800/public" type="image/png" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body { background: #f5f7fb; }
+    .page-wrap { margin-left: 260px; padding: 20px; }
+    @media (max-width: 991px) { .page-wrap { margin-left: 0; } }
+    .card-soft { border: 1px solid #e6ebf2; border-radius: 16px; box-shadow: 0 8px 24px rgba(15,23,42,.05); }
+    #map { height: 72vh; border-radius: 16px; }
+  </style>
+</head>
+<body>
+  {% include 'admin_sidebar.html' %}
+  <div class="page-wrap">
+    <div class="container-fluid">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <div>
+          <h4 class="mb-1">Leader Tracking</h4>
+          <div class="text-muted small">{{ activation.title }} | {{ activation.location }}</div>
+        </div>
+        <a class="btn btn-outline-secondary" href="{{ url_for('activations.admin_activations_detail_page', activation_id=activation.id) }}">Back to Activation</a>
+      </div>
+
+      <div id="errorBox" class="alert alert-danger d-none"></div>
+      <div class="row g-3">
+        <div class="col-12 col-xl-8">
+          <div class="card card-soft">
+            <div class="card-body">
+              <div id="map"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-xl-4">
+          <div class="card card-soft mb-3">
+            <div class="card-body">
+              <h6 class="mb-2">Latest Position</h6>
+              <div id="latestBox" class="small text-muted">Loading latest position...</div>
+            </div>
+          </div>
+          <div class="card card-soft">
+            <div class="card-body">
+              <h6 class="mb-3">Location History</h6>
+              <div id="historyList" class="vstack gap-2" style="max-height: 55vh; overflow:auto;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const activationId = '{{ activation.id }}';
+    const errorBox = document.getElementById('errorBox');
+    const latestBox = document.getElementById('latestBox');
+    const historyList = document.getElementById('historyList');
+    const map = L.map('map').setView([5.6037, -0.1870], 7);
+    let polyline = null;
+    let markers = [];
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    function fmtDate(iso){
+      if(!iso) return '--';
+      const d = new Date(iso);
+      if(Number.isNaN(d.getTime())) return '--';
+      return d.toLocaleString();
+    }
+
+    function renderMap(items){
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+      if(polyline){
+        map.removeLayer(polyline);
+        polyline = null;
+      }
+      if(!items.length) return;
+      const ordered = items.slice().reverse();
+      const points = ordered.map(item => [item.latitude, item.longitude]);
+      polyline = L.polyline(points, { color: '#2563eb', weight: 4 }).addTo(map);
+      ordered.forEach((item, idx) => {
+        const marker = L.marker([item.latitude, item.longitude]).addTo(map);
+        marker.bindPopup(`<b>${item.leaderName || 'Leader'}</b><br>${fmtDate(item.recordedAt)}<br>Accuracy: ${Number(item.accuracy || 0).toFixed(1)}m`);
+        if(idx === ordered.length - 1){
+          marker.openPopup();
+        }
+        markers.push(marker);
+      });
+      map.fitBounds(polyline.getBounds(), { padding: [30, 30] });
+    }
+
+    function renderHistory(items){
+      historyList.innerHTML = '';
+      if(!items.length){
+        historyList.innerHTML = '<div class="alert alert-info mb-0">No leader location updates yet.</div>';
+        return;
+      }
+      items.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'border rounded-4 p-3';
+        card.innerHTML = `
+          <div class="fw-semibold">${item.leaderName || 'Leader'}</div>
+          <div class="small text-muted">${fmtDate(item.recordedAt)}</div>
+          <div class="small mt-1">Lat: ${Number(item.latitude).toFixed(6)} | Lng: ${Number(item.longitude).toFixed(6)}</div>
+          <div class="small">Accuracy: ${Number(item.accuracy || 0).toFixed(1)}m</div>`;
+        historyList.appendChild(card);
+      });
+    }
+
+    async function readJsonSafe(res){
+      const text = await res.text();
+      try{
+        return text ? JSON.parse(text) : {};
+      }catch(_err){
+        return {
+          ok: false,
+          message: res.ok ? 'Unexpected server response.' : `Request failed with status ${res.status}.`
+        };
+      }
+    }
+
+    async function loadData(){
+      errorBox.classList.add('d-none');
+      try{
+        const res = await fetch(`/admin/activations/${activationId}/leader-location-data`, { credentials: 'same-origin' });
+        const data = await readJsonSafe(res);
+        if(!res.ok || !data.ok) throw new Error(data.message || 'Failed to load tracking data.');
+        if(!data.trackingRequired){
+          latestBox.textContent = 'Leader location tracking is not enabled for this activation.';
+          renderHistory([]);
+          return;
+        }
+        if(data.latest){
+          latestBox.innerHTML = `<div class="fw-semibold">${data.leaderName || 'Leader'}</div><div>${fmtDate(data.latest.recordedAt)}</div><div>Lat: ${Number(data.latest.latitude).toFixed(6)} | Lng: ${Number(data.latest.longitude).toFixed(6)}</div><div>Accuracy: ${Number(data.latest.accuracy || 0).toFixed(1)}m</div>`;
+        } else {
+          latestBox.textContent = 'Waiting for leader location approval and first location update.';
+        }
+        renderHistory(data.items || []);
+        renderMap(data.items || []);
+      }catch(err){
+        errorBox.textContent = err.message || 'Failed to load tracking data.';
+        errorBox.classList.remove('d-none');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadData);
+  </script>
+</body>
+</html>

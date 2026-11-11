@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deliveries | SmartLiving</title>
+  <style>
+    body{margin:0;background:#f5f7fa;color:#172c42;font-family:system-ui,sans-serif}.d-none{display:none!important}
+    .deliveries-page{max-width:1120px;margin:0 auto;padding:78px 24px 40px}
+    .delivery-hero{padding:26px;border-radius:18px;background:linear-gradient(135deg,#0b2c4a,#124b7d);color:white;display:flex;justify-content:space-between;gap:20px;align-items:center}
+    .delivery-hero h1{margin:0 0 8px;font-size:28px}.delivery-hero p{margin:0;color:#dbeafe;max-width:670px}
+    .delivery-total{border:1px solid #ffffff40;border-radius:14px;padding:16px;text-align:center;min-width:115px}.delivery-total strong{display:block;font-size:30px}.delivery-total span{font-size:13px}
+    .delivery-filters{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:22px 0}.delivery-filters label{display:grid;gap:6px;font-size:14px;font-weight:600}.delivery-filters select{font:inherit;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:white;color:#172c42}
+    .delivery-button{display:inline-block;border:1px solid #cbd5e1;background:white;border-radius:8px;padding:10px 14px;color:#172c42;text-decoration:none;font:600 14px system-ui;cursor:pointer}.delivery-button.primary{background:#0b2c4a;border-color:#0b2c4a;color:white}.delivery-button:disabled{opacity:.6;cursor:wait}
+    .delivery-list{background:white;border:1px solid #dce4ed;border-radius:14px;overflow:hidden}table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:17px 18px;border-bottom:1px solid #edf2f7;vertical-align:middle}th{background:#f8fafc;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em}td{font-size:14px}tbody tr:last-child td{border:0}.delivery-secondary{font-size:12px;color:#64748b;margin-top:5px}.delivery-status{display:inline-block;border-radius:99px;padding:6px 10px;background:#e0f2fe;color:#075985;font-weight:650;font-size:12px;white-space:nowrap}.delivery-status.delivered{background:#dcfce7;color:#166534}.delivery-status.pending{background:#fff7d6;color:#805d00}
+    .delivery-note{font-size:13px;color:#64748b}.delivery-feedback{padding:14px 18px;border-radius:10px;background:#fff7d6;border:1px solid #facc15;margin-bottom:16px}.delivery-feedback[hidden]{display:none}.delivery-feedback.success{background:#dcfce7;border-color:#86efac}.delivery-empty{padding:48px 20px;text-align:center;color:#64748b}.delivery-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:20px;font-size:14px}.delivery-pagination nav{display:flex;gap:10px}
+    @media(max-width:700px){.deliveries-page{padding:78px 12px 28px}.delivery-hero{align-items:stretch;flex-direction:column;padding:22px}.delivery-total{display:flex;gap:12px;align-items:center;justify-content:center;padding:10px}.delivery-list{background:transparent;border:0}table,tbody,tr,td{display:block}thead{display:none}tbody tr{background:white;border:1px solid #dce4ed;border-radius:14px;padding:8px 16px;margin-bottom:14px}td{padding:10px 0;border:0}td:before{content:attr(data-label);display:block;font-size:11px;color:#64748b;text-transform:uppercase;margin-bottom:5px}.delivery-pagination{flex-wrap:wrap}}
+  </style>
+</head>
+<body>
+  {% include 'side_bar.html' %}
+  <main class="deliveries-page">
+    <header class="delivery-hero">
+      <div><h1>Deliveries</h1><p>Track your customers’ submitted products and confirm each handover with a camera photo.</p></div>
+      <div class="delivery-total"><strong data-undelivered-total>{{ undelivered_count }}</strong><span>Undelivered products</span></div>
+    </header>
+    <form class="delivery-filters" method="get">
+      <label>Show products<select name="status">
+        {% for value, label in [('undelivered','Undelivered'),('pending','Submitted'),('packaging','Packaging'),('delivering','Delivering'),('delivered','Delivered'),('all','All submissions')] %}
+        <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select></label>
+      <button class="delivery-button primary" type="submit">Apply filter</button>
+    </form>
+    <p class="delivery-note">All submission dates are included. Delivery requires settled Packaging stock deductions and a camera photo of the customer with the item or the item being handed over.</p>
+    <div class="delivery-feedback" role="alert" data-delivery-feedback hidden></div>
+    <section class="delivery-list" aria-label="Submitted products">
+      {% if rows %}
+      <table>
+        <thead><tr><th>Product</th><th>Customer</th><th>Submitted date</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>{% for row in rows %}
+          <tr data-delivery-row>
+            <td data-label="Product"><strong>{{ row.product_name }}</strong></td>
+            <td data-label="Customer"><a href="{{ url_for('view.view_customer_profile', customer_id=row.customer_id) }}">{{ row.customer_name }}</a>{% if row.customer_phone %}<div class="delivery-secondary">{{ row.customer_phone }}</div>{% endif %}</td>
+            <td data-label="Submitted date">{{ row.submitted_at.strftime('%d %b %Y') if row.submitted_at else 'Not recorded' }}{% if row.submitted_at %}<div class="delivery-secondary">{{ row.submitted_at.strftime('%I:%M %p') }}</div>{% endif %}</td>
+            <td data-label="Status"><span class="delivery-status {{ row.status }}" data-delivery-status>{{ row.status_label }}</span></td>
+            <td data-label="Action">
+              {% if row.can_deliver %}
+              <button type="button" class="delivery-button primary" data-confirm-delivery="{{ url_for('completed_cards.completed_card_mark_delivered', customer_id=row.customer_id, product_index=row.product_index) }}">Mark Delivered</button>
+              {% elif row.status == 'pending' %}<span class="delivery-note">Awaiting Packaging</span>{% endif %}
+              {% if row.evidence.url %}<a class="delivery-button" href="{{ row.evidence.url }}" target="_blank" rel="noopener noreferrer">View delivery photo</a>{% endif %}
+            </td>
+          </tr>
+        {% endfor %}</tbody>
+      </table>
+      {% else %}
+      <div class="delivery-empty">{% if status == 'undelivered' %}You have no undelivered submitted products.{% else %}No products match this status.{% endif %}</div>
+      {% endif %}
+    </section>
+    <footer class="delivery-pagination"><span>{{ total }} product{{ '' if total == 1 else 's' }} · Page {{ page }} of {{ total_pages }}</span><nav aria-label="Delivery pages">
+      {% if page > 1 %}<a class="delivery-button" href="{{ url_for('agent_deliveries.deliveries', status=status, page=page-1) }}">Previous</a>{% endif %}
+      {% if page < total_pages %}<a class="delivery-button" href="{{ url_for('agent_deliveries.deliveries', status=status, page=page+1) }}">Next</a>{% endif %}
+    </nav></footer>
+  </main>
+  <script src="{{ url_for('static', filename='js/delivery_camera.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/agent_deliveries.js') }}"></script>
+</body>
+</html>

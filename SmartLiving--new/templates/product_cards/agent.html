@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Product Cards</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <style>
+    body{background:linear-gradient(180deg,#f7f9fc,#eef2f7);font-family:Segoe UI,system-ui,sans-serif;}
+    .page-shell{padding:86px 18px 36px;}
+    .hero,.panel-card,.card-tile{background:#fff;border:1px solid #d8e3f1;border-radius:24px;box-shadow:0 16px 36px rgba(15,23,42,.08);}
+    .hero{padding:24px;background:linear-gradient(135deg,#10233f,#0b5fff 70%,#62a4ef);color:#fff;}
+    .hero h1{font-size:1.75rem;font-weight:800;margin:10px 0 8px;}
+    .hero p{margin:0;color:rgba(255,255,255,.86);}
+    .hero-chip{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.15);font-size:.78rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;}
+    .panel-card{padding:20px;}
+    .grid-wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;}
+    .card-tile{padding:18px;display:flex;flex-direction:column;gap:14px;}
+    .card-head{display:flex;gap:14px;align-items:center;}
+    .product-thumb{width:64px;height:64px;border-radius:18px;object-fit:cover;background:#eef2f7;border:1px solid #d8e3f1;flex:0 0 auto;}
+    .product-thumb-fallback{width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#edf3ff,#dbe7fb);border:1px dashed #bcd0ef;display:flex;align-items:center;justify-content:center;color:#4c6da7;font-size:1.2rem;flex:0 0 auto;}
+    .stat-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+    .stat{padding:12px;border-radius:16px;background:#f7faff;border:1px solid #e4ecf8;text-align:center;}
+    .stat small{display:block;color:#74839a;font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;}
+    .stat strong{display:block;font-size:1rem;margin-top:4px;}
+    .empty-state{padding:24px;border:1px dashed #c7d4ea;border-radius:18px;background:#f8fbff;text-align:center;color:#72839a;}
+    .grid-loading{display:flex;align-items:center;justify-content:center;gap:12px;min-height:180px;color:#5f718a;font-weight:700;}
+    .pager{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px;}
+  </style>
+</head>
+<body>
+  {% include 'side_bar.html' %}
+  <div class="page-shell">
+    <section class="hero mb-4">
+      <div class="hero-chip"><i class="bi bi-postcard-heart"></i> My Card Stock</div>
+      <h1>Agent Product Cards</h1>
+      <p>Track the printed product cards currently assigned to you. Each linked sale reduces your available stock automatically.</p>
+    </section>
+
+    <div class="panel-card">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+        <div>
+          <h2 class="h5 mb-1 fw-bold">Available Product Cards</h2>
+          <div class="text-muted">Live balances, usage, and latest consumption activity.</div>
+        </div>
+        <input class="form-control" id="searchInput" placeholder="Search assigned cards..." style="max-width:260px;">
+      </div>
+      <div id="cardsGrid" class="grid-wrap"></div>
+      <div class="pager">
+        <div class="small text-muted" id="cardsPageInfo">Page 1 of 1</div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-secondary btn-sm" id="cardsPrevBtn" type="button">Prev</button>
+          <button class="btn btn-outline-secondary btn-sm" id="cardsNextBtn" type="button">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let cards = [];
+    let cardsPage = 1;
+    const cardsPerPage = 5;
+    let cardsLoading = true;
+    function num(v){ return Number(v || 0).toLocaleString(); }
+    function formatDate(v){
+      if(!v) return 'No usage yet';
+      const d = new Date(v);
+      return Number.isNaN(d.getTime()) ? 'No usage yet' : d.toLocaleString();
+    }
+    async function loadOverview(){
+      cardsLoading = true;
+      renderCards();
+      const res = await fetch('/api/product-cards/agent/overview');
+      const data = await res.json();
+      if(!data.ok) return;
+      cards = data.cards || [];
+      cardsLoading = false;
+      renderCards();
+    }
+    function renderCards(){
+      const term = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+      const wrap = document.getElementById('cardsGrid');
+      if(cardsLoading){
+        wrap.innerHTML = '<div class="grid-loading"><div class="spinner-border text-primary" role="status"></div><span>Loading assigned product cards...</span></div>';
+        document.getElementById('cardsPageInfo').textContent = 'Loading...';
+        return;
+      }
+      const rows = cards.filter(card => !term || String(card.product_name || '').toLowerCase().includes(term));
+      if(!rows.length){
+        wrap.innerHTML = '<div class="empty-state">No assigned product cards found for this filter.</div>';
+        document.getElementById('cardsPageInfo').textContent = 'Page 0 of 0';
+        document.getElementById('cardsPrevBtn').disabled = true;
+        document.getElementById('cardsNextBtn').disabled = true;
+        return;
+      }
+      const totalPages = Math.max(1, Math.ceil(rows.length / cardsPerPage));
+      if(cardsPage > totalPages) cardsPage = totalPages;
+      const start = (cardsPage - 1) * cardsPerPage;
+      const pageRows = rows.slice(start, start + cardsPerPage);
+      wrap.innerHTML = pageRows.map(card => `
+        <div class="card-tile">
+          <div class="d-flex justify-content-between align-items-start gap-3">
+            <div class="card-head">
+              ${card.image_url ? `<img class="product-thumb" src="${card.image_url}" alt="">` : `<div class="product-thumb-fallback"><i class="bi bi-postcard"></i></div>`}
+              <div>
+                <div class="text-muted small text-uppercase fw-bold">Linked Product</div>
+                <h3 class="h6 fw-bold mb-1">${card.product_name}</h3>
+                <div class="small text-muted">Auto-consumes when this product is sold.</div>
+              </div>
+            </div>
+            <span class="badge rounded-pill ${Number(card.available_qty || 0) > 5 ? 'text-bg-success' : 'text-bg-warning'}">${Number(card.available_qty || 0) > 5 ? 'Healthy' : 'Low'}</span>
+          </div>
+          <div class="stat-row">
+            <div class="stat"><small>Received</small><strong>${num(card.received_qty)}</strong></div>
+            <div class="stat"><small>Sold</small><strong>${num(card.sold_qty)}</strong></div>
+            <div class="stat"><small>Left</small><strong>${num(card.available_qty)}</strong></div>
+          </div>
+          <div class="small text-muted">Last consumption: ${formatDate(card.last_used_at)}</div>
+        </div>
+      `).join('');
+      document.getElementById('cardsPageInfo').textContent = `Page ${cardsPage} of ${totalPages}`;
+      document.getElementById('cardsPrevBtn').disabled = cardsPage <= 1;
+      document.getElementById('cardsNextBtn').disabled = cardsPage >= totalPages;
+    }
+    document.getElementById('searchInput').addEventListener('input', () => { cardsPage = 1; renderCards(); });
+    document.getElementById('cardsPrevBtn').addEventListener('click', () => { if(cardsPage > 1){ cardsPage -= 1; renderCards(); } });
+    document.getElementById('cardsNextBtn').addEventListener('click', () => {
+      const term = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+      const totalPages = Math.max(1, Math.ceil(cards.filter(card => !term || String(card.product_name || '').toLowerCase().includes(term)).length / cardsPerPage));
+      if(cardsPage < totalPages){ cardsPage += 1; renderCards(); }
+    });
+    loadOverview();
+  </script>
+</body>
+</html>

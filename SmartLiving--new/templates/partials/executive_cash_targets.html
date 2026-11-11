@@ -1,0 +1,38 @@
+<section class="card p-3 my-3" id="cashTargetBreakdown">
+  <div class="d-flex flex-wrap justify-content-between gap-2 align-items-center">
+    <h5 class="mb-0">Cash targets and collections</h5>
+    <label>Period <select id="cashTargetPeriod" class="form-select form-select-sm"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select></label>
+    <a href="{{ url_for('executive_target.executive_targets_page') }}">Edit targets</a>
+  </div>
+  <p class="small text-muted mt-2 mb-0">All active manager targets for the selected period.</p>
+  <div class="row g-3 mt-1">
+    {% for c, label in [('cash','Cash'), ('product_cash','Product Cash'), ('susu_cash','SUSU Cash')] %}
+    <div class="col-md-4"><div class="small text-muted">{{ label }} achieved / target (GHS)</div><strong id="{{ c }}TargetValue">Loading…</strong></div>
+    {% endfor %}
+  </div>
+  <p id="cashTargetError" role="alert" class="text-danger mb-0"></p>
+</section>
+<script>
+(() => {
+  const period = document.getElementById('cashTargetPeriod');
+  let controller;
+  const money = value => Number(value || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  async function refresh() {
+    if (controller) controller.abort();
+    controller = new AbortController();
+    document.getElementById('cashTargetError').textContent = '';
+    try {
+      const response = await fetch({{ url_for('executive_target.executive_cash_target_progress')|tojson }} + '?period=' + period.value, {credentials: 'same-origin', signal: controller.signal});
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.message || 'Unable to load cash targets.');
+      ['cash', 'product_cash', 'susu_cash'].forEach(c => {
+        document.getElementById(c + 'TargetValue').textContent = money(data.totals[c + '_achieved']) + ' / ' + money(data.totals[c + '_target']);
+      });
+    } catch (error) {
+      if (error.name !== 'AbortError') document.getElementById('cashTargetError').textContent = error.message;
+    }
+  }
+  period.addEventListener('change', refresh);
+  refresh();
+})();
+</script>

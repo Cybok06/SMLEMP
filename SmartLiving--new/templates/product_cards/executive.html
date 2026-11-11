@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Product Cards</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <style>
+    :root{
+      --pc-ink:#10233f;
+      --pc-ocean:#0b5fff;
+      --pc-mist:#eef4ff;
+      --pc-line:#d7e3f8;
+      --pc-surface:#ffffff;
+      --pc-warm:#f59e0b;
+      --pc-green:#0f9f6e;
+    }
+    body{background:linear-gradient(180deg,#f4f7fb 0%,#eef2f8 100%);padding-left:270px;font-family:Segoe UI,system-ui,sans-serif;color:var(--pc-ink);}
+    @media (max-width:768px){body{padding-left:0;}}
+    .page-shell{padding:28px 20px 40px;}
+    .hero{background:linear-gradient(135deg,#0d2040,#144b8f 60%,#3d7bda);border-radius:28px;padding:26px;color:#fff;box-shadow:0 22px 48px rgba(16,35,63,.18);}
+    .hero-chip{display:inline-flex;gap:8px;align-items:center;padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.14);font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;font-weight:800;}
+    .hero h1{font-size:2rem;font-weight:800;margin:14px 0 8px;}
+    .hero p{max-width:760px;color:rgba(255,255,255,.84);margin:0;}
+    .kpi-card,.panel-card,.product-card{background:var(--pc-surface);border:1px solid var(--pc-line);border-radius:24px;box-shadow:0 16px 34px rgba(16,35,63,.08);}
+    .kpi-card{padding:18px;height:100%;}
+    .kpi-icon{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:var(--pc-mist);color:var(--pc-ocean);font-size:1.15rem;}
+    .kpi-label{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:#6b7a90;font-weight:700;}
+    .kpi-value{font-size:1.7rem;font-weight:800;color:var(--pc-ink);}
+    .panel-card{padding:20px;}
+    .section-title{font-size:1.05rem;font-weight:800;margin:0;}
+    .section-subtitle{color:#697991;font-size:.92rem;}
+    .grid-wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;}
+    .product-card{padding:18px;display:flex;flex-direction:column;gap:14px;}
+    .product-head{display:flex;gap:14px;align-items:center;}
+    .product-image{width:58px;height:58px;border-radius:18px;background:#f3f6fb;border:1px solid var(--pc-line);object-fit:cover;}
+    .product-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#eef9f4;color:var(--pc-green);font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;}
+    .product-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+    .stat-box{padding:12px;border-radius:16px;background:#f8fbff;border:1px solid #e8effb;}
+    .stat-box small{display:block;color:#7b899d;font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;}
+    .stat-box strong{display:block;font-size:1.05rem;margin-top:5px;}
+    .product-actions{display:flex;flex-wrap:wrap;gap:10px;}
+    .table-shell{overflow:auto;max-height:430px;}
+    .table thead th{font-size:.76rem;text-transform:uppercase;letter-spacing:.06em;color:#6f7e94;background:#f5f8fd;border-bottom:1px solid var(--pc-line);}
+    .table td{vertical-align:middle;}
+    .activity-list{display:flex;flex-direction:column;gap:10px;max-height:430px;overflow:auto;}
+    .activity-item{padding:12px 14px;border-radius:16px;background:#f8fbff;border:1px solid #e6eefb;}
+    .empty-state{padding:26px;border:1px dashed #c7d5ec;border-radius:20px;background:#f8fbff;text-align:center;color:#76859a;}
+    .modal .form-label{font-weight:700;font-size:.88rem;}
+    .grid-loading{display:flex;align-items:center;justify-content:center;gap:12px;min-height:180px;color:#5f718a;font-weight:700;}
+    .pager{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px;}
+    .picker-preview{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--pc-line);border-radius:18px;background:#f8fbff;min-height:72px;}
+    .picker-preview img{width:46px;height:46px;border-radius:14px;object-fit:cover;background:#eef2f7;border:1px solid var(--pc-line);}
+    .picker-preview .empty{width:46px;height:46px;border-radius:14px;background:#eef2f7;border:1px dashed var(--pc-line);}
+    .picker-list{display:flex;flex-direction:column;gap:8px;max-height:220px;overflow:auto;margin-top:12px;}
+    .picker-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid #e4ecf8;border-radius:16px;background:#fff;cursor:pointer;transition:.18s ease;}
+    .picker-item:hover,.picker-item.active{border-color:#0b5fff;background:#eef4ff;}
+    .picker-item img{width:38px;height:38px;border-radius:12px;object-fit:cover;background:#eef2f7;border:1px solid var(--pc-line);}
+    .picker-item .empty{width:38px;height:38px;border-radius:12px;background:#eef2f7;border:1px dashed var(--pc-line);}
+    .transfer-preview{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--pc-line);border-radius:18px;background:#f8fbff;}
+    .transfer-preview img{width:46px;height:46px;border-radius:14px;object-fit:cover;background:#eef2f7;border:1px solid var(--pc-line);}
+    .transfer-preview-fallback{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#edf3ff,#dbe7fb);border:1px dashed #bcd0ef;display:flex;align-items:center;justify-content:center;color:#4c6da7;}
+  </style>
+</head>
+<body>
+  {% include 'executive_sidebar.html' %}
+  <div class="page-shell">
+    <section class="hero mb-4">
+      <div class="hero-chip"><i class="bi bi-postcard"></i> Product Cards Control</div>
+      <h1>Executive Product Cards</h1>
+      <p>Register printed product cards, update live executive stock, transfer allocations to branches, and monitor manager and agent availability from one responsive control room.</p>
+    </section>
+
+    <div class="row g-3 mb-4" id="kpisRow">
+      <div class="col-md-6 col-xl-3"><div class="kpi-card"><div class="d-flex justify-content-between"><div><div class="kpi-label">Executive Stock</div><div class="kpi-value" id="kpiExecutive">0</div></div><div class="kpi-icon"><i class="bi bi-safe2"></i></div></div></div></div>
+      <div class="col-md-6 col-xl-3"><div class="kpi-card"><div class="d-flex justify-content-between"><div><div class="kpi-label">With Managers</div><div class="kpi-value" id="kpiManagers">0</div></div><div class="kpi-icon"><i class="bi bi-diagram-3"></i></div></div></div></div>
+      <div class="col-md-6 col-xl-3"><div class="kpi-card"><div class="d-flex justify-content-between"><div><div class="kpi-label">With Agents</div><div class="kpi-value" id="kpiAgents">0</div></div><div class="kpi-icon"><i class="bi bi-people"></i></div></div></div></div>
+      <div class="col-md-6 col-xl-3"><div class="kpi-card"><div class="d-flex justify-content-between"><div><div class="kpi-label">Consumed</div><div class="kpi-value" id="kpiSold">0</div></div><div class="kpi-icon"><i class="bi bi-check2-circle"></i></div></div></div></div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-12 col-xxl-8">
+        <div class="panel-card mb-4">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+            <div>
+              <h2 class="section-title">Card Grid</h2>
+              <div class="section-subtitle">Every linked product card in a compact operational layout.</div>
+            </div>
+            <div class="d-flex gap-2">
+              <input class="form-control" id="searchInput" placeholder="Search product cards..." style="min-width:240px;">
+              <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#saveModal"><i class="bi bi-plus-circle"></i> Add Card</button>
+            </div>
+          </div>
+          <div id="cardsGrid" class="grid-wrap"></div>
+          <div class="pager">
+            <div class="small text-muted" id="cardsPageInfo">Page 1 of 1</div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-secondary btn-sm" id="cardsPrevBtn" type="button">Prev</button>
+              <button class="btn btn-outline-secondary btn-sm" id="cardsNextBtn" type="button">Next</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+            <div>
+              <h2 class="section-title">Branch Breakdown</h2>
+              <div class="section-subtitle">Manager pools and downstream agent allocations for the selected product card.</div>
+            </div>
+            <div class="fw-semibold text-primary" id="detailTitle">Select a product card</div>
+          </div>
+          <div class="table-shell">
+            <table class="table align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Manager</th>
+                  <th>Branch</th>
+                  <th>Received</th>
+                  <th>Available</th>
+                  <th>Distributed</th>
+                  <th>Agents</th>
+                </tr>
+              </thead>
+              <tbody id="detailsBody">
+                <tr><td colspan="6"><div class="empty-state">Choose a card from the grid to inspect manager and agent balances.</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-xxl-4">
+        <div class="panel-card h-100">
+          <div class="mb-3">
+            <h2 class="section-title">Recent Product Card Activity</h2>
+            <div class="section-subtitle">Latest transfers made across the executive distribution chain.</div>
+          </div>
+          <div class="activity-list" id="activityList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="saveModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <form class="modal-content" id="saveForm">
+        <div class="modal-header">
+          <h5 class="modal-title">Create or Update Product Card</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Product</label>
+            <input type="hidden" id="saveProductId" required>
+            <input class="form-control mb-2" id="saveProductSearch" placeholder="Search and select product by name...">
+            <div class="picker-preview">
+              <img id="saveProductPreviewImage" src="" alt="" style="display:none;">
+              <div id="saveProductPreviewEmpty" class="empty"></div>
+              <div>
+                <div class="fw-bold" id="saveProductPreviewName">No product selected</div>
+                <div class="text-muted small">Choose the product card item you want to manage.</div>
+              </div>
+            </div>
+            <div id="saveProductList" class="picker-list"></div>
+          </div>
+          <div class="row g-3">
+            <div class="col-sm-12">
+              <label class="form-label">Executive Available Qty</label>
+              <input class="form-control" type="number" min="0" id="saveQty" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-light" type="button" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary" type="submit">Save Product Card</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal fade" id="transferModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <form class="modal-content" id="transferForm">
+        <div class="modal-header">
+          <h5 class="modal-title">Transfer to Manager</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="transferProductId">
+          <div class="transfer-preview mb-3">
+            <img id="transferPreviewImage" src="" alt="" style="display:none;">
+            <div id="transferPreviewFallback" class="transfer-preview-fallback"><i class="bi bi-postcard"></i></div>
+            <div>
+              <div class="fw-bold" id="transferPreviewName">Selected product card</div>
+              <div class="text-muted small">Send part of this executive card stock to a branch manager.</div>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Manager</label>
+            <select class="form-select" id="transferManagerId" required></select>
+          </div>
+          <div>
+            <label class="form-label">Quantity</label>
+            <input class="form-control" type="number" min="1" id="transferQty" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-light" type="button" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary" type="submit">Transfer Cards</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let payload = { cards: [], details: {}, managers: [], activity: [] };
+    let activeCardId = '';
+    let filteredProductOptions = [];
+    let cardsPage = 1;
+    const cardsPerPage = 5;
+    let cardsLoading = true;
+    const saveModal = new bootstrap.Modal(document.getElementById('saveModal'));
+    const transferModal = new bootstrap.Modal(document.getElementById('transferModal'));
+
+    function formatNum(v){ return Number(v || 0).toLocaleString(); }
+    function formatDate(v){
+      if(!v) return 'Now';
+      const d = new Date(v);
+      return Number.isNaN(d.getTime()) ? 'Now' : d.toLocaleString();
+    }
+
+    async function loadOverview(){
+      cardsLoading = true;
+      renderCards();
+      const res = await fetch('/api/product-cards/executive/overview');
+      const data = await res.json();
+      if(!data.ok) return;
+      payload = data;
+      cardsLoading = false;
+      renderFilters();
+      renderCards();
+      renderActivity();
+      renderKpis();
+      if(activeCardId){
+        renderDetails(activeCardId);
+      }
+    }
+
+    function renderKpis(){
+      const cards = payload.cards || [];
+      document.getElementById('kpiExecutive').textContent = formatNum(cards.reduce((a, c) => a + Number(c.executive_available_qty || 0), 0));
+      document.getElementById('kpiManagers').textContent = formatNum(cards.reduce((a, c) => a + Number(c.manager_total || 0), 0));
+      document.getElementById('kpiAgents').textContent = formatNum(cards.reduce((a, c) => a + Number(c.agent_total || 0), 0));
+      document.getElementById('kpiSold').textContent = formatNum(cards.reduce((a, c) => a + Number(c.sold_total || 0), 0));
+    }
+
+    function renderFilters(){
+      const managerSelect = document.getElementById('transferManagerId');
+      managerSelect.innerHTML = '<option value="">Select manager</option>' + (payload.managers || []).map(m => `<option value="${m._id}">${m.name || 'Manager'}${m.branch ? ' - ' + m.branch : ''}</option>`).join('');
+      filterProductOptions();
+    }
+
+    function updateProductPreview(){
+      const productId = document.getElementById('saveProductId').value;
+      const selected = (payload.product_options || []).find(item => item._id === productId);
+      const previewImage = document.getElementById('saveProductPreviewImage');
+      const previewEmpty = document.getElementById('saveProductPreviewEmpty');
+      const previewName = document.getElementById('saveProductPreviewName');
+      if(!selected){
+        previewImage.style.display = 'none';
+        previewImage.src = '';
+        previewEmpty.style.display = 'block';
+        previewName.textContent = 'No product selected';
+        syncProductListActive('');
+        return;
+      }
+      previewName.textContent = selected.name || 'Selected Product';
+      syncProductListActive(productId);
+      if(selected.image_url){
+        previewImage.src = selected.image_url;
+        previewImage.style.display = 'block';
+        previewEmpty.style.display = 'none';
+      } else {
+        previewImage.style.display = 'none';
+        previewImage.src = '';
+        previewEmpty.style.display = 'block';
+      }
+    }
+
+    function syncProductListActive(productId){
+      document.querySelectorAll('#saveProductList .picker-item').forEach(item => {
+        item.classList.toggle('active', item.getAttribute('data-id') === productId);
+      });
+    }
+
+    function chooseProduct(productId){
+      document.getElementById('saveProductId').value = productId || '';
+      updateProductPreview();
+    }
+
+    function filterProductOptions(){
+      const term = (document.getElementById('saveProductSearch').value || '').trim().toLowerCase();
+      const currentValue = document.getElementById('saveProductId').value;
+      filteredProductOptions = (payload.product_options || []).filter(item => !term || String(item.name || '').toLowerCase().includes(term));
+      const list = document.getElementById('saveProductList');
+      list.innerHTML = filteredProductOptions.length ? filteredProductOptions.map(card => `
+        <button type="button" class="picker-item ${card._id === currentValue ? 'active' : ''}" data-id="${card._id}" onclick="chooseProduct('${card._id}')">
+          ${card.image_url ? `<img src="${card.image_url}" alt="">` : `<div class="empty"></div>`}
+          <div class="text-start">
+            <div class="fw-bold">${card.name}</div>
+            <div class="small text-muted">Linked product card</div>
+          </div>
+        </button>
+      `).join('') : '<div class="empty-state py-3">No products match this search.</div>';
+      if(!filteredProductOptions.some(item => item._id === currentValue)){
+        document.getElementById('saveProductId').value = '';
+      }
+      updateProductPreview();
+    }
+
+    function renderCards(){
+      const term = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+      const wrap = document.getElementById('cardsGrid');
+      if(cardsLoading){
+        wrap.innerHTML = '<div class="grid-loading"><div class="spinner-border text-primary" role="status"></div><span>Loading product cards...</span></div>';
+        document.getElementById('cardsPageInfo').textContent = 'Loading...';
+        return;
+      }
+      const cards = (payload.cards || []).filter(card => !term || String(card.product_name || '').toLowerCase().includes(term));
+      if(!cards.length){
+        wrap.innerHTML = '<div class="empty-state">No product cards found for the current filter.</div>';
+        document.getElementById('cardsPageInfo').textContent = 'Page 0 of 0';
+        document.getElementById('cardsPrevBtn').disabled = true;
+        document.getElementById('cardsNextBtn').disabled = true;
+        return;
+      }
+      const totalPages = Math.max(1, Math.ceil(cards.length / cardsPerPage));
+      if(cardsPage > totalPages) cardsPage = totalPages;
+      const start = (cardsPage - 1) * cardsPerPage;
+      const pageRows = cards.slice(start, start + cardsPerPage);
+      wrap.innerHTML = pageRows.map(card => `
+        <div class="product-card">
+          <div class="product-head">
+            <img class="product-image" src="${card.image_url || ''}" onerror="this.style.visibility='hidden'">
+            <div class="flex-grow-1">
+              <div class="d-flex justify-content-between gap-2 align-items-start">
+                <div>
+                  <h3 class="h6 mb-1">${card.product_name}</h3>
+                  <div class="text-muted small">Printed card stock linked to this product.</div>
+                </div>
+                <span class="product-badge"><i class="bi bi-check2-circle"></i> Live</span>
+              </div>
+            </div>
+          </div>
+          <div class="product-stats">
+            <div class="stat-box"><small>Executive</small><strong>${formatNum(card.executive_available_qty)}</strong></div>
+            <div class="stat-box"><small>Managers</small><strong>${formatNum(card.manager_total)}</strong></div>
+            <div class="stat-box"><small>Agents</small><strong>${formatNum(card.agent_total)}</strong></div>
+            <div class="stat-box"><small>Consumed</small><strong>${formatNum(card.sold_total)}</strong></div>
+          </div>
+          <div class="product-actions">
+            <button class="btn btn-outline-primary btn-sm flex-fill" onclick="openDetails('${card.product_id}')"><i class="bi bi-diagram-3"></i> View Breakdown</button>
+            <button class="btn btn-primary btn-sm flex-fill" onclick="openTransfer('${card.product_id}')"><i class="bi bi-send"></i> Transfer</button>
+            <button class="btn btn-outline-secondary btn-sm" onclick="prefillEdit('${card.product_id}')"><i class="bi bi-pencil"></i></button>
+          </div>
+        </div>
+      `).join('');
+      document.getElementById('cardsPageInfo').textContent = `Page ${cardsPage} of ${totalPages}`;
+      document.getElementById('cardsPrevBtn').disabled = cardsPage <= 1;
+      document.getElementById('cardsNextBtn').disabled = cardsPage >= totalPages;
+    }
+
+    function renderDetails(productId){
+      activeCardId = productId;
+      const rows = (payload.details || {})[productId] || [];
+      const card = (payload.cards || []).find(item => item.product_id === productId);
+      document.getElementById('detailTitle').textContent = card ? card.product_name : 'Select a product card';
+      const body = document.getElementById('detailsBody');
+      if(!rows.length){
+        body.innerHTML = '<tr><td colspan="6"><div class="empty-state">This card has not been transferred to any manager yet.</div></td></tr>';
+        return;
+      }
+      body.innerHTML = rows.map(row => `
+        <tr>
+          <td><strong>${row.manager_name}</strong></td>
+          <td>${row.branch || 'Unassigned'}</td>
+          <td>${formatNum(row.received_qty)}</td>
+          <td>${formatNum(row.available_qty)}</td>
+          <td>${formatNum(row.distributed_qty)}</td>
+          <td>
+            ${row.agents && row.agents.length ? row.agents.map(agent => `<div class="small mb-1"><strong>${agent.agent_name}</strong> · Left ${formatNum(agent.available_qty)} · Sold ${formatNum(agent.sold_qty)}</div>`).join('') : '<span class="text-muted small">No agents yet</span>'}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderActivity(){
+      const wrap = document.getElementById('activityList');
+      const rows = payload.activity || [];
+      if(!rows.length){
+        wrap.innerHTML = '<div class="empty-state">No transfer activity yet.</div>';
+        return;
+      }
+      wrap.innerHTML = rows.map(row => `
+        <div class="activity-item">
+          <div class="d-flex justify-content-between gap-3">
+            <div>
+              <div class="fw-bold">${row.product_name}</div>
+              <div class="small text-muted">${row.from_role} to ${row.to_role} · ${row.to_name || ''}</div>
+            </div>
+            <div class="text-end">
+              <div class="fw-bold text-primary">${formatNum(row.qty)}</div>
+              <div class="small text-muted">${formatDate(row.created_at)}</div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function updateTransferPreview(productId){
+      const card = (payload.cards || []).find(item => item.product_id === productId);
+      const image = document.getElementById('transferPreviewImage');
+      const fallback = document.getElementById('transferPreviewFallback');
+      const name = document.getElementById('transferPreviewName');
+      if(!card){
+        image.style.display = 'none';
+        image.src = '';
+        fallback.style.display = 'flex';
+        name.textContent = 'Selected product card';
+        return;
+      }
+      name.textContent = card.product_name || 'Selected product card';
+      if(card.image_url){
+        image.src = card.image_url;
+        image.style.display = 'block';
+        fallback.style.display = 'none';
+      } else {
+        image.style.display = 'none';
+        image.src = '';
+        fallback.style.display = 'flex';
+      }
+    }
+
+    function openDetails(productId){ renderDetails(productId); }
+    function openTransfer(productId){
+      document.getElementById('transferProductId').value = productId;
+      document.getElementById('transferQty').value = '';
+      updateTransferPreview(productId);
+      transferModal.show();
+    }
+    function prefillEdit(productId){
+      const card = (payload.cards || []).find(item => item.product_id === productId);
+      if(!card) return;
+      document.getElementById('saveProductSearch').value = '';
+      filterProductOptions();
+      chooseProduct(card.product_id);
+      document.getElementById('saveQty').value = card.executive_available_qty || 0;
+      saveModal.show();
+    }
+
+    document.getElementById('searchInput').addEventListener('input', () => { cardsPage = 1; renderCards(); });
+    document.getElementById('cardsPrevBtn').addEventListener('click', () => { if(cardsPage > 1){ cardsPage -= 1; renderCards(); } });
+    document.getElementById('cardsNextBtn').addEventListener('click', () => {
+      const term = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+      const totalPages = Math.max(1, Math.ceil((payload.cards || []).filter(card => !term || String(card.product_name || '').toLowerCase().includes(term)).length / cardsPerPage));
+      if(cardsPage < totalPages){ cardsPage += 1; renderCards(); }
+    });
+    document.getElementById('saveProductSearch').addEventListener('input', filterProductOptions);
+    document.getElementById('saveForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const payloadIn = {
+        product_id: document.getElementById('saveProductId').value,
+        qty: document.getElementById('saveQty').value
+      };
+      const res = await fetch('/api/product-cards/executive/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payloadIn)
+      });
+      const data = await res.json();
+      if(!data.ok){ alert(data.message || 'Unable to save product card.'); return; }
+      saveModal.hide();
+      await loadOverview();
+    });
+
+    document.getElementById('transferForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const payloadIn = {
+        product_id: document.getElementById('transferProductId').value,
+        manager_id: document.getElementById('transferManagerId').value,
+        qty: document.getElementById('transferQty').value
+      };
+      const res = await fetch('/api/product-cards/executive/transfer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payloadIn)
+      });
+      const data = await res.json();
+      if(!data.ok){ alert(data.message || 'Unable to transfer cards.'); return; }
+      transferModal.hide();
+      await loadOverview();
+      renderDetails(payloadIn.product_id);
+    });
+
+    loadOverview();
+  </script>
+</body>
+</html>

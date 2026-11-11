@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cards Tracker - Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="icon" href="https://res.cloudinary.com/dljpgzbto/image/upload/v1743993646/company-logo_dksb23.jpg" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="{{ url_for('static', filename='cards_tracker.css') }}" rel="stylesheet">
+</head>
+<body style="font-family:'Space Grotesk', system-ui, sans-serif; background:#f7f8fc;">
+  {% include 'manager_sidebar.html' %}
+
+  <div class="cards-tracker-wrap">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+      <div>
+        <h3 class="fw-bold mb-1">Cards Tracker</h3>
+        <div class="text-muted">Track cards received and distribute to agents</div>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+        <input id="cardsProductSearch" class="form-control form-control-sm" placeholder="Search card">
+      </div>
+    </div>
+
+    <div class="ct-card mb-3">
+      <div class="fw-semibold mb-2"><i class="bi bi-grid-3x3-gap"></i> Cards Grid</div>
+      <div class="row g-2" id="cardsProductGrid">
+        <div class="text-muted">Loading...</div>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-sm-6 col-lg-3">
+        <div class="ct-card ct-kpi">
+          <small>Received</small>
+          <strong id="kpiManagerReceived">0</strong>
+          <span class="ct-subtext">From Executive</span>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="ct-card ct-kpi">
+          <small>Transferred</small>
+          <strong id="kpiManagerTransferred">0</strong>
+          <span class="ct-subtext">To Agents</span>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="ct-card ct-kpi">
+          <small>Sold</small>
+          <strong id="kpiManagerSold">0</strong>
+          <span class="ct-subtext">Cards Used</span>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="ct-card ct-kpi">
+          <small>Remaining</small>
+          <strong id="kpiManagerRemaining">0</strong>
+          <span class="ct-subtext">Pool + Agents</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="ct-card mb-3">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <div class="fw-semibold"><i class="bi bi-people"></i> Agents</div>
+        <div class="ct-subtext">Progress based on sold / given</div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover ct-table mb-0">
+          <thead>
+            <tr>
+              <th>Agent</th>
+              <th>Branch</th>
+              <th class="text-end">Given</th>
+              <th class="text-end">Sold</th>
+              <th class="text-end">Left</th>
+              <th class="text-end">Progress</th>
+              <th class="text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody id="cardsAgentsTableBody">
+            <tr><td colspan="7" class="text-muted">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ct-card">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <div class="fw-semibold"><i class="bi bi-clock-history"></i> Transfer Ledger</div>
+        <span class="ct-subtext">Latest transfers</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm ct-table mb-0">
+          <thead>
+            <tr>
+              <th>Transfer ID</th>
+              <th class="text-end">Qty</th>
+              <th>From</th>
+              <th>To</th>
+              <th>Note</th>
+              <th>Date</th>
+              <th>When</th>
+            </tr>
+          </thead>
+          <tbody id="cardsLedgerTableBody">
+            <tr><td colspan="7" class="text-muted">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="cardsTransferModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="cardsTransferTitle">Transfer to Agent</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="cardsTransferForm">
+          <div class="modal-body">
+            <div class="mb-2">
+              <label class="form-label">Agent</label>
+              <select name="agent_id" id="cardsTransferAgent" class="form-select">
+                {% for a in agents %}
+                <option value="{{ a._id }}">{{ a.name }}{% if a.branch %} ({{ a.branch }}){% endif %}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Quantity</label>
+              <input type="number" name="qty" class="form-control" min="1" required>
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Date</label>
+              <input type="date" name="transfer_date" class="form-control">
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Note</label>
+              <input type="text" name="note" class="form-control" placeholder="Optional">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+            <button class="btn btn-primary" type="submit">Confirm</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="cardsAdjustModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="cardsAdjustTitle">Adjust Cards</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="cardsAdjustForm">
+          <div class="modal-body">
+            <div class="mb-2">
+              <label class="form-label">Quantity</label>
+              <input type="number" name="qty" class="form-control" min="1" required>
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Date</label>
+              <input type="date" name="date" class="form-control">
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Note</label>
+              <input type="text" name="note" class="form-control" placeholder="Optional">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+            <button class="btn btn-primary" type="submit">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container position-fixed top-0 end-0 p-3" id="cardsToastContainer"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    window.cardsTrackerConfig = {
+      role: 'manager',
+      endpoints: {
+        data: '/manager/cards-tracker/data',
+        transfer: '/manager/cards/transfer',
+        adjust: '/manager/cards/adjust'
+      }
+    };
+  </script>
+  <script src="{{ url_for('static', filename='cards_tracker.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register Activation Lead</title>
+  <link rel="icon" href="https://imagedelivery.net/h9fmMoa1o2c2P55TcWJGOg/10283f28-b9a0-4100-b254-19a854386800/public" type="image/png" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <style>
+    body { background: #f8fafc; color: #0f172a; }
+    .page-wrap { margin-left: 260px; padding: 20px; }
+    @media (max-width: 991px) { .page-wrap { margin-left: 0; } }
+    .card-soft { border: 1px solid #e5e7eb; border-radius: 16px; box-shadow: 0 16px 36px rgba(15,23,42,.08); }
+    .act-badge { font-size: .75rem; border-radius: 999px; padding: 4px 10px; }
+  </style>
+</head>
+<body>
+  {% if role == 'manager' %}
+    {% include 'manager_sidebar.html' %}
+  {% else %}
+    {% include 'side_bar.html' %}
+  {% endif %}
+
+  <div id="message" class="toast-container position-fixed top-0 end-0 p-3"></div>
+
+  <div class="page-wrap">
+    <div class="container" style="max-width: 920px;">
+      <div class="card card-soft mb-3">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+              <h5 class="mb-1">{{ activation.title }}</h5>
+              <div class="small text-muted"><i class="bi bi-geo-alt"></i> {{ activation.location }} | <i class="bi bi-clock"></i> {{ activation.when }}</div>
+            </div>
+            <span class="act-badge text-bg-success text-capitalize">{{ activation.status }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-soft">
+        <div class="card-body">
+          <h6 class="text-uppercase small text-muted mb-3">Activation Lead Registration</h6>
+          <form id="activationLeadForm" method="POST" action="/activation/leads/add" novalidate>
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="name">Full Name</label>
+                <input id="name" type="text" name="name" class="form-control" required />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="phone_number">Phone Number</label>
+                <input id="phone_number" type="tel" name="phone_number" class="form-control" required />
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="location">Location</label>
+                <input id="location" type="text" name="location" class="form-control" required value="{{ activation.location }}" />
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="comment">Additional Comments</label>
+                <textarea id="comment" name="comment" class="form-control" rows="3" placeholder="Optional notes..."></textarea>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Upload Image</label>
+                <div class="d-flex flex-column gap-2">
+                  <input type="file" id="imageFile" class="form-control" accept="image/*" />
+                  <div id="imageUploadStatus" class="small text-muted d-none">
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Uploading image...
+                  </div>
+                  <div id="imagePreviewWrap" class="d-none d-flex align-items-center gap-3">
+                    <img id="imagePreview" src="" alt="Lead preview" style="width:72px;height:72px;object-fit:cover;border-radius:12px;border:1px solid #e5e7eb;" />
+                    <button type="button" id="changeImageBtn" class="btn btn-link p-0 text-decoration-none">Change image</button>
+                  </div>
+                  <input type="hidden" name="image_url" id="image_url" />
+                  <input type="hidden" name="image_id" id="image_id" />
+                </div>
+              </div>
+            </div>
+
+            <input type="hidden" name="activation_id" value="{{ activation.id }}" />
+            <input type="hidden" name="agent_id" value="{{ agent_id }}" />
+            <input type="hidden" name="manager_id" value="{{ manager_id }}" />
+            <input type="hidden" name="date_registered" id="date_registered" value="{{ today_str }}" />
+            <input type="hidden" name="latitude" id="latitude" />
+            <input type="hidden" name="longitude" id="longitude" />
+
+            <div class="d-flex gap-2 mt-4">
+              <button type="submit" class="btn btn-primary" id="submitBtn">Register Activation Lead</button>
+              <a class="btn btn-outline-secondary" href="{% if role == 'manager' %}/manager/activations{% else %}/agent/activations{% endif %}">Back to Activations</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition((pos) => {
+        document.getElementById('latitude').value = pos.coords.latitude.toFixed(6);
+        document.getElementById('longitude').value = pos.coords.longitude.toFixed(6);
+      });
+    }
+
+    (function(){
+      const form = document.getElementById('activationLeadForm');
+      const imageInput = document.getElementById('imageFile');
+      const imageUrlInput = document.getElementById('image_url');
+      const imageIdInput = document.getElementById('image_id');
+      const imagePreviewWrap = document.getElementById('imagePreviewWrap');
+      const imagePreview = document.getElementById('imagePreview');
+      const uploadStatus = document.getElementById('imageUploadStatus');
+      const changeImageBtn = document.getElementById('changeImageBtn');
+      const submitBtn = document.getElementById('submitBtn');
+      const toastHost = document.getElementById('message');
+      let uploadToken = 0;
+      let uploadInProgress = false;
+
+      function toast(type, msg){
+        if(!toastHost || !window.bootstrap) return;
+        const el = document.createElement('div');
+        el.className = `toast align-items-center text-bg-${type} border-0`;
+        el.setAttribute('role','alert');
+        el.setAttribute('aria-live','assertive');
+        el.setAttribute('aria-atomic','true');
+        el.innerHTML = `<div class="d-flex"><div class="toast-body">${msg}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>`;
+        toastHost.appendChild(el);
+        const t = bootstrap.Toast.getOrCreateInstance(el, { delay: 2800 });
+        t.show();
+        el.addEventListener('hidden.bs.toast', () => el.remove());
+      }
+
+      function updateSubmitState(){
+        const hasImage = !!(imageUrlInput && imageUrlInput.value);
+        if(submitBtn) submitBtn.disabled = uploadInProgress || !hasImage;
+      }
+
+      function setUploadState(v){
+        uploadInProgress = v;
+        uploadStatus.classList.toggle('d-none', !v);
+        updateSubmitState();
+      }
+
+      function resetImage(){
+        imageUrlInput.value = '';
+        imageIdInput.value = '';
+        imagePreview.src = '';
+        imagePreviewWrap.classList.add('d-none');
+        imageInput.value = '';
+        updateSubmitState();
+      }
+
+      async function uploadImage(file){
+        const token = ++uploadToken;
+        setUploadState(true);
+        imagePreviewWrap.classList.add('d-none');
+        imageUrlInput.value = '';
+        imageIdInput.value = '';
+        try{
+          const fd = new FormData();
+          fd.append('image', file);
+          const res = await fetch('/customer/upload_image', { method:'POST', body: fd });
+          const data = await res.json();
+          if(token !== uploadToken) return;
+          if(!res.ok || !data.success) throw new Error(data.error || 'Upload failed');
+          imageUrlInput.value = data.image_url || '';
+          imageIdInput.value = data.image_id || '';
+          imagePreview.src = data.image_url || '';
+          imagePreviewWrap.classList.remove('d-none');
+          updateSubmitState();
+        }catch(err){
+          resetImage();
+          toast('danger', err.message || 'Image upload failed.');
+        }finally{
+          if(token === uploadToken) setUploadState(false);
+        }
+      }
+
+      imageInput.addEventListener('change', () => {
+        const file = imageInput.files && imageInput.files[0];
+        if(!file){ resetImage(); return; }
+        uploadImage(file);
+      });
+
+      changeImageBtn.addEventListener('click', () => {
+        resetImage();
+        imageInput.click();
+      });
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if(uploadInProgress){ toast('warning', 'Please wait for image upload.'); return; }
+        if(!imageUrlInput.value){ toast('warning', 'Please upload an image.'); return; }
+
+        const fd = new FormData(form);
+        submitBtn.disabled = true;
+        try{
+          const res = await fetch(form.action, { method:'POST', body: fd, headers: { 'X-Requested-With':'XMLHttpRequest' } });
+          const data = await res.json();
+          if(!res.ok || !data.ok) throw new Error(data.message || 'Failed to register lead.');
+          toast('success', data.message || 'Lead registered.');
+          form.reset();
+          document.getElementById('location').value = '{{ activation.location }}';
+          document.getElementById('date_registered').value = '{{ today_str }}';
+          resetImage();
+        }catch(err){
+          toast('danger', err.message || 'Failed to register lead.');
+        }finally{
+          submitBtn.disabled = false;
+        }
+      });
+
+      updateSubmitState();
+    })();
+  </script>
+  {% include 'app_footer.html' %}
+</body>
+</html>

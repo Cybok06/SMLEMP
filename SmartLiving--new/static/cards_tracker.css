@@ -1,0 +1,172 @@
+:root {
+  --ct-ink: #0f172a;
+  --ct-muted: #64748b;
+  --ct-border: rgba(148, 163, 184, 0.2);
+  --ct-card: #ffffff;
+  --ct-green: #16a34a;
+  --ct-amber: #f59e0b;
+  --ct-red: #ef4444;
+}
+
+.cards-tracker-wrap {
+  padding: 1.2rem 1.5rem;
+  padding-left: 260px;
+}
+
+@media (max-width: 768px) {
+  .cards-tracker-wrap { padding-left: 1rem; }
+}
+
+.ct-card {
+  background: var(--ct-card);
+  border: 1px solid var(--ct-border);
+  border-radius: 16px;
+  padding: 0.9rem 1rem;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.ct-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ct-kpi small {
+  color: var(--ct-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+
+.ct-kpi strong {
+  font-size: 1.4rem;
+  color: var(--ct-ink);
+}
+
+.ct-progress {
+  height: 6px;
+  border-radius: 999px;
+}
+
+.ct-hit-row {
+  background: linear-gradient(90deg, rgba(22, 163, 74, 0.12), transparent 70%);
+  border-left: 4px solid rgba(22, 163, 74, 0.7);
+}
+
+.ct-hit-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(22, 163, 74, 0.16);
+  color: #166534;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ct-subtext {
+  color: var(--ct-muted);
+  font-size: 0.72rem;
+}
+
+.ct-table th {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ct-muted);
+}
+
+.ct-table td {
+  font-size: 0.82rem;
+}
+
+.ct-product-card {
+  border: 1px solid var(--ct-border);
+  border-radius: 14px;
+  padding: 0.6rem;
+  background: #fff;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  position: relative;
+}
+
+.ct-product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.ct-product-card.active {
+  border-color: rgba(13, 110, 253, 0.5);
+  box-shadow: 0 10px 20px rgba(13, 110, 253, 0.12);
+}
+
+.ct-product-card img {
+  width: 54px;
+  height: 54px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: #f1f5f9;
+}
+
+.ct-product-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.2rem 0.6rem;
+  font-size: 0.72rem;
+  color: var(--ct-muted);
+}
+
+.ct-qty-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.9rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(13, 110, 253, 0.12);
+  color: #0b3b91;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.ct-qty-low {
+  background: rgba(245, 158, 11, 0.18);
+  color: #92400e;
+}
+
+.ct-qty-out {
+  background: rgba(239, 68, 68, 0.18);
+  color: #991b1b;
+}
+
+.ct-card-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin-top: 0.35rem;
+}
+
+.ct-out-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.58);
+  color: #fff;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  z-index: 2;
+  pointer-events: none;
+}

@@ -1,0 +1,779 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Trading, Profit & Loss -- Smart Living</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link rel="icon" href="https://res.cloudinary.com/dljpgzbto/image/upload/v1743993646/company-logo_dksb23.jpg" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+
+  <style>
+    body { font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:#f4f6fb; min-height:100vh; }
+    .skeleton { background:#e2e8f0; border-radius:6px; animation: pulse 1.2s infinite ease-in-out; }
+    @keyframes pulse { 0% { opacity:1; } 50% { opacity:0.5; } 100% { opacity:1; } }
+    .chart-bar { display:flex; align-items:center; gap:0.75rem; }
+    .chart-bar-label { flex:1; font-size:0.8rem; color:#475569; }
+    .chart-bar-track { flex:2; height:6px; background:#e5e7eb; border-radius:999px; overflow:hidden; position:relative; }
+    .chart-bar-fill { height:100%; border-radius:999px; transition: width 0.3s ease; }
+    .card-muted { color:#64748b; }
+    .pill { font-size:12px; padding:2px 10px; border-radius:999px; background:#eef2ff; color:#3730a3; }
+    .tabular { font-variant-numeric: tabular-nums; }
+    .modal-shell { opacity:0; transform: scale(0.98); transition: all 0.18s ease; }
+    .modal-open .modal-shell { opacity:1; transform: scale(1); }
+    .exp-tab-active { background:#1e1b4b; color:#fff; border-color:#1e1b4b; }
+  </style>
+
+  <script>
+    window.PL_SHELL = {
+      periodDefaults: { range: "{{ default_range }}" },
+      api: {
+        summary: "{{ url_for('profit_loss.profit_loss_api_summary') }}",
+        sales: "{{ url_for('profit_loss.profit_loss_api_sales') }}",
+        cost_of_sales: "{{ url_for('profit_loss.profit_loss_api_cost_of_sales') }}",
+        income: "{{ url_for('profit_loss.profit_loss_api_income') }}",
+        opex: "{{ url_for('profit_loss.profit_loss_api_opex') }}",
+        current_assets: "{{ url_for('profit_loss.profit_loss_api_current_assets') }}",
+        all: "{{ url_for('profit_loss.profit_loss_api_all') }}",
+      },
+      exportUrl: "{{ export_url }}",
+    };
+  </script>
+</head>
+
+<body>
+  {% include 'accounting/sidebar.html' %}
+
+  <main class="p-4 sm:p-6 lg:p-10">
+    <div class="max-w-7xl mx-auto space-y-6">
+      <header class="flex flex-col gap-2">
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="inline-flex items-center gap-2 rounded-full bg-white/80 border border-slate-200 px-3 py-1 text-xs text-slate-500 shadow-sm">
+            <span class="material-symbols-outlined text-sm text-indigo-500">shield_moon</span>
+            Accounting Dashboard
+          </div>
+          <span class="pill">Live</span>
+        </div>
+        <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-2">
+          <div>
+            <h1 class="text-2xl sm:text-3xl font-semibold text-slate-900">Trading, Profit &amp; Loss</h1>
+            <p class="text-sm text-slate-500">Default range: {{ default_range.replace('_', ' ') | title }}.</p>
+          </div>
+          <div class="text-xs text-slate-500 flex items-center gap-2">
+            <span class="material-symbols-outlined text-sm">update</span>
+            Last updated: <span id="pl-last-updated">--</span>
+          </div>
+        </div>
+      </header>
+
+      <section class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border border-slate-200 rounded-2xl shadow-sm px-4 py-3">
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-base text-slate-500">calendar_today</span>
+            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Range</label>
+            <select id="pl-range" class="border rounded-full px-3 py-1 text-sm bg-white">
+              <option value="all_time" {% if default_range == 'all_time' %}selected{% endif %}>All time</option>
+              <option value="this_month" {% if default_range == 'this_month' %}selected{% endif %}>This month</option>
+              <option value="year" {% if default_range == 'year' %}selected{% endif %}>Year</option>
+              <option value="custom" {% if default_range == 'custom' %}selected{% endif %}>Custom</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <input id="pl-from" type="date" class="border rounded-full px-3 py-1 text-sm hidden">
+            <input id="pl-to" type="date" class="border rounded-full px-3 py-1 text-sm hidden">
+            <select id="pl-year" class="border rounded-full px-3 py-1 text-sm hidden">
+              {% for year in year_options %}
+                <option value="{{ year }}" {% if default_year is defined and year == default_year %}selected{% endif %}>{{ year }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <button id="pl-apply" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-4 py-1.5 text-sm shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+            <span class="material-symbols-outlined text-sm">tune</span>
+            Apply
+          </button>
+
+          <a id="pl-export" href="{{ export_url }}" class="ml-auto inline-flex items-center gap-2 text-sm text-indigo-600 rounded-full border border-indigo-200 px-3 py-1 hover:bg-indigo-50">
+            <span class="material-symbols-outlined text-sm">download</span>
+            Export CSV
+          </a>
+        </div>
+
+        <div id="pl-meta" class="text-xs text-slate-500 mt-2">
+          Period: <span class="font-semibold" id="pl-period-label">--</span>
+        </div>
+      </section>
+
+      <div id="pl-summary" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <article class="summary-card bg-white rounded-2xl shadow-sm border border-slate-200 p-4" data-kpi="net_sales">
+          <div class="flex items-center justify-between">
+            <div class="text-sm text-slate-500">Net Sales</div>
+            <span class="material-symbols-outlined text-slate-400">trending_up</span>
+          </div>
+          <div class="text-2xl font-semibold mt-2 text-slate-900 skeleton value-placeholder tabular">GHS 0.00</div>
+          <div class="text-xs text-slate-400 mt-2 flex items-center gap-2">
+            <span class="kpi-trend inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-slate-200 text-slate-500"></span>
+            <span>Updated <span class="pl-ts">--</span></span>
+          </div>
+        </article>
+
+        <article class="summary-card bg-white rounded-2xl shadow-sm border border-slate-200 p-4" data-kpi="gross_profit">
+          <div class="flex items-center justify-between">
+            <div class="text-sm text-slate-500">Gross Profit</div>
+            <span class="material-symbols-outlined text-slate-400">timeline</span>
+          </div>
+          <div class="text-2xl font-semibold mt-2 text-slate-900 skeleton value-placeholder tabular">GHS 0.00</div>
+          <div class="text-xs text-slate-400 mt-2 flex items-center gap-2">
+            <span class="kpi-trend inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-slate-200 text-slate-500"></span>
+            <span>Updated <span class="pl-ts">--</span></span>
+          </div>
+        </article>
+
+        <article class="summary-card bg-white rounded-2xl shadow-sm border border-slate-200 p-4" data-kpi="total_expenses">
+          <div class="flex items-center justify-between">
+            <div class="text-sm text-slate-500">Total Expenses</div>
+            <button
+              type="button"
+              id="btnViewExpenses"
+              class="inline-flex items-center gap-1 text-[11px] rounded-full border border-rose-200 bg-rose-50 px-2 py-1 text-rose-700 hover:bg-rose-100"
+            >
+              <span class="material-symbols-outlined text-[14px]">receipt_long</span>
+              View Expenses
+            </button>
+          </div>
+          <div class="text-2xl font-semibold mt-2 text-slate-900 skeleton value-placeholder tabular">GHS 0.00</div>
+          <div class="text-xs text-slate-400 mt-2 flex items-center gap-2">
+            <span class="kpi-trend inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-slate-200 text-slate-500"></span>
+            <span>Updated <span class="pl-ts">--</span></span>
+          </div>
+        </article>
+
+        <article class="summary-card bg-white rounded-2xl shadow-sm border border-slate-200 p-4" data-kpi="net_profit">
+          <div class="flex items-center justify-between">
+            <div class="text-sm text-slate-500">Net Profit</div>
+            <span class="material-symbols-outlined text-slate-400">insights</span>
+          </div>
+          <div class="text-2xl font-semibold mt-2 text-slate-900 skeleton value-placeholder tabular">GHS 0.00</div>
+          <div class="text-xs text-slate-400 mt-2 flex items-center gap-2">
+            <span class="kpi-trend inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-slate-200 text-slate-500"></span>
+            <span>Updated <span class="pl-ts">--</span></span>
+          </div>
+        </article>
+      </div>
+
+      <div class="grid gap-6 lg:grid-cols-2">
+        <section id="pl-sales" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-slate-400">payments</span>
+              <h2 class="text-base font-semibold">Revenue &amp; Returns</h2>
+            </div>
+            <span class="text-xs text-slate-500">Summary · <span class="pl-ts">--</span></span>
+          </div>
+          <div class="pl-section-body mt-4 space-y-3">
+            <div class="skeleton h-6 w-6/12"></div>
+            <div class="skeleton h-4 w-4/12"></div>
+          </div>
+          <div class="mt-4 text-xs text-slate-400">Source: Receipts ledger</div>
+        </section>
+
+        <section id="pl-cost_of_sales" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-slate-400">inventory_2</span>
+              <h2 class="text-base font-semibold">Cost of Sales</h2>
+            </div>
+            <span class="text-xs text-slate-500">Details · <span class="pl-ts">--</span></span>
+          </div>
+          <div class="pl-section-body mt-4 space-y-3">
+            <div class="skeleton h-6 w-6/12"></div>
+            <div class="skeleton h-4 w-4/12"></div>
+            <div id="pl-cost-cogs" class="space-y-2"></div>
+          </div>
+          <div class="mt-4 text-xs text-slate-400">Source: AP bills + Stock entries</div>
+        </section>
+      </div>
+
+      <div class="grid gap-6 lg:grid-cols-2">
+        <section id="pl-income" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-slate-400">account_balance</span>
+              <h2 class="text-base font-semibold">Other Income</h2>
+            </div>
+            <span class="text-xs text-slate-500">Insights · <span class="pl-ts">--</span></span>
+          </div>
+          <div class="pl-section-body mt-4 space-y-2">
+            <div class="skeleton h-6 w-6/12"></div>
+            <div class="skeleton h-4 w-4/12"></div>
+          </div>
+          <div class="mt-4 text-xs text-slate-400">Source: Income adjustments</div>
+        </section>
+
+        <section id="pl-current_assets" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-slate-400">account_balance_wallet</span>
+              <h2 class="text-base font-semibold">Current Assets</h2>
+            </div>
+            <span class="text-xs text-slate-500">As-of · <span class="pl-ts">--</span></span>
+          </div>
+          <div class="pl-section-body mt-4 space-y-2">
+            <div class="skeleton h-6 w-6/12"></div>
+            <div class="skeleton h-4 w-4/12"></div>
+          </div>
+          <div class="mt-4 text-xs text-slate-400">Source: Prepayments module</div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- Expenses Modal -->
+  <div id="expensesModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" data-expenses-backdrop></div>
+    <div class="modal-shell relative mx-auto mt-10 w-full max-w-4xl rounded-2xl bg-white p-6 shadow-xl border border-slate-200 max-h-[80vh] overflow-hidden">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h3 class="text-lg font-semibold">Expenses Breakdown</h3>
+          <p class="text-xs text-slate-500" id="expensesPeriodLabel">Period: --</p>
+        </div>
+        <button type="button" id="expensesClose" class="text-slate-400 hover:text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+        <div class="rounded-xl border border-slate-200 p-3">
+          <div class="text-xs text-slate-500 uppercase">Total Expenses</div>
+          <div class="text-lg font-semibold tabular" id="expTotal">--</div>
+        </div>
+        <div class="rounded-xl border border-slate-200 p-3">
+          <div class="text-xs text-slate-500 uppercase">Accounting</div>
+          <div class="text-lg font-semibold tabular" id="expAccounting">--</div>
+        </div>
+        <div class="rounded-xl border border-slate-200 p-3">
+          <div class="text-xs text-slate-500 uppercase">Manager Approved</div>
+          <div class="text-lg font-semibold tabular" id="expManager">--</div>
+        </div>
+      </div>
+
+      <div class="mt-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+        <div class="flex items-center gap-2">
+          <button type="button" data-exp-tab="all" class="exp-tab exp-tab-active text-xs rounded-full border border-slate-200 px-3 py-1">All</button>
+          <button type="button" data-exp-tab="accounting" class="exp-tab text-xs rounded-full border border-slate-200 px-3 py-1">Accounting</button>
+          <button type="button" data-exp-tab="manager" class="exp-tab text-xs rounded-full border border-slate-200 px-3 py-1">Manager</button>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-3">
+          <input
+            id="expSearch"
+            type="text"
+            placeholder="Search category..."
+            class="w-full sm:w-64 border rounded-full px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+          />
+          <select id="expSort" class="border rounded-full px-3 py-2 text-sm">
+            <option value="amount_desc">Amount ↓</option>
+            <option value="amount_asc">Amount ↑</option>
+            <option value="name_asc">Name A-Z</option>
+            <option value="name_desc">Name Z-A</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-4 border border-slate-200 rounded-xl overflow-hidden">
+        <div class="max-h-[40vh] overflow-auto">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-50 text-slate-600 sticky top-0">
+              <tr>
+                <th class="px-3 py-2 text-left">Category</th>
+                <th class="px-3 py-2 text-right">Total</th>
+                <th class="px-3 py-2 text-right hidden sm:table-cell">Accounting</th>
+                <th class="px-3 py-2 text-right hidden sm:table-cell">Manager</th>
+              </tr>
+            </thead>
+            <tbody id="expCategoryBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="mt-4 flex items-center justify-between text-xs text-slate-500">
+        <span id="expCount">0 categories</span>
+        <a id="expExport" href="{{ export_url }}" class="text-indigo-600 underline">Export CSV</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const cache = {};
+    let activeController = null;
+    const summaryFields = ["net_sales", "gross_profit", "total_expenses", "net_profit"];
+    let lastPayload = null;
+    let activeExpenseTab = "all";
+
+    const formatGHS = (value) => {
+      const number = Number(value) || 0;
+      return `GHS ${number.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
+
+    const updateTimestamp = (container) => {
+      const ts = container.querySelector(".pl-ts");
+      if (ts) ts.textContent = new Date().toLocaleTimeString();
+    };
+
+    const updateLastUpdated = () => {
+      const el = document.getElementById("pl-last-updated");
+      if (el) el.textContent = new Date().toLocaleTimeString();
+    };
+
+    const debugMode = new URLSearchParams(window.location.search).get("debug") === "1";
+    const debugLog = (...args) => { if (debugMode) console.log(...args); };
+
+    const setRangeControls = (value) => {
+      document.getElementById("pl-from").classList.toggle("hidden", value !== "custom");
+      document.getElementById("pl-to").classList.toggle("hidden", value !== "custom");
+      document.getElementById("pl-year").classList.toggle("hidden", value !== "year");
+    };
+
+    document.getElementById("pl-range").addEventListener("change", (e) => {
+      setRangeControls(e.target.value);
+    });
+
+    const buildParams = () => {
+      const range = document.getElementById("pl-range").value;
+      const params = new URLSearchParams();
+      params.set("range", range);
+
+      if (range === "custom") {
+        const from = document.getElementById("pl-from").value;
+        const to = document.getElementById("pl-to").value;
+        if (from) params.set("from", from);
+        if (to) params.set("to", to);
+      }
+
+      if (range === "year") {
+        params.set("year", document.getElementById("pl-year").value);
+      }
+
+      return params.toString();
+    };
+
+    const updateExportLink = (params) => {
+      const link = document.getElementById("pl-export");
+      if (!link) return;
+      link.href = `${window.PL_SHELL.exportUrl}?${params}`;
+      const modalExport = document.getElementById("expExport");
+      if (modalExport) modalExport.href = link.href;
+    };
+
+    const setPeriodLabel = (meta) => {
+      const label =
+        meta?.label ||
+        meta?.period_label ||
+        meta?.meta?.label ||
+        meta?.data?.period_label ||
+        "--";
+      document.getElementById("pl-period-label").textContent = label;
+    };
+
+    const applyAccountingColors = () => {
+      document.querySelectorAll("#pl-summary article").forEach((card) => {
+        const valueEl = card.querySelector(".value-placeholder");
+        const trendEl = card.querySelector(".kpi-trend");
+        if (!valueEl || !trendEl) return;
+        const raw = valueEl.textContent || "";
+        const num = Number(raw.replace(/[^0-9.-]+/g, ""));
+        const positive = num >= 0;
+        const isExpense = card.dataset.kpi === "total_expenses";
+
+        valueEl.classList.remove("text-emerald-600", "text-rose-600");
+        trendEl.classList.remove("text-emerald-700", "text-rose-700", "bg-emerald-50", "bg-rose-50", "border-emerald-200", "border-rose-200");
+
+        if (isExpense) {
+          valueEl.classList.add("text-rose-600");
+          trendEl.classList.add("text-rose-700", "bg-rose-50", "border-rose-200");
+          trendEl.innerHTML = `<span class="material-symbols-outlined text-sm">trending_down</span>Expense`;
+          return;
+        }
+
+        if (positive) {
+          valueEl.classList.add("text-emerald-600");
+          trendEl.classList.add("text-emerald-700", "bg-emerald-50", "border-emerald-200");
+          trendEl.innerHTML = `<span class="material-symbols-outlined text-sm">trending_up</span>Positive`;
+        } else {
+          valueEl.classList.add("text-rose-600");
+          trendEl.classList.add("text-rose-700", "bg-rose-50", "border-rose-200");
+          trendEl.innerHTML = `<span class="material-symbols-outlined text-sm">trending_down</span>Negative`;
+        }
+      });
+    };
+
+    const renderSummary = (payload) => {
+      const data = payload.data || {};
+      const cards = document.querySelectorAll("#pl-summary article");
+      summaryFields.forEach((key, i) => {
+        const card = cards[i];
+        if (!card) return;
+        const el = card.querySelector(".value-placeholder");
+        el.textContent = formatGHS(data[key]);
+        el.classList.remove("skeleton");
+        updateTimestamp(card);
+      });
+      setPeriodLabel(payload.meta || payload);
+      applyAccountingColors();
+    };
+
+    const renderSales = (payload) => {
+      const container = document.getElementById("pl-sales");
+      const data = payload.data || {};
+      const body = container.querySelector(".pl-section-body");
+
+      const rows = [
+        { label: "Sales", amount: data.sales },
+        { label: "Returns Inwards", amount: data.returns_inwards },
+        { label: "Net Sales", amount: data.net_sales },
+      ];
+
+      body.innerHTML = rows
+        .map(row => `<div class="flex justify-between text-sm py-1 border-b border-slate-100 last:border-b-0"><span>${row.label}</span><span class="tabular font-medium">${formatGHS(row.amount)}</span></div>`)
+        .join("");
+
+      if (data.returns_inwards_count) {
+        body.innerHTML += `<div class="text-xs text-slate-400 mt-2">${data.returns_inwards_count} approved returns</div>`;
+      }
+
+      updateTimestamp(container);
+    };
+
+    const renderChartBars = (containerId, items) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      if (!items.length) {
+        container.innerHTML = "";
+        return;
+      }
+      const maxAmount = Math.max(...items.map((item) => Math.abs(item.amount)), 1);
+      container.innerHTML = items.map((item) => {
+        const amt = Number(item.amount || 0);
+        const color = amt >= 0 ? "#6366f1" : "#f87171";
+        return `
+          <div class="chart-bar" title="${item.label}">
+            <span class="chart-bar-label">${item.label}</span>
+            <div class="chart-bar-track">
+              <div class="chart-bar-fill" style="width:${Math.min(100, (Math.abs(amt) / maxAmount) * 100)}%; background:${color};"></div>
+            </div>
+            <span class="text-xs text-slate-500 tabular">${formatGHS(amt)}</span>
+          </div>
+        `;
+      }).join("");
+    };
+
+    const renderCostOfSales = (payload) => {
+      const container = document.getElementById("pl-cost_of_sales");
+      const data = payload.data || {};
+      const body = container.querySelector(".pl-section-body");
+      const openingStockDisplay = formatGHS(1000000);
+
+      const rows = [
+        { label: "Opening stock", display: openingStockDisplay },
+        { label: "Purchases", amount: data.purchases },
+        { label: "Returns outwards", amount: data.returns_outwards },
+        { label: "Carriage inwards", amount: data.carriage_inwards },
+        { label: "Goods drawn", amount: data.goods_drawn },
+        { label: "Net purchases", amount: data.net_purchases },
+        { label: "Cost goods available", amount: data.cost_goods_available },
+        { label: "Closing stock", display: "Pending" },
+        { label: "COGS", amount: data.cost_goods_sold },
+        { label: "Wages", amount: data.wages },
+        { label: "Cost of sales", amount: data.cost_of_sales },
+      ];
+
+      body.innerHTML = rows
+        .map(row => `<div class="flex justify-between text-sm py-1 border-b border-slate-100 last:border-b-0"><span>${row.label}</span><span class="tabular font-medium">${row.display !== undefined ? row.display : formatGHS(row.amount)}</span></div>`)
+        .join("");
+
+      if (Array.isArray(data.purchases_breakdown) && data.purchases_breakdown.length) {
+        body.innerHTML += `<div class="text-xs text-slate-500 mt-3">Purchases breakdown</div>`;
+        body.innerHTML += data.purchases_breakdown.map(entry => `
+          <div class="flex justify-between text-xs text-slate-600">
+            <span>${entry.label}</span>
+            <span class="tabular">${formatGHS(entry.amount)}${entry.count ? ` (${entry.count})` : ""}</span>
+          </div>
+        `).join("");
+      }
+
+      const bySrc = data.cogs_by_source || {};
+      const chartItems = Object.entries(bySrc).map(([label, amount]) => ({ label, amount }));
+      if (chartItems.length) {
+        body.innerHTML += `<div class="text-xs text-slate-500 mt-3">COGS by source</div>`;
+      }
+      renderChartBars("pl-cost-cogs", chartItems);
+
+      if (data.cogs_missing_cost_count) {
+        body.innerHTML += `<div class="text-xs text-amber-600 mt-2">Warning: ${data.cogs_missing_cost_count} outflow rows missing unit cost.</div>`;
+      }
+
+      updateTimestamp(container);
+    };
+
+    const renderIncome = (payload) => {
+      const container = document.getElementById("pl-income");
+      const data = payload.data || {};
+      const body = container.querySelector(".pl-section-body");
+
+      const rows = [
+        { label: "Discount received", amount: data.discount_received },
+        { label: "Investment income", amount: data.investment_income },
+        { label: "Other incomes", amount: data.other_incomes },
+      ];
+
+      body.innerHTML = rows
+        .map(row => `<div class="flex justify-between text-sm py-1 border-b border-slate-100 last:border-b-0"><span>${row.label}</span><span class="tabular font-medium">${formatGHS(row.amount)}</span></div>`)
+        .join("");
+
+      if (data.income_info?.count !== undefined) {
+        body.innerHTML += `<div class="text-xs text-slate-500 mt-2">Entries: ${data.income_info.count}</div>`;
+      }
+
+      updateTimestamp(container);
+    };
+
+    const renderCurrentAssets = (payload) => {
+      const container = document.getElementById("pl-current_assets");
+      const data = payload.data || {};
+      const body = container.querySelector(".pl-section-body");
+
+      body.innerHTML = `
+        <div class="flex justify-between text-sm py-1 border-b border-slate-100"><span>Prepayments Outstanding</span><span class="tabular font-medium">${formatGHS(data.prepayments_outstanding)}</span></div>
+        <div class="flex justify-between text-sm py-1 border-b border-slate-100"><span>Active prepayments</span><span class="tabular">${data.active_prepayments_count || 0}</span></div>
+        <div class="flex justify-between text-sm py-1"><span>Pending recognition</span><span class="tabular">${data.pending_recognition_count || 0}</span></div>
+        <div class="pt-2">
+          <a href="/prepayments" class="text-indigo-600 text-xs underline">View Prepayments</a>
+        </div>
+      `;
+
+      updateTimestamp(container);
+    };
+
+    const normalizeExpenses = (opex = {}) => {
+      const total =
+        Number(opex.total_expenses || 0) ||
+        Number(opex.expenses_total || 0) ||
+        Number(opex.opex_total || 0);
+      const sources = opex.sources || opex.opex_sources || {};
+      const categories =
+        opex.expense_categories ||
+        opex.opex_breakdown_all ||
+        opex.categories ||
+        [];
+      return { total, sources, categories };
+    };
+
+    const renderExpensesModal = () => {
+      if (!lastPayload) return;
+      const opex = lastPayload?.data?.opex || {};
+      const meta = lastPayload?.meta || lastPayload || {};
+      const normalized = normalizeExpenses(opex);
+
+      const periodLabel = meta.label || meta.period_label || meta.meta?.label || "--";
+      document.getElementById("expensesPeriodLabel").textContent = `Period: ${periodLabel}`;
+      document.getElementById("expTotal").textContent = formatGHS(normalized.total);
+      document.getElementById("expAccounting").textContent = formatGHS(normalized.sources.accounting || 0);
+      document.getElementById("expManager").textContent = formatGHS(normalized.sources.manager || 0);
+
+      const search = (document.getElementById("expSearch").value || "").trim().toLowerCase();
+      const sort = document.getElementById("expSort").value || "amount_desc";
+      let categories = (normalized.categories || []).slice();
+
+      const isStockMini = (name) => {
+        const normalizedName = String(name || "").trim().toLowerCase().replace(/\s+/g, " ");
+        return normalizedName === "stock (mini)" || normalizedName === "stock(mini)";
+      };
+
+      categories = categories.filter((c) => !isStockMini(c.category));
+
+      if (activeExpenseTab === "accounting") {
+        categories = categories.filter((c) => Number((c.sources || {}).accounting || 0) > 0);
+      }
+      if (activeExpenseTab === "manager") {
+        categories = categories.filter((c) => Number((c.sources || {}).manager || 0) > 0);
+      }
+
+      if (search) {
+        categories = categories.filter((c) => (c.category || "").toLowerCase().includes(search));
+      }
+
+      categories.sort((a, b) => {
+        const aName = (a.category || "").toLowerCase();
+        const bName = (b.category || "").toLowerCase();
+        const aAmt = Number(a.amount || 0);
+        const bAmt = Number(b.amount || 0);
+        if (sort === "amount_asc") return aAmt - bAmt;
+        if (sort === "name_asc") return aName.localeCompare(bName);
+        if (sort === "name_desc") return bName.localeCompare(aName);
+        return bAmt - aAmt;
+      });
+
+      const body = document.getElementById("expCategoryBody");
+      body.innerHTML = "";
+      if (!categories.length) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="4" class="px-3 py-3 text-xs text-slate-400">No expense categories found for this period.</td>`;
+        body.appendChild(tr);
+      } else {
+        categories.forEach((c, idx) => {
+          const sources = c.sources || {};
+          const tr = document.createElement("tr");
+          tr.className = idx % 2 === 0 ? "bg-white" : "bg-slate-50/60";
+          tr.innerHTML = `
+            <td class="px-3 py-2">${c.category || "Uncategorized"}</td>
+            <td class="px-3 py-2 text-right font-semibold tabular">${formatGHS(c.amount || 0)}</td>
+            <td class="px-3 py-2 text-right hidden sm:table-cell tabular">${formatGHS(sources.accounting || 0)}</td>
+            <td class="px-3 py-2 text-right hidden sm:table-cell tabular">${formatGHS(sources.manager || 0)}</td>
+          `;
+          body.appendChild(tr);
+        });
+      }
+      document.getElementById("expCount").textContent = `${categories.length} categories`;
+    };
+
+    const sectionRenderers = {
+      summary: renderSummary,
+      sales: renderSales,
+      cost_of_sales: renderCostOfSales,
+      income: renderIncome,
+      current_assets: renderCurrentAssets,
+    };
+
+    const setLoadingState = (key) => {
+      if (key === "summary") return;
+      const container = document.getElementById(`pl-${key}`);
+      if (!container) return;
+      const body = container.querySelector(".pl-section-body");
+      if (!body) return;
+      body.innerHTML = `
+        <div class="skeleton h-6 w-6/12"></div>
+        <div class="skeleton h-4 w-4/12"></div>
+      `;
+    };
+
+    const showSectionError = (key, message) => {
+      const container = document.getElementById(`pl-${key}`);
+      if (!container) return;
+      const body = container.querySelector(".pl-section-body");
+      if (!body) return;
+
+      body.innerHTML = `
+        <div class="text-sm text-red-600">
+          ${message}
+          <button class="text-indigo-600 ml-2 underline" onclick="window.retrySection('${key}')">Retry</button>
+        </div>
+      `;
+      updateTimestamp(container);
+    };
+
+    let lastLoadParams = "";
+
+    const sectionOrder = ["summary", "sales", "cost_of_sales", "income", "current_assets"];
+
+    const loadAllSections = async () => {
+      const params = buildParams();
+      lastLoadParams = params;
+      updateExportLink(params);
+      sectionOrder.forEach(setLoadingState);
+
+      const cacheKey = `all|${params}`;
+      const now = Date.now();
+      if (cache[cacheKey] && now - cache[cacheKey].ts < 60000) {
+        const payload = cache[cacheKey].data;
+        lastPayload = payload;
+        renderSummary({ data: payload.data.summary, meta: payload });
+        renderSales({ data: payload.data.sales });
+        renderCostOfSales({ data: payload.data.cost_of_sales });
+        renderIncome({ data: payload.data.income });
+        renderCurrentAssets({ data: payload.data.current_assets });
+        if (!document.getElementById("expensesModal").classList.contains("hidden")) {
+          renderExpensesModal();
+        }
+        updateLastUpdated();
+        return;
+      }
+
+      if (activeController) activeController.abort();
+      activeController = new AbortController();
+
+      try {
+        const res = await fetch(`${window.PL_SHELL.api.all}?${params}`, {
+          headers: { "Accept": "application/json" },
+          signal: activeController.signal,
+        });
+        const payload = await res.json();
+        if (!payload.ok) throw new Error("API returned error");
+        cache[cacheKey] = { ts: now, data: payload };
+        debugLog("P&L payload", payload);
+        lastPayload = payload;
+        renderSummary({ data: payload.data.summary, meta: payload });
+        renderSales({ data: payload.data.sales });
+        renderCostOfSales({ data: payload.data.cost_of_sales });
+        renderIncome({ data: payload.data.income });
+        renderCurrentAssets({ data: payload.data.current_assets });
+        if (!document.getElementById("expensesModal").classList.contains("hidden")) {
+          renderExpensesModal();
+        }
+        updateLastUpdated();
+      } catch (err) {
+        if (err.name === "AbortError") return;
+        sectionOrder.forEach((key) => showSectionError(key, "Failed to load section."));
+      }
+    };
+
+    const modal = document.getElementById("expensesModal");
+    const btnView = document.getElementById("btnViewExpenses");
+    const btnClose = document.getElementById("expensesClose");
+    const backdrop = modal?.querySelector("[data-expenses-backdrop]");
+
+    function openExpensesModal() {
+      if (!modal) return;
+      document.body.style.overflow = "hidden";
+      modal.classList.remove("hidden");
+      modal.classList.add("modal-open");
+      renderExpensesModal();
+    }
+    function closeExpensesModal() {
+      if (!modal) return;
+      document.body.style.overflow = "";
+      modal.classList.add("hidden");
+      modal.classList.remove("modal-open");
+    }
+
+    btnView?.addEventListener("click", openExpensesModal);
+    btnClose?.addEventListener("click", closeExpensesModal);
+    backdrop?.addEventListener("click", closeExpensesModal);
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeExpensesModal();
+    });
+    document.getElementById("expSearch")?.addEventListener("input", renderExpensesModal);
+    document.getElementById("expSort")?.addEventListener("change", renderExpensesModal);
+    document.querySelectorAll("[data-exp-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        activeExpenseTab = btn.getAttribute("data-exp-tab");
+        document.querySelectorAll(".exp-tab").forEach((el) => {
+          el.classList.remove("exp-tab-active");
+        });
+        btn.classList.add("exp-tab-active");
+        renderExpensesModal();
+      });
+    });
+
+    window.retrySection = () => loadAllSections();
+
+    document.getElementById("pl-apply").addEventListener("click", loadAllSections);
+
+    document.addEventListener("DOMContentLoaded", () => {
+      setRangeControls(document.getElementById("pl-range").value);
+      loadAllSections();
+    });
+  </script>
+</body>
+</html>

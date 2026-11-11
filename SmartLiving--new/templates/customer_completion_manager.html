@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Customer Completion Rate</title>
+  <link rel="icon" href="https://res.cloudinary.com/dljpgzbto/image/upload/v1743993646/company-logo_dksb23.jpg" type="image/png" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <style>
+    :root{
+      --bg:#f6f7fb; --card:#fff; --ink:#0f172a; --muted:#64748b; --border:rgba(15,23,42,.10);
+      --brand:#0b63ce; --brand2:#0ea5e9; --ok:#16a34a; --warn:#f59e0b; --bad:#dc2626;
+    }
+    body{margin:0;background:radial-gradient(circle at 10% 0%, rgba(14,165,233,.10), transparent 45%),var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;}
+    .shell{max-width:1360px;margin:0 auto;padding:18px;}
+    .topbar,.cardx{background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:0 18px 45px rgba(2,6,23,.08);}
+    .topbar{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+    .btn-soft,.btn-brand{border-radius:999px;padding:9px 14px;font-size:.88rem;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+    .btn-soft{border:1px solid rgba(15,23,42,.14);background:#fff;color:var(--ink)}
+    .btn-brand{border:1px solid rgba(11,99,206,.35);background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff}
+    .grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    @media(max-width:900px){.grid4{grid-template-columns:repeat(2,minmax(0,1fr));}}
+    @media(max-width:600px){.grid4{grid-template-columns:1fr;}}
+    .stat{padding:14px}
+    .stat .label{color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+    .stat .val{font-size:1.7rem;font-weight:800}
+    .filters{display:grid;grid-template-columns:minmax(0,1.4fr) 220px 220px;gap:10px}
+    @media(max-width:900px){.filters{grid-template-columns:1fr;}}
+    .tabbar{display:flex;gap:8px;flex-wrap:wrap}
+    .tabchip{border:1px solid rgba(15,23,42,.12);background:#fff;color:#334155;border-radius:999px;padding:7px 12px;font-size:.84rem;text-decoration:none}
+    .tabchip.active{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
+    .tablewrap{overflow:auto}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:12px 14px;border-bottom:1px solid rgba(15,23,42,.08);vertical-align:middle}
+    th{font-size:.73rem;text-transform:uppercase;letter-spacing:.08em;color:#64748b;background:#f8fafc}
+    .progressx{height:8px;background:#e2e8f0;border-radius:999px;overflow:hidden}
+    .progressx > span{display:block;height:100%;background:linear-gradient(135deg,var(--brand),var(--brand2))}
+    .badge-soft{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(15,23,42,.1);border-radius:999px;padding:4px 10px;font-size:.76rem;font-weight:700}
+    .b-stock{background:#fffbeb;color:#b45309}.b-delivery{background:#eff6ff;color:#1d4ed8}.b-done{background:#ecfdf5;color:#166534}.b-none{background:#f8fafc;color:#475569}
+    .muted{color:var(--muted)}
+    .pager{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar mb-3">
+      <div>
+        <h1 class="m-0" style="font-size:1.2rem;font-weight:900;">Customer Completion Rate</h1>
+        <p class="m-0 muted" style="font-size:.88rem;">Manager-scoped view of customer completion, payment progress, and delivery readiness.</p>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <a class="btn-soft" href="{{ url_for(customers_route or 'customers.customers_list') }}"><i class="bi bi-arrow-left"></i> Customers List</a>
+        <button class="btn-brand" type="button" id="refreshBtn"><i class="bi bi-arrow-repeat"></i> Refresh</button>
+      </div>
+    </div>
+
+    <div class="grid4 mb-3">
+      <div class="cardx stat"><div class="label">All Customers</div><div class="val" id="kAll">0</div></div>
+      <div class="cardx stat"><div class="label">90%+</div><div class="val" id="k90">0</div></div>
+      <div class="cardx stat"><div class="label">Awaiting Stock</div><div class="val" id="kStock">0</div></div>
+      <div class="cardx stat"><div class="label">Awaiting Delivery</div><div class="val" id="kDelivery">0</div></div>
+    </div>
+
+    <div class="cardx p-3 mb-3">
+      <div class="tabbar mb-3" id="tabBar">
+        <a href="#" class="tabchip active" data-tab="all">All</a>
+        <a href="#" class="tabchip" data-tab="70plus">70%+</a>
+        <a href="#" class="tabchip" data-tab="80plus">80%+</a>
+        <a href="#" class="tabchip" data-tab="90plus">90%+</a>
+        <a href="#" class="tabchip" data-tab="completed">Completed</a>
+        <a href="#" class="tabchip" data-tab="awaiting-stock">Awaiting Stock</a>
+        <a href="#" class="tabchip" data-tab="awaiting-delivery">Awaiting Delivery</a>
+      </div>
+      <div class="filters">
+        <input id="searchInput" class="form-control" placeholder="Search customer, phone, product card..." />
+        <select id="branchSelect" class="form-select">
+          <option value="">All Branches</option>
+          {% for branch in branches %}<option value="{{ branch }}">{{ branch }}</option>{% endfor %}
+        </select>
+        <select id="agentSelect" class="form-select">
+          <option value="all">All Agents</option>
+          {% for agent in agents %}<option value="{{ agent._id }}">{{ agent.name }}{% if agent.branch %} ({{ agent.branch }}){% endif %}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="cardx p-0">
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Branch / Agent</th>
+              <th>Product Card</th>
+              <th>Completion</th>
+              <th>Payment Progress</th>
+              <th>Est. Finish</th>
+              <th>Delivery Status</th>
+              <th class="text-end">Profile</th>
+            </tr>
+          </thead>
+          <tbody id="rowsBody">
+            <tr><td colspan="8" class="text-center muted py-4">Loading completion data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="p-3 pager">
+        <div class="muted" id="pagerMeta">Showing 0-0 of 0 records</div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn-soft" id="prevBtn">Previous</button>
+          <button type="button" class="btn-soft" id="nextBtn">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const state = { page: 1, perPage: 20, tab: 'all' };
+    const dataUrl = "{{ url_for(completion_data_route or 'customers.manager_completion_rate_data') }}";
+    const els = {
+      search: document.getElementById('searchInput'),
+      branch: document.getElementById('branchSelect'),
+      agent: document.getElementById('agentSelect'),
+      body: document.getElementById('rowsBody'),
+      meta: document.getElementById('pagerMeta'),
+      prev: document.getElementById('prevBtn'),
+      next: document.getElementById('nextBtn'),
+      refresh: document.getElementById('refreshBtn'),
+      tabBar: document.getElementById('tabBar'),
+      kAll: document.getElementById('kAll'),
+      k90: document.getElementById('k90'),
+      kStock: document.getElementById('kStock'),
+      kDelivery: document.getElementById('kDelivery'),
+    };
+
+    function badge(status){
+      const labelMap = {
+        'awaiting-stock':'Awaiting Stock',
+        'awaiting-delivery':'Awaiting Delivery',
+        'completed':'Completed',
+        'delivered':'Delivered',
+        'not-ready':'Not Ready'
+      };
+      const cls = status === 'awaiting-stock' ? 'b-stock'
+        : (status === 'awaiting-delivery' || status === 'completed') ? 'b-delivery'
+        : status === 'delivered' ? 'b-done' : 'b-none';
+      return `<span class="badge-soft ${cls}">${labelMap[status] || 'Not Ready'}</span>`;
+    }
+
+    function rowHtml(row){
+      return `
+        <tr>
+          <td>
+            <div style="font-weight:700;color:#0f172a;">${row.customerName || 'Customer'}</div>
+            <div class="muted" style="font-size:.84rem;">${row.customerPhone || '-'}</div>
+          </td>
+          <td>
+            <div>${row.branch || '-'}</div>
+            <div class="muted" style="font-size:.84rem;">${row.agentName || 'Unassigned'}</div>
+          </td>
+          <td>
+            <div>${row.productCard || '-'}</div>
+            <div class="muted" style="font-size:.84rem;">Enrolled: ${row.enrollmentDate || '-'}</div>
+          </td>
+          <td style="min-width:180px;">
+            <div class="d-flex align-items-center gap-2">
+              <div class="progressx flex-grow-1"><span style="width:${row.completion || 0}%"></span></div>
+              <strong>${row.completion || 0}%</strong>
+            </div>
+          </td>
+          <td>
+            <div>GHS ${(row.paidAmount || 0).toLocaleString()} / GHS ${(row.totalAmount || 0).toLocaleString()}</div>
+            <div class="muted" style="font-size:.84rem;">Remaining: GHS ${(row.remainingAmount || 0).toLocaleString()}</div>
+          </td>
+          <td>${row.estimatedFinish || '-'}</td>
+          <td>${badge(row.deliveryStatus || 'not-ready')}</td>
+          <td class="text-end"><a class="btn-soft" href="${row.profileUrl}" target="_blank" rel="noreferrer"><i class="bi bi-eye"></i> View</a></td>
+        </tr>`;
+    }
+
+    async function loadData(){
+      els.body.innerHTML = `<tr><td colspan="8" class="text-center muted py-4">Loading completion data...</td></tr>`;
+      const params = new URLSearchParams({
+        page: String(state.page),
+        per_page: String(state.perPage),
+        tab: state.tab,
+        search: els.search.value.trim(),
+        branch: els.branch.value,
+        agent_id: els.agent.value
+      });
+      const res = await fetch(`${dataUrl}?${params.toString()}`, { headers: { Accept: 'application/json' }});
+      const payload = await res.json();
+      if(!res.ok || !payload.ok){
+        els.body.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4">${payload.error || 'Unable to load data.'}</td></tr>`;
+        return;
+      }
+      const rows = Array.isArray(payload.customers) ? payload.customers : [];
+      const counts = payload.counts || {};
+      const pg = payload.pagination || { page:1, perPage:20, totalItems:0, totalPages:1 };
+      els.kAll.textContent = counts.all || 0;
+      els.k90.textContent = counts['90plus'] || 0;
+      els.kStock.textContent = counts['awaiting-stock'] || 0;
+      els.kDelivery.textContent = counts['awaiting-delivery'] || 0;
+      if(!rows.length){
+        els.body.innerHTML = `<tr><td colspan="8" class="text-center muted py-4">No customer completion records found.</td></tr>`;
+      }else{
+        els.body.innerHTML = rows.map(rowHtml).join('');
+      }
+      const start = pg.totalItems ? ((pg.page - 1) * pg.perPage) + 1 : 0;
+      const end = Math.min(pg.totalItems || 0, pg.page * pg.perPage);
+      els.meta.textContent = `Showing ${start}-${end} of ${pg.totalItems || 0} records`;
+      els.prev.disabled = pg.page <= 1;
+      els.next.disabled = pg.page >= pg.totalPages;
+      state.page = pg.page || 1;
+    }
+
+    let searchTimer = null;
+    els.search.addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => { state.page = 1; loadData(); }, 250);
+    });
+    els.branch.addEventListener('change', () => { state.page = 1; loadData(); });
+    els.agent.addEventListener('change', () => { state.page = 1; loadData(); });
+    els.prev.addEventListener('click', () => { if(state.page > 1){ state.page -= 1; loadData(); } });
+    els.next.addEventListener('click', () => { state.page += 1; loadData(); });
+    els.refresh.addEventListener('click', loadData);
+    els.tabBar.addEventListener('click', (event) => {
+      const link = event.target.closest('[data-tab]');
+      if(!link) return;
+      event.preventDefault();
+      state.tab = link.dataset.tab || 'all';
+      state.page = 1;
+      [...els.tabBar.querySelectorAll('.tabchip')].forEach((node) => node.classList.remove('active'));
+      link.classList.add('active');
+      loadData();
+    });
+
+    loadData();
+  </script>
+</body>
+</html>

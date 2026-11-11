@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Distribute Target</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>main{margin-left:260px;padding:24px} input[type=number]{min-width:110px} @media(max-width:992px){main{margin-left:0}}</style></head>
+<body>{% include 'manager_sidebar.html' %}<main>
+<a href="{{ url_for('manager_target.manager_targets') }}">Back to My Targets</a>
+<h3 class="mt-3">Distribute {{ target.period }} target</h3>
+<p>Enter exact quotas for each agent. Leave zero for agents you are not assigning. Each column must total the assigned target.</p>
+{% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+{% if agents %}<form method="post">
+{% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+<div class="table-responsive"><table class="table align-middle"><thead><tr><th>Agent</th><th>Product units</th><th>Cash (GHS)</th><th>New customers</th><th>Product Cash (GHS)</th><th>SUSU Cash (GHS)</th></tr></thead><tbody>
+{% for a in agents %}{% set alloc = allocations.get(a._id|string, {}) %}
+<tr><td>{{ a.name or 'Agent' }}<input type="hidden" name="agent_id[]" value="{{ a._id }}"></td>
+{% for field in ['product', 'cash', 'customer', 'product_cash', 'susu_cash'] %}<td><input aria-label="{{ a.name or 'Agent' }} {{ field }} quota" class="form-control" type="number" name="{{ field }}_quota[]" min="0" max="{{ target.get(field + '_target', 0) }}" step="{{ '0.01' if 'cash' in field else '1' }}" value="{{ alloc.get(field + '_quota', 0) }}" required></td>{% endfor %}</tr>{% endfor %}
+</tbody><tfoot><tr><th>Assigned target</th><td>{{ target.product_target }}</td><td>{{ '%.2f'|format(target.cash_target) }}</td><td>{{ target.customer_target }}</td><td>{{ '%.2f'|format(target.product_cash_target or 0) }}</td><td>{{ '%.2f'|format(target.susu_cash_target or 0) }}</td></tr>
+<tr><th>Remaining to allocate</th>{% for field in ['product', 'cash', 'customer', 'product_cash', 'susu_cash'] %}<td id="remaining-{{ field }}" data-total="{{ target.get(field + '_target', 0) }}"></td>{% endfor %}</tr></tfoot></table></div>
+<p id="allocation-status" aria-live="polite"></p><button class="btn btn-primary" type="submit">Save allocations</button>
+</form>{% else %}<div class="alert alert-info">There are no agents on your team. Add agents before distributing this target.</div>{% endif %}
+</main><script>
+const fields = ['product', 'cash', 'customer', 'product_cash', 'susu_cash'];
+function updateTotals() {
+  let complete = true;
+  fields.forEach(field => {
+    const cell = document.getElementById('remaining-' + field);
+    if (!cell) return;
+    const scale = field.includes('cash') ? 100 : 1;
+    const sum = [...document.getElementsByName(field + '_quota[]')].reduce((n, input) => n + Math.round(Number(input.value) * scale), 0);
+    const remaining = Math.round(Number(cell.dataset.total) * scale) - sum;
+    cell.textContent = (remaining / scale).toFixed(field.includes('cash') ? 2 : 0);
+    cell.classList.toggle('text-danger', remaining !== 0);
+    complete = complete && remaining === 0;
+  });
+  const status = document.getElementById('allocation-status');
+  if (status) status.textContent = complete ? 'All target amounts allocated. Ready to save.' : 'Adjust quotas until all remaining amounts are zero.';
+}
+document.querySelectorAll('input[type=number]').forEach(input => input.addEventListener('input', updateTotals));
+updateTotals();
+</script>{% include 'app_footer.html' %}</body></html>

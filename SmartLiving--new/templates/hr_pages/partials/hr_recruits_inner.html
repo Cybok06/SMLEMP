@@ -1,0 +1,226 @@
+<style>
+  .recruit-card{ border:1px solid #e5e7eb; border-radius:16px; background:#fff; box-shadow:0 12px 30px rgba(15,23,42,.06); overflow:hidden; }
+  .recruit-cv{ width:100%; height:190px; object-fit:cover; background:#f8fafc; border-bottom:1px solid #e5e7eb; cursor:pointer; }
+  .recruit-empty{ border:1px dashed #cbd5e1; border-radius:16px; background:#f8fafc; }
+  .status-New{ background:#dbeafe; color:#1d4ed8; }
+  .status-Reviewed{ background:#fef3c7; color:#92400e; }
+  .status-Shortlisted{ background:#dcfce7; color:#166534; }
+  .status-Rejected{ background:#fee2e2; color:#991b1b; }
+  .status-Hired{ background:#ede9fe; color:#5b21b6; }
+</style>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <div>
+    <h1 class="h5 mb-1">Recruits</h1>
+    <p class="text-muted small mb-0">Manage public CV submissions and applicant review status.</p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <button class="btn btn-sm btn-outline-secondary" type="button" id="copyRecruitLink">
+      <i class="bi bi-link-45deg"></i> Copy public link
+    </button>
+    <a class="btn btn-sm btn-primary" href="{{ public_recruit_url }}" target="_blank" rel="noopener">
+      <i class="bi bi-box-arrow-up-right"></i> Open public page
+    </a>
+  </div>
+</div>
+
+<form id="recruitFilters" class="card border-0 shadow-sm mb-3">
+  <div class="card-body">
+    <div class="row g-2 align-items-end">
+      <div class="col-12 col-lg-4">
+        <label class="form-label small mb-1">Search</label>
+        <input class="form-control form-control-sm" name="search" placeholder="Name, phone, location, role">
+      </div>
+      <div class="col-6 col-lg-2">
+        <label class="form-label small mb-1">Status</label>
+        <select class="form-select form-select-sm" name="status">
+          <option value="">All</option>
+          {% for status in recruit_statuses %}
+          <option value="{{ status }}">{{ status }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-lg-2">
+        <label class="form-label small mb-1">From</label>
+        <input class="form-control form-control-sm" name="date_from" type="date">
+      </div>
+      <div class="col-6 col-lg-2">
+        <label class="form-label small mb-1">To</label>
+        <input class="form-control form-control-sm" name="date_to" type="date">
+      </div>
+      <div class="col-6 col-lg-2 d-flex gap-2">
+        <button class="btn btn-sm btn-primary flex-fill" type="submit">Apply</button>
+        <button class="btn btn-sm btn-outline-secondary" type="button" id="clearRecruitFilters">Clear</button>
+      </div>
+    </div>
+  </div>
+</form>
+
+<div id="recruitsLoading" class="card border-0 shadow-sm">
+  <div class="card-body text-center text-muted py-5">
+    <span class="spinner-border spinner-border-sm me-2"></span> Loading recruits...
+  </div>
+</div>
+
+<div id="recruitsGrid" class="row g-3"></div>
+
+<div id="recruitsEmpty" class="recruit-empty text-center text-muted p-5 d-none">
+  <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+  No recruit submissions found.
+</div>
+
+<script>
+(function(){
+  const publicUrl = {{ public_recruit_url|tojson }};
+  const statuses = {{ recruit_statuses|tojson }};
+  const canDelete = {{ can_delete_recruits|tojson }};
+  const form = document.getElementById('recruitFilters');
+  const grid = document.getElementById('recruitsGrid');
+  const empty = document.getElementById('recruitsEmpty');
+  const loading = document.getElementById('recruitsLoading');
+  const clearBtn = document.getElementById('clearRecruitFilters');
+  const copyLinkBtn = document.getElementById('copyRecruitLink');
+
+  function esc(value){
+    return String(value || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+  function fmtDate(value){
+    if (!value) return '--';
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? value : d.toLocaleString();
+  }
+  async function copyText(text, message){
+    try{
+      await navigator.clipboard.writeText(text || '');
+      window.showToast && window.showToast('success', message || 'Copied');
+    }catch(err){
+      window.showToast && window.showToast('danger', 'Copy failed.');
+    }
+  }
+  function detailsText(r){
+    return [
+      `Name: ${r.full_name || ''}`,
+      `Phone: ${r.phone || ''}`,
+      `Email: ${r.email || ''}`,
+      `Location: ${r.location || ''}`,
+      `Position: ${r.position_applied || ''}`,
+      `Status: ${r.status || ''}`,
+      `CV: ${r.cv_image_url || ''}`,
+      `Note: ${r.note || ''}`,
+    ].join('\n');
+  }
+  function statusOptions(current){
+    return statuses.map(s => `<option value="${esc(s)}" ${s === current ? 'selected' : ''}>${esc(s)}</option>`).join('');
+  }
+  function render(rows){
+    grid.innerHTML = '';
+    empty.classList.toggle('d-none', rows.length !== 0);
+    rows.forEach(r => {
+      const col = document.createElement('div');
+      col.className = 'col-12 col-md-6 col-xl-4';
+      col.innerHTML = `
+        <div class="recruit-card h-100">
+          ${r.cv_image_url ? `<img src="${esc(r.cv_image_url)}" class="recruit-cv" alt="CV for ${esc(r.full_name)}" data-action="open-cv">` : `<div class="recruit-cv d-flex align-items-center justify-content-center text-muted"><i class="bi bi-file-image fs-2"></i></div>`}
+          <div class="p-3">
+            <div class="d-flex justify-content-between gap-2 mb-2">
+              <div class="min-w-0">
+                <div class="fw-semibold text-truncate">${esc(r.full_name)}</div>
+                <div class="small text-muted">${esc(r.position_applied || '--')}</div>
+              </div>
+              <span class="badge rounded-pill status-${esc(r.status)}">${esc(r.status || 'New')}</span>
+            </div>
+            <div class="small text-muted mb-2">
+              <div><i class="bi bi-telephone me-1"></i>${esc(r.phone || '--')}</div>
+              <div><i class="bi bi-geo-alt me-1"></i>${esc(r.location || '--')}</div>
+              <div><i class="bi bi-calendar-event me-1"></i>${esc(fmtDate(r.submitted_at))}</div>
+            </div>
+            ${r.note ? `<div class="small border rounded p-2 bg-light mb-2">${esc(r.note)}</div>` : ''}
+            <label class="form-label small mb-1">Status</label>
+            <select class="form-select form-select-sm mb-2" data-action="status">
+              ${statusOptions(r.status || 'New')}
+            </select>
+            <div class="d-flex flex-wrap gap-2">
+              <button class="btn btn-sm btn-outline-primary" data-action="open-cv" type="button"><i class="bi bi-eye"></i> CV</button>
+              <button class="btn btn-sm btn-outline-secondary" data-action="copy-cv" type="button"><i class="bi bi-link"></i> Copy CV</button>
+              <button class="btn btn-sm btn-outline-secondary" data-action="copy-details" type="button"><i class="bi bi-clipboard"></i> Copy details</button>
+              ${canDelete ? `<button class="btn btn-sm btn-outline-danger ms-auto" data-action="delete" type="button"><i class="bi bi-trash"></i></button>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+      col.querySelectorAll('[data-action="open-cv"]').forEach(el => el.addEventListener('click', () => {
+        if (r.cv_image_url) window.open(r.cv_image_url, '_blank', 'noopener');
+      }));
+      col.querySelector('[data-action="copy-cv"]')?.addEventListener('click', () => copyText(r.cv_image_url, 'CV link copied.'));
+      col.querySelector('[data-action="copy-details"]')?.addEventListener('click', () => copyText(detailsText(r), 'Applicant details copied.'));
+      col.querySelector('[data-action="status"]')?.addEventListener('change', async (event) => {
+        await updateStatus(r.id, event.target.value);
+      });
+      col.querySelector('[data-action="delete"]')?.addEventListener('click', async () => {
+        if (!confirm('Delete this recruit submission? This cannot be undone.')) return;
+        await deleteRecruit(r.id);
+      });
+      grid.appendChild(col);
+    });
+  }
+  async function loadRecruits(){
+    loading.classList.remove('d-none');
+    grid.innerHTML = '';
+    empty.classList.add('d-none');
+    const params = new URLSearchParams(new FormData(form));
+    try{
+      const response = await fetch(`{{ url_for('hr.recruits_data') }}?${params.toString()}`, { headers: { 'Accept':'application/json' }});
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.message || 'Unable to load recruits.');
+      render(data.recruits || []);
+      window.refreshHrRecruitBadge && window.refreshHrRecruitBadge();
+    }catch(err){
+      window.showToast && window.showToast('danger', err.message || 'Unable to load recruits.');
+      render([]);
+    }finally{
+      loading.classList.add('d-none');
+    }
+  }
+  async function updateStatus(id, status){
+    try{
+      const response = await fetch(`{{ url_for('hr.update_recruit_status', recruit_id='RECRUIT_ID') }}`.replace('RECRUIT_ID', encodeURIComponent(id)), {
+        method: 'POST',
+        headers: {'Content-Type':'application/json', 'Accept':'application/json'},
+        body: JSON.stringify({status})
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.message || 'Unable to update status.');
+      window.showToast && window.showToast('success', 'Recruit status updated.');
+      await loadRecruits();
+    }catch(err){
+      window.showToast && window.showToast('danger', err.message || 'Unable to update status.');
+      await loadRecruits();
+    }
+  }
+  async function deleteRecruit(id){
+    try{
+      const response = await fetch(`{{ url_for('hr.delete_recruit', recruit_id='RECRUIT_ID') }}`.replace('RECRUIT_ID', encodeURIComponent(id)), {
+        method: 'DELETE',
+        headers: {'Accept':'application/json'}
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.message || 'Unable to delete recruit.');
+      window.showToast && window.showToast('success', 'Recruit deleted.');
+      await loadRecruits();
+    }catch(err){
+      window.showToast && window.showToast('danger', err.message || 'Unable to delete recruit.');
+    }
+  }
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    loadRecruits();
+  });
+  clearBtn.addEventListener('click', () => {
+    form.reset();
+    loadRecruits();
+  });
+  copyLinkBtn.addEventListener('click', () => copyText(publicUrl, 'Public recruit link copied.'));
+  loadRecruits();
+})();
+</script>

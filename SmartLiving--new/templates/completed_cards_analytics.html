@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Completed Cards Analytics</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root{
+      --sl-navy:#0b2c4a;
+      --sl-gold:#f4c430;
+      --sl-ink:#0f172a;
+      --sl-muted:#64748b;
+      --sl-border:#e6ebf2;
+      --sl-soft:#f8fafc;
+      --sl-shadow: 0 10px 24px rgba(15,23,42,0.08);
+    }
+    .content-wrap{ max-width: 1200px; margin: 0 auto; }
+    .hero-head{
+      background: linear-gradient(135deg, rgba(244,196,48,0.12), rgba(11,44,74,0.08));
+      border: 1px solid var(--sl-border);
+      border-radius: 18px;
+      padding: 28px 18px;
+      box-shadow: var(--sl-shadow);
+    }
+    .hero-icon{
+      width: 56px; height: 56px; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, var(--sl-navy), #0f3a66); color: #fff; font-size: 1.5rem;
+      box-shadow: 0 8px 18px rgba(11,44,74,0.35); margin-bottom: 10px;
+    }
+    .summary-card{
+      border: 1px solid var(--sl-border);
+      border-radius: 16px;
+      box-shadow: 0 6px 16px rgba(15,23,42,0.05);
+      background: #fff;
+      height: 100%;
+    }
+    .summary-card h6{
+      font-size: .72rem;
+      letter-spacing: .10em;
+      text-transform: uppercase;
+      color: var(--sl-muted);
+      margin-bottom: 6px;
+      font-weight: 800;
+    }
+    .summary-card .value{ font-size: 1.3rem; font-weight: 800; color: var(--sl-ink); }
+    .filter-card{ border: 1px solid var(--sl-border); border-radius: 16px; box-shadow: 0 8px 18px rgba(15,23,42,0.06); background: #fff; }
+    .chart-card{ border: 1px solid var(--sl-border); border-radius: 16px; box-shadow: 0 8px 18px rgba(15,23,42,0.06); background: #fff; }
+    .chart-box{ height: 260px; }
+    .chart-box.tall{ height: 320px; }
+    .chip-row .btn{ border-radius: 999px; font-size: .78rem; font-weight: 700; }
+  </style>
+</head>
+<body>
+  {% if identity.role == 'manager' %}
+    {% include 'manager_sidebar.html' %}
+  {% elif identity.role == 'executive' %}
+    {% include 'executive_sidebar.html' %}
+  {% elif identity.role == 'admin' %}
+    {% include 'admin_sidebar.html' %}
+  {% else %}
+    {% include 'side_bar.html' %}
+  {% endif %}
+
+  <main class="page-wrap">
+    <div class="content-wrap">
+      <section class="hero-head text-center mb-4">
+        <div class="hero-icon"><i class="bi bi-bar-chart-line"></i></div>
+        <h2 class="fw-bold mb-1">Completed Cards Analytics</h2>
+        <p class="text-muted mb-0">Trends, rankings, and delivery insights for completed cards.</p>
+      </section>
+
+      <div class="filter-card p-3 p-md-4 mb-3">
+        <form class="row g-2 align-items-end" method="get">
+          <div class="col-12 col-md-3">
+            <label class="form-label small text-muted">Start date</label>
+            <input type="date" name="start" class="form-control" value="{{ start }}">
+          </div>
+          <div class="col-12 col-md-3">
+            <label class="form-label small text-muted">End date</label>
+            <input type="date" name="end" class="form-control" value="{{ end }}">
+          </div>
+
+          {% if identity.role in ['executive','admin'] %}
+          <div class="col-12 col-md-3">
+            <label class="form-label small text-muted">Manager</label>
+            <select class="form-select" name="manager_id">
+              <option value="">All managers</option>
+              {% for m in managers %}
+                <option value="{{ m._id }}" {% if selected_manager == (m._id|string) %}selected{% endif %}>{{ m.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+
+          {% if identity.role in ['manager','executive','admin'] %}
+          <div class="col-12 col-md-3">
+            <label class="form-label small text-muted">Branch</label>
+            <select class="form-select" name="branch">
+              <option value="">All branches</option>
+              {% for b in branches %}
+                <option value="{{ b }}" {% if selected_branch == b %}selected{% endif %}>{{ b }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12 col-md-3">
+            <label class="form-label small text-muted">Agent</label>
+            <select class="form-select" name="agent_id">
+              <option value="">All agents</option>
+              {% for a in agents %}
+                <option value="{{ a._id }}" {% if selected_agent == (a._id|string) %}selected{% endif %}>{{ a.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+
+          <div class="col-12 col-md-3">
+            <label class="form-label small text-muted">Delivery status</label>
+            <select class="form-select" name="delivery_status">
+              <option value="" {% if not selected_delivery_status %}selected{% endif %}>All</option>
+              <option value="not_delivered" {% if selected_delivery_status == 'pending' or selected_delivery_status == 'not_delivered' %}selected{% endif %}>Not delivered</option>
+              <option value="delivered" {% if selected_delivery_status == 'delivered' %}selected{% endif %}>Delivered</option>
+              <option value="delivering" {% if selected_delivery_status == 'delivering' %}selected{% endif %}>Delivering</option>
+              <option value="packaging" {% if selected_delivery_status == 'packaging' %}selected{% endif %}>Packaging</option>
+              <option value="cancelled" {% if selected_delivery_status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+              <option value="unknown" {% if selected_delivery_status == 'unknown' %}selected{% endif %}>Unknown</option>
+            </select>
+          </div>
+
+          <div class="col-12 col-md-2">
+            <button class="btn btn-primary w-100" type="submit">
+              <i class="bi bi-funnel"></i> Apply
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="d-flex flex-wrap gap-2 chip-row mb-4">
+        <a class="btn btn-outline-secondary" href="?start={{ quick_ranges.today[0] }}&end={{ quick_ranges.today[1] }}">Today</a>
+        <a class="btn btn-outline-secondary" href="?start={{ quick_ranges.this_week[0] }}&end={{ quick_ranges.this_week[1] }}">This Week</a>
+        <a class="btn btn-outline-secondary" href="?start={{ quick_ranges.this_month[0] }}&end={{ quick_ranges.this_month[1] }}">This Month</a>
+        <a class="btn btn-outline-secondary" href="?start={{ quick_ranges.last_30[0] }}&end={{ quick_ranges.last_30[1] }}">Last 30 days</a>
+        <a class="btn btn-outline-primary ms-auto" href="{{ url_for('completed_cards.completed_cards_page') }}?start={{ start }}&end={{ end }}{% if selected_manager %}&manager_id={{ selected_manager }}{% endif %}{% if selected_branch %}&branch={{ selected_branch }}{% endif %}{% if selected_agent %}&agent_id={{ selected_agent }}{% endif %}{% if selected_delivery_status %}&delivery_status={{ selected_delivery_status }}{% endif %}">
+          <i class="bi bi-list-check"></i> View List
+        </a>
+        <a class="btn btn-outline-success" href="{{ url_for('completed_cards.completed_cards_export_csv') }}?start={{ start }}&end={{ end }}{% if selected_manager %}&manager_id={{ selected_manager }}{% endif %}{% if selected_branch %}&branch={{ selected_branch }}{% endif %}{% if selected_agent %}&agent_id={{ selected_agent }}{% endif %}{% if selected_delivery_status %}&delivery_status={{ selected_delivery_status }}{% endif %}">
+          <i class="bi bi-download"></i> Export CSV
+        </a>
+      </div>
+
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="summary-card p-3">
+            <h6>Total Completed</h6>
+            <div class="value">{{ totals.total_completed or 0 }}</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="summary-card p-3">
+            <h6>Delivered %</h6>
+            <div class="value">{{ totals.delivered_pct or 0 }}%</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="summary-card p-3">
+            <h6>Avg Value</h6>
+            <div class="value">{{ totals.avg_value or 0 }}</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="summary-card p-3">
+            <h6>Total Profit</h6>
+            <div class="value">{{ totals.total_profit or 0 }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-12">
+          <div class="chart-card p-3">
+            <h6 class="mb-3">Completed Cards Trend</h6>
+            <div class="chart-box tall">
+              <canvas id="trendChart"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="chart-card p-3">
+            <h6 class="mb-3">Top Branches</h6>
+            <div class="chart-box">
+              <canvas id="branchChart"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="chart-card p-3">
+            <h6 class="mb-3">Top Agents</h6>
+            <div class="chart-box">
+              <canvas id="agentChart"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="chart-card p-3">
+            <h6 class="mb-3">Top Products</h6>
+            <div class="chart-box">
+              <canvas id="productChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    const trend = {{ trend|tojson }};
+    const branches = {{ top_branches|tojson }};
+    const agents = {{ top_agents|tojson }};
+    const products = {{ top_products|tojson }};
+
+    const trendLabels = trend.map(t => t._id || '');
+    const trendCounts = trend.map(t => Number(t.count || 0));
+    const branchLabels = branches.map(b => b._id || 'Unknown');
+    const branchCounts = branches.map(b => Number(b.count || 0));
+    const agentLabels = agents.map(a => a.agent_name || a._id || 'Agent');
+    const agentCounts = agents.map(a => Number(a.count || 0));
+    const productLabels = products.map(p => p._id || 'Product');
+    const productCounts = products.map(p => Number(p.count || 0));
+
+    new Chart(document.getElementById('trendChart'), {
+      type: 'line',
+      data: {
+        labels: trendLabels,
+        datasets: [{
+          label: '{{ "Week" if use_week else "Day" }} count',
+          data: trendCounts,
+          borderColor: '#0b2c4a',
+          backgroundColor: 'rgba(11,44,74,0.12)',
+          fill: true,
+          tension: 0.25
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+      }
+    });
+
+    new Chart(document.getElementById('branchChart'), {
+      type: 'bar',
+      data: {
+        labels: branchLabels,
+        datasets: [{ label: 'Completed', data: branchCounts, backgroundColor: '#0b2c4a' }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+      }
+    });
+
+    new Chart(document.getElementById('agentChart'), {
+      type: 'bar',
+      data: {
+        labels: agentLabels,
+        datasets: [{ label: 'Completed', data: agentCounts, backgroundColor: '#f4c430' }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+      }
+    });
+
+    new Chart(document.getElementById('productChart'), {
+      type: 'bar',
+      data: {
+        labels: productLabels,
+        datasets: [{ label: 'Completed', data: productCounts, backgroundColor: '#334155' }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+      }
+    });
+  </script>
+</body>
+</html>

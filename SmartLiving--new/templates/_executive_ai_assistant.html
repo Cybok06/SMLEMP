@@ -1,0 +1,49 @@
+{% if identity.role in ['executive', 'admin'] %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/executive-ai-assistant.css', v='20260526b') }}">
+  <div class="exec-ai-shell" data-exec-ai-assistant data-endpoint="{{ url_for('ai_assistant.ai_chat') }}">
+    <div class="exec-ai-panel" data-ai-panel data-open="false">
+      <div class="exec-ai-header">
+        <div class="exec-ai-brand">
+          <img
+            src="https://png.pngtree.com/png-vector/20190214/ourmid/pngtree-customer-support-icon-graphic-design-template-vector-png-image_384609.jpg"
+            alt="CYBOK"
+            class="exec-ai-brand-icon"
+          >
+          <h3>CYBOK</h3>
+        </div>
+        <button type="button" class="exec-ai-close" data-ai-close aria-label="Close CYBOK">×</button>
+      </div>
+      <div class="exec-ai-body">
+        <div class="exec-ai-suggestions">
+          <button type="button" class="exec-ai-chip" data-ai-chip="What are today's sales?">Today's sales</button>
+          <button type="button" class="exec-ai-chip" data-ai-chip="Compare today vs yesterday">Compare days</button>
+          <button type="button" class="exec-ai-chip" data-ai-chip="Which agent collected the most this week?">Top agent</button>
+          <button type="button" class="exec-ai-chip" data-ai-chip="Show low stock items">Low stock</button>
+          <button type="button" class="exec-ai-chip" data-ai-chip="What sales can we expect tomorrow?">Forecast</button>
+        </div>
+        <div class="exec-ai-messages" data-ai-messages></div>
+        <div class="exec-ai-footer">
+          <div class="exec-ai-input-row">
+            <textarea
+              class="exec-ai-input"
+              data-ai-input
+              rows="2"
+              maxlength="1000"
+              placeholder="Ask a business question..."
+            ></textarea>
+            <button type="button" class="exec-ai-send" data-ai-send>Send</button>
+          </div>
+          <div class="exec-ai-status" data-ai-status></div>
+        </div>
+      </div>
+    </div>
+    <button type="button" class="exec-ai-launcher" data-ai-launcher aria-label="Open CYBOK">
+      <img
+        src="https://png.pngtree.com/png-vector/20190214/ourmid/pngtree-customer-support-icon-graphic-design-template-vector-png-image_384609.jpg"
+        alt="CYBOK"
+        class="exec-ai-launcher-icon"
+      >
+    </button>
+  </div>
+  <script src="{{ url_for('static', filename='js/executive-ai-assistant.js', v='20260526c') }}"></script>
+{% endif %}

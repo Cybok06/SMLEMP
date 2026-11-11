@@ -1,0 +1,748 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ role_label }} Activations</title>
+  <link rel="icon" href="https://imagedelivery.net/h9fmMoa1o2c2P55TcWJGOg/10283f28-b9a0-4100-b254-19a854386800/public" type="image/png" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <style>
+    body { background: #f5f7fb; }
+    .page-wrap { margin-left: 260px; padding: 20px; }
+    @media (max-width: 991px) { .page-wrap { margin-left: 0; } }
+    .card-soft { border: 1px solid #e6ebf2; border-radius: 16px; box-shadow: 0 8px 24px rgba(15,23,42,.05); }
+    .click-going { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+    .status-pill { font-size: .75rem; font-weight: 700; border-radius: 999px; padding: 3px 10px; }
+    .st-pending { background: #fef3c7; color: #92400e; }
+    .st-approved { background: #dcfce7; color: #166534; }
+    .st-rejected { background: #fee2e2; color: #991b1b; }
+    .skeleton { background: linear-gradient(90deg, #eef2f7 25%, #e3e8ef 37%, #eef2f7 63%); background-size: 400% 100%; animation: shine 1.1s infinite; border-radius: 8px; }
+    .sk-h { height: 18px; }
+    .sk-p { height: 12px; }
+    .simple-summary-card { margin-top: 1rem; border: 1px solid #e2e8f0; border-radius: 18px; background: #fff; padding: 16px; }
+    .summary-metric { border: 1px solid #e2e8f0; border-radius: 14px; background: #f8fafc; padding: 12px; }
+    .agent-customer-list { margin-top: 14px; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; }
+    .agent-customer-row { padding: 12px 14px; border-top: 1px solid #e2e8f0; background: #fff; }
+    .agent-customer-row:first-child { border-top: 0; }
+    .agent-customer-name { font-weight: 600; color: #0f172a; }
+    .agent-customer-meta { font-size: .83rem; color: #64748b; }
+    .leader-report-card { margin-top: 1rem; border: 1px solid #d8e1ec; border-radius: 20px; background: #fff; padding: 16px; }
+    .leader-report-toolbar { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+    .leader-report-totals { display: flex; gap: 10px; flex-wrap: wrap; }
+    .leader-total-box { min-width: 150px; border: 1px solid #e2e8f0; border-radius: 14px; background: #f8fafc; padding: 10px 12px; }
+    .leader-report-table th { font-size: .76rem; text-transform: uppercase; letter-spacing: .04em; color: #64748b; white-space: nowrap; }
+    .leader-report-table td { vertical-align: top; }
+    .leader-report-product { min-width: 220px; white-space: normal; }
+    @keyframes shine { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+    @media (max-width: 575px) {
+      .simple-summary-card, .leader-report-card { padding: 14px; }
+      .leader-total-box { min-width: 0; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  {% if role_base == 'manager' %}
+    {% include 'manager_sidebar.html' %}
+  {% else %}
+    {% include 'side_bar.html' %}
+  {% endif %}
+
+  <div class="page-wrap">
+    <div class="container-fluid">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+          <h4 class="mb-1">Activations</h4>
+          <div class="text-muted small">View upcoming activations or review activations you attended.</div>
+        </div>
+        <div class="btn-group" role="group" aria-label="Activation view">
+          <button type="button" class="btn btn-primary" id="upcomingViewBtn">Upcoming</button>
+          <button type="button" class="btn btn-outline-primary" id="pastViewBtn">Past</button>
+        </div>
+      </div>
+
+      <div id="leaderTrackingBox" class="alert alert-warning d-none d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <div class="fw-semibold">Leader Location Sharing</div>
+          <div class="small mb-0" id="leaderTrackingMessage">Enable location so admin can track the selected activation leader.</div>
+        </div>
+        <button class="btn btn-sm btn-dark" id="leaderTrackingEnableBtn" type="button">Enable Location</button>
+      </div>
+
+      <div id="errorBox" class="alert alert-danger d-none"></div>
+      <div id="skeletonBox" class="row g-3">
+        <div class="col-12 col-md-6 col-xl-4"><div class="card card-soft"><div class="card-body"><div class="skeleton sk-h mb-2"></div><div class="skeleton sk-p mb-2"></div><div class="skeleton sk-p"></div></div></div></div>
+        <div class="col-12 col-md-6 col-xl-4"><div class="card card-soft"><div class="card-body"><div class="skeleton sk-h mb-2"></div><div class="skeleton sk-p mb-2"></div><div class="skeleton sk-p"></div></div></div></div>
+        <div class="col-12 col-md-6 col-xl-4"><div class="card card-soft"><div class="card-body"><div class="skeleton sk-h mb-2"></div><div class="skeleton sk-p mb-2"></div><div class="skeleton sk-p"></div></div></div></div>
+      </div>
+
+      <div id="emptyBox" class="alert alert-info d-none">No upcoming activations found.</div>
+      <div id="listBox" class="row g-3 d-none"></div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="goingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-fullscreen-sm-down">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">People Going</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input id="goingSearch" class="form-control form-control-sm mb-3" placeholder="Search name, role, branch" />
+          <div id="goingModalLoading" class="text-muted small d-none">Loading...</div>
+          <div id="goingModalEmpty" class="alert alert-info d-none">No approved attendees yet.</div>
+          <div id="goingModalList" class="list-group list-group-flush"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer"></div>
+
+  <script>
+    const listBox = document.getElementById('listBox');
+    const skeletonBox = document.getElementById('skeletonBox');
+    const emptyBox = document.getElementById('emptyBox');
+    const errorBox = document.getElementById('errorBox');
+    const goingModalEl = document.getElementById('goingModal');
+    const leaderTrackingBox = document.getElementById('leaderTrackingBox');
+    const leaderTrackingMessage = document.getElementById('leaderTrackingMessage');
+    const leaderTrackingEnableBtn = document.getElementById('leaderTrackingEnableBtn');
+    let goingModal = null;
+    let modalRows = [];
+    let leaderTrackingWatchId = null;
+    let leaderTrackingItems = [];
+    let trackedLeaderActivationId = null;
+    let leaderReportStore = {};
+    let leaderTrackingRequestInFlight = false;
+    const LEADER_REPORT_PAGE_SIZE = 20;
+    let activationView = 'upcoming';
+
+    function fmtDate(iso){
+      if(!iso) return '--';
+      const d = new Date(iso);
+      if(Number.isNaN(d.getTime())) return '--';
+      return d.toLocaleString([], { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function showToast(type, message){
+      const host = document.getElementById('toastContainer');
+      if(!host || !window.bootstrap) return;
+      const el = document.createElement('div');
+      el.className = `toast align-items-center text-bg-${type} border-0`;
+      el.setAttribute('role', 'alert');
+      el.setAttribute('aria-live', 'assertive');
+      el.setAttribute('aria-atomic', 'true');
+      el.innerHTML = `<div class="d-flex"><div class="toast-body">${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>`;
+      host.appendChild(el);
+      const t = bootstrap.Toast.getOrCreateInstance(el, { delay: 2600 });
+      t.show();
+      el.addEventListener('hidden.bs.toast', () => el.remove());
+    }
+
+    function leaderStateLabel(state){
+      if(state === 'running') return 'Leader mode active';
+      if(state === 'not_started') return 'Leader selected, waiting for start';
+      if(state === 'ended') return 'Activation ended';
+      return 'No leader selected';
+    }
+
+    function fmtMoney(value){
+      return `GHS ${Number(value || 0).toFixed(2)}`;
+    }
+
+    function setLeaderTrackingState(kind, message){
+      if(!kind){
+        leaderTrackingBox.classList.add('d-none');
+        leaderTrackingEnableBtn.disabled = false;
+        leaderTrackingEnableBtn.textContent = 'Enable Location';
+        return;
+      }
+      const tone = kind === 'success' ? 'alert-success' : kind === 'danger' ? 'alert-danger' : kind === 'info' ? 'alert-info' : 'alert-warning';
+      leaderTrackingBox.className = `alert ${tone} d-flex justify-content-between align-items-center flex-wrap gap-2`;
+      leaderTrackingBox.classList.remove('d-none');
+      leaderTrackingMessage.textContent = message;
+      leaderTrackingEnableBtn.classList.toggle('d-none', kind === 'success');
+    }
+
+    function clearLeaderTrackingWatch(){
+      if(leaderTrackingWatchId !== null && 'geolocation' in navigator){
+        navigator.geolocation.clearWatch(leaderTrackingWatchId);
+      }
+      leaderTrackingWatchId = null;
+    }
+
+    function setLeaderTrackingButtonLoading(isLoading){
+      leaderTrackingRequestInFlight = isLoading;
+      leaderTrackingEnableBtn.disabled = isLoading;
+      leaderTrackingEnableBtn.textContent = isLoading ? 'Enabling...' : 'Enable Location';
+    }
+
+    function locationErrorMessage(err, fromWatch = false){
+      if(err && err.code === 1){
+        return 'Location permission was denied. Allow location for this site in your browser settings, then click Enable Location again.';
+      }
+      if(err && err.code === 2){
+        return fromWatch
+          ? 'Location updates are unavailable right now. Check GPS/network and click Enable Location to retry.'
+          : 'Your current location is unavailable. Check GPS/network and try again.';
+      }
+      if(err && err.code === 3){
+        return fromWatch
+          ? 'Location updates timed out. Click Enable Location to retry live tracking.'
+          : 'Reading your location timed out. Click Enable Location and try again.';
+      }
+      return fromWatch
+        ? 'Location updates paused. Click Enable Location to retry live tracking.'
+        : 'Unable to read your location yet. Check GPS/network and try again.';
+    }
+
+    function getCurrentPositionAsync(options){
+      return new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, options);
+      });
+    }
+
+    function statusBlock(item){
+      const st = item.myRsvpStatus || 'none';
+      if(st === 'approved') return '<span class="status-pill st-approved">Approved - You are going</span>';
+      if(st === 'pending') return '<span class="status-pill st-pending">Pending approval</span>';
+      if(st === 'rejected') return '<span class="status-pill st-rejected">Rejected</span>';
+      return '<span class="text-muted small">No request yet</span>';
+    }
+
+    function actionButton(item){
+      if(activationView === 'past') return '<button class="btn btn-outline-secondary btn-sm" disabled>Past</button>';
+      if(item.runtimeState === 'ended') return '<button class="btn btn-outline-secondary btn-sm" disabled>Ended</button>';
+      const st = item.myRsvpStatus || 'none';
+      if(st === 'approved') return '<button class="btn btn-success btn-sm" disabled>Approved</button>';
+      const label = st === 'rejected' ? 'Request Again' : (st === 'pending' ? 'Requested' : 'Request Going');
+      const disabled = st === 'pending' ? 'disabled' : '';
+      return `<button class="btn btn-primary btn-sm request-btn" ${disabled} data-id="${item.id}">${label}</button>`;
+    }
+
+    function leaderReportBlock(item){
+      const info = item.leaderInfo || {};
+      if((item.myRsvpStatus || 'none') !== 'approved' || !info.isLeader){
+        return '';
+      }
+
+      const summary = info.summary || {};
+      leaderReportStore[item.id] = { rows: summary.customerRows || [], page: 1, agentId: '' };
+      const agentOptions = (summary.agents || []).map(agent => `<option value="${agent.userId || ''}">${agent.name || 'Unknown Agent'}</option>`).join('');
+
+      return `
+        <div class="leader-report-card">
+          <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-3">
+            <div>
+              <div class="fw-semibold">Leader Customer Report</div>
+              <div class="small text-muted">Customer name, phone number, product, amount paid, and the agent that registered each record.</div>
+            </div>
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+              <span class="badge text-bg-success">Leader View</span>
+            </div>
+          </div>
+          <div class="leader-report-toolbar">
+            <div class="w-100" style="max-width: 280px;">
+              <label class="form-label form-label-sm mb-1">Filter by agent</label>
+              <select class="form-select form-select-sm leader-agent-filter" data-report-id="${item.id}">
+                <option value="">All agents</option>
+                ${agentOptions}
+              </select>
+            </div>
+            <div class="leader-report-totals">
+              <div class="leader-total-box">
+                <div class="small text-muted">Total Products</div>
+                <div class="fw-bold" id="leader-products-${item.id}">${Number(summary.totalProducts || 0).toLocaleString()}</div>
+              </div>
+              <div class="leader-total-box">
+                <div class="small text-muted">Total Amount</div>
+                <div class="fw-bold" id="leader-amount-${item.id}">${fmtMoney(summary.totalAmount || 0)}</div>
+              </div>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle leader-report-table mb-0">
+              <thead>
+                <tr>
+                  <th>Customer Name</th>
+                  <th>Phone Number</th>
+                  <th>Product</th>
+                  <th>Amount Paid</th>
+                  <th>Registered By</th>
+                </tr>
+              </thead>
+              <tbody id="leader-report-body-${item.id}"></tbody>
+            </table>
+          </div>
+          <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mt-3">
+            <div class="small text-muted" id="leader-report-page-meta-${item.id}"></div>
+            <div class="btn-group btn-group-sm" role="group" aria-label="Leader customer pagination">
+              <button type="button" class="btn btn-outline-secondary leader-page-prev" data-report-id="${item.id}">Prev</button>
+              <button type="button" class="btn btn-outline-secondary leader-page-next" data-report-id="${item.id}">View Next</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderLeaderReportRows(reportId){
+      const report = leaderReportStore[reportId] || { rows: [], page: 1, agentId: '' };
+      const rows = report.rows || [];
+      const agentId = report.agentId || '';
+      const filteredRows = agentId ? rows.filter(row => (row.agentId || '') === agentId) : rows;
+      const body = document.getElementById(`leader-report-body-${reportId}`);
+      const productsBox = document.getElementById(`leader-products-${reportId}`);
+      const amountBox = document.getElementById(`leader-amount-${reportId}`);
+      const pageMeta = document.getElementById(`leader-report-page-meta-${reportId}`);
+      const prevBtn = document.querySelector(`.leader-page-prev[data-report-id="${reportId}"]`);
+      const nextBtn = document.querySelector(`.leader-page-next[data-report-id="${reportId}"]`);
+      if(!body || !productsBox || !amountBox || !pageMeta || !prevBtn || !nextBtn){
+        return;
+      }
+
+      const totalProducts = filteredRows.reduce((sum, row) => sum + Number(row.productTotal || 0), 0);
+      const totalAmount = filteredRows.reduce((sum, row) => sum + Number(row.amountPaid || 0), 0);
+      productsBox.textContent = totalProducts.toLocaleString();
+      amountBox.textContent = fmtMoney(totalAmount);
+
+      const totalPages = Math.max(1, Math.ceil(filteredRows.length / LEADER_REPORT_PAGE_SIZE));
+      const currentPage = Math.min(Math.max(Number(report.page) || 1, 1), totalPages);
+      leaderReportStore[reportId] = { ...report, page: currentPage, agentId };
+      prevBtn.disabled = currentPage <= 1;
+      nextBtn.disabled = currentPage >= totalPages || !filteredRows.length;
+
+      if(!filteredRows.length){
+        body.innerHTML = '<tr><td colspan="5" class="text-muted text-center py-3">No customer records found for this agent.</td></tr>';
+        pageMeta.textContent = 'Showing 0 customers';
+        return;
+      }
+
+      const startIndex = (currentPage - 1) * LEADER_REPORT_PAGE_SIZE;
+      const pagedRows = filteredRows.slice(startIndex, startIndex + LEADER_REPORT_PAGE_SIZE);
+      const startLabel = startIndex + 1;
+      const endLabel = startIndex + pagedRows.length;
+      pageMeta.textContent = `Showing ${startLabel}-${endLabel} of ${filteredRows.length} customers`;
+
+      body.innerHTML = pagedRows.map(row => `
+        <tr>
+          <td>${row.customerName || 'Unnamed Customer'}</td>
+          <td>${row.phoneNumber || '--'}</td>
+          <td class="leader-report-product">${row.productsLabel || 'No product assigned'}<div class="small text-muted mt-1">Total products: ${Number(row.productTotal || 0).toLocaleString()}</div></td>
+          <td>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+              <span>${fmtMoney(row.amountPaid || 0)}</span>
+              <button
+                type="button"
+                class="btn btn-sm ${row.moneyTaken ? 'btn-outline-secondary' : 'btn-outline-success'} mark-taken-btn"
+                data-report-id="${reportId}"
+                data-customer-id="${row.customerId || ''}"
+                ${row.moneyTaken ? 'disabled' : ''}
+              >${row.moneyTaken ? 'Money Taken' : 'Mark Taken'}</button>
+            </div>
+          </td>
+          <td>${row.agentName || 'Unknown Agent'}</td>
+        </tr>
+      `).join('');
+
+      body.querySelectorAll('.mark-taken-btn').forEach(button => {
+        if(button.disabled) return;
+        button.addEventListener('click', () => markLeaderMoneyTaken(button.dataset.reportId, button.dataset.customerId, button));
+      });
+    }
+
+    function personalActivityBlock(item){
+      const info = item.leaderInfo || {};
+      if((item.myRsvpStatus || 'none') !== 'approved'){
+        return '';
+      }
+      if(info.isLeader){
+        return leaderReportBlock(item);
+      }
+
+      const myCustomers = info.viewerCustomers || [];
+      const customerList = myCustomers.length
+        ? `
+          <div class="agent-customer-list">
+            ${myCustomers.map(customer => `
+              <div class="agent-customer-row">
+                <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+                  <div>
+                    <div class="agent-customer-name">${customer.name || 'Unnamed Customer'}</div>
+                    <div class="agent-customer-meta">${customer.phoneNumber || '--'}${customer.location ? ` | ${customer.location}` : ''}</div>
+                  </div>
+                  <span class="badge text-bg-light">${customer.status || 'Registered'}</span>
+                </div>
+                <div class="agent-customer-meta mt-2">
+                  Registered ${fmtDate(customer.dateRegistered)}${customer.leaderName ? ` | Leader: ${customer.leaderName}` : ''}
+                </div>
+                <div class="agent-customer-meta mt-1">
+                  ${customer.productsLabel || 'No product assigned'} | ${fmtMoney(customer.amount || 0)}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `
+        : '<div class="small text-muted mt-3">No customers registered by you for this leader yet.</div>';
+
+      return `
+        <div class="simple-summary-card">
+          <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+            <div>
+              <div class="fw-semibold">My Summary</div>
+              <div class="small text-muted">Your registrations and amount recorded on this activation.</div>
+            </div>
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+              <span class="badge text-bg-light">My View</span>
+            </div>
+          </div>
+          <div class="row g-2">
+            <div class="col-6">
+              <div class="summary-metric">
+                <div class="small text-muted">Customers</div>
+                <div class="fw-bold">${Number(info.viewerCustomerCount || 0).toLocaleString()}</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="summary-metric">
+                <div class="small text-muted">Amount</div>
+                <div class="fw-bold">${fmtMoney(info.viewerRecordedAmount || 0)}</div>
+              </div>
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="fw-semibold mb-2">Customers You Registered</div>
+            ${customerList}
+          </div>
+        </div>
+      `;
+    }
+
+    function render(items){
+      listBox.innerHTML = '';
+      leaderReportStore = {};
+      if(!(items || []).length){
+        emptyBox.textContent = activationView === 'upcoming'
+          ? 'No upcoming activations found.'
+          : 'No past activations found for your account.';
+        emptyBox.classList.remove('d-none');
+        listBox.classList.add('d-none');
+        return;
+      }
+      emptyBox.classList.add('d-none');
+      listBox.classList.remove('d-none');
+
+      (items || []).forEach(item => {
+        const col = document.createElement('div');
+        col.className = 'col-12';
+        col.innerHTML = `
+        <div class="card card-soft h-100">
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-2">
+              <div>
+                <h5 class="mb-1">${item.title || ''}</h5>
+                <div class="small text-muted">${activationView === 'upcoming' ? 'Upcoming activation' : 'Past activation'}</div>
+              </div>
+              <span class="badge text-bg-primary">${item.status || 'activation'}</span>
+            </div>
+            <div class="small text-muted mb-2"><i class="bi bi-geo-alt"></i> ${item.location || '--'}</div>
+            <div class="small text-muted mb-2"><i class="bi bi-clock"></i> ${fmtDate(item.activationDateTime)}</div>
+            <div class="small text-muted mb-2"><i class="bi bi-broadcast"></i> ${leaderStateLabel((item.leaderInfo || {}).leaderState)}</div>
+            <div class="small text-muted mb-3 click-going" data-going-id="${item.id}">${item.approvedCount || 0} going</div>
+            ${personalActivityBlock(item)}
+            <div class="d-flex align-items-center justify-content-between gap-2 mt-auto">
+              ${statusBlock(item)}
+              ${actionButton(item)}
+            </div>
+          </div>
+        </div>`;
+        listBox.appendChild(col);
+      });
+
+      listBox.querySelectorAll('[data-going-id]').forEach(el => {
+        el.addEventListener('click', () => openGoingModal(el.dataset.goingId));
+      });
+
+      listBox.querySelectorAll('.leader-agent-filter').forEach(select => {
+        renderLeaderReportRows(select.dataset.reportId);
+        select.addEventListener('change', () => {
+          const reportId = select.dataset.reportId;
+          const report = leaderReportStore[reportId] || { rows: [] };
+          leaderReportStore[reportId] = { ...report, agentId: select.value || '', page: 1 };
+          renderLeaderReportRows(reportId);
+        });
+      });
+
+      listBox.querySelectorAll('.leader-page-prev').forEach(button => {
+        button.addEventListener('click', () => {
+          const reportId = button.dataset.reportId;
+          const report = leaderReportStore[reportId];
+          if(!report) return;
+          leaderReportStore[reportId] = { ...report, page: Math.max(1, (Number(report.page) || 1) - 1) };
+          renderLeaderReportRows(reportId);
+        });
+      });
+
+      listBox.querySelectorAll('.leader-page-next').forEach(button => {
+        button.addEventListener('click', () => {
+          const reportId = button.dataset.reportId;
+          const report = leaderReportStore[reportId];
+          if(!report) return;
+          leaderReportStore[reportId] = { ...report, page: (Number(report.page) || 1) + 1 };
+          renderLeaderReportRows(reportId);
+        });
+      });
+
+      listBox.querySelectorAll('.request-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.dataset.id;
+          btn.disabled = true;
+          btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+          try{
+            const res = await fetch(`/api/activations/${id}/request-going`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({})
+            });
+            const data = await res.json();
+            if(!res.ok || !data.ok) throw new Error(data.message || 'Request failed');
+            showToast('success', data.message || 'Request sent.');
+            await loadItems();
+            window.refreshActivationAlerts && window.refreshActivationAlerts(true);
+          }catch(err){
+            showToast('danger', err.message || 'Request failed');
+            btn.disabled = false;
+            btn.textContent = 'Request Going';
+          }
+        });
+      });
+      startLeaderTrackingFromList(items);
+    }
+
+    async function sendLeaderLocation(activationId, position){
+      const res = await fetch(`/api/activations/${activationId}/leader-location`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          source: 'browser-watch'
+        })
+      });
+      const raw = await res.text();
+      let data = {};
+      try { data = raw ? JSON.parse(raw) : {}; } catch (_) {}
+      if(!res.ok || data.ok === false){
+        throw new Error(data.message || 'Failed to share live location.');
+      }
+      setLeaderTrackingState('success', 'Live location sharing is active. Admin can now track this leader on the map.');
+    }
+
+    async function startLeaderTrackingWatch(activationId){
+      const pos = await getCurrentPositionAsync({ enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+      await sendLeaderLocation(activationId, pos);
+      clearLeaderTrackingWatch();
+      leaderTrackingWatchId = navigator.geolocation.watchPosition(
+        nextPos => {
+          sendLeaderLocation(activationId, nextPos).catch(err => {
+            clearLeaderTrackingWatch();
+            setLeaderTrackingState('danger', err.message || 'Failed to share live location.');
+          });
+        },
+        err => {
+          clearLeaderTrackingWatch();
+          setLeaderTrackingState('danger', locationErrorMessage(err, true));
+        },
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 }
+      );
+    }
+
+    async function startLeaderTrackingFromList(items, forcePrompt = false){
+      const leaderActivation = (items || []).find(item => item.leaderInfo && item.leaderInfo.isLeader && item.leaderInfo.ownershipActive && item.teamLeaderLocationRequired);
+      if(!leaderActivation){
+        trackedLeaderActivationId = null;
+        clearLeaderTrackingWatch();
+        setLeaderTrackingState(null, '');
+        return;
+      }
+      trackedLeaderActivationId = leaderActivation.id;
+      const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+      if(!window.isSecureContext && !isLocalhost){
+        clearLeaderTrackingWatch();
+        setLeaderTrackingState('danger', 'Location sharing requires HTTPS or localhost in this browser. Open the app on a secure URL, then try again.');
+        return;
+      }
+      if(!('geolocation' in navigator)){
+        clearLeaderTrackingWatch();
+        setLeaderTrackingState('danger', 'This browser does not support location sharing, so admin cannot track the leader here.');
+        return;
+      }
+      if(leaderTrackingRequestInFlight){
+        return;
+      }
+      if(forcePrompt){
+        setLeaderTrackingButtonLoading(true);
+        setLeaderTrackingState('info', 'Requesting location access for live leader tracking...');
+        try{
+          await startLeaderTrackingWatch(leaderActivation.id);
+        }catch(err){
+          clearLeaderTrackingWatch();
+          setLeaderTrackingState('danger', (err && err.message) ? err.message : locationErrorMessage(err));
+        }finally{
+          setLeaderTrackingButtonLoading(false);
+        }
+        return;
+      }
+      if(leaderTrackingWatchId !== null){
+        return;
+      }
+      if(navigator.permissions && navigator.permissions.query){
+        try{
+          const status = await navigator.permissions.query({ name: 'geolocation' });
+          if(status.state === 'granted'){
+            setLeaderTrackingButtonLoading(true);
+            setLeaderTrackingState('info', 'Resuming live location sharing...');
+            try{
+              await startLeaderTrackingWatch(leaderActivation.id);
+            }catch(err){
+              clearLeaderTrackingWatch();
+              setLeaderTrackingState('danger', (err && err.message) ? err.message : locationErrorMessage(err));
+            }finally{
+              setLeaderTrackingButtonLoading(false);
+            }
+            return;
+          }
+          if(status.state === 'denied'){
+            setLeaderTrackingState('danger', 'Location permission is blocked for this site. Allow it in your browser settings, then click Enable Location again.');
+            return;
+          }
+        }catch(_){
+          // Fall back to manual enable button flow below.
+        }
+      }
+      setLeaderTrackingState('warning', 'Location sharing is required for this activation leader. Click Enable Location and allow browser access.');
+    }
+
+    async function markLeaderMoneyTaken(reportId, customerId, button){
+      if(!reportId || !customerId || !button) return;
+      button.disabled = true;
+      button.textContent = 'Saving...';
+      try{
+        const res = await fetch(`/api/activations/${reportId}/leader/customers/${customerId}/mark-taken`, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const data = await res.json();
+        if(!res.ok || !data.ok) throw new Error(data.message || 'Failed to mark money as taken.');
+        const report = leaderReportStore[reportId];
+        if(report && Array.isArray(report.rows)){
+          report.rows = report.rows.map(row => (
+            row.customerId === customerId
+              ? { ...row, moneyTaken: true, moneyTakenAt: data.moneyTakenAt || row.moneyTakenAt || null }
+              : row
+          ));
+        }
+        renderLeaderReportRows(reportId);
+        showToast('success', data.message || 'Money marked as taken.');
+      }catch(err){
+        button.disabled = false;
+        button.textContent = 'Mark Taken';
+        showToast('danger', err.message || 'Failed to mark money as taken.');
+      }
+    }
+
+    function renderGoingRows(rows){
+      const q = (document.getElementById('goingSearch').value || '').trim().toLowerCase();
+      const list = document.getElementById('goingModalList');
+      const empty = document.getElementById('goingModalEmpty');
+      list.innerHTML = '';
+      const filtered = rows.filter(r => (`${r.name||''} ${r.role||''} ${r.branch||''}`).toLowerCase().includes(q));
+      if(!filtered.length){
+        empty.classList.remove('d-none');
+        return;
+      }
+      empty.classList.add('d-none');
+      filtered.forEach(r => {
+        const item = document.createElement('div');
+        item.className = 'list-group-item px-0';
+        item.innerHTML = `<div class="d-flex justify-content-between align-items-start"><div><div class="fw-semibold">${r.name || 'Unknown User'}</div><div class="small text-muted text-capitalize">${r.role || '--'}${r.branch ? ` - ${r.branch}` : ''}</div></div></div>`;
+        list.appendChild(item);
+      });
+    }
+
+    async function openGoingModal(activationId){
+      document.getElementById('goingSearch').value = '';
+      document.getElementById('goingModalList').innerHTML = '';
+      document.getElementById('goingModalEmpty').classList.add('d-none');
+      const loading = document.getElementById('goingModalLoading');
+      loading.classList.remove('d-none');
+      if(!goingModal && window.bootstrap){
+        goingModal = new bootstrap.Modal(goingModalEl);
+      }
+      if(goingModal){
+        goingModal.show();
+      }
+      try{
+        const res = await fetch(`/api/activations/${activationId}/going`, { credentials: 'same-origin' });
+        const data = await res.json();
+        if(!res.ok || !data.ok) throw new Error(data.message || 'Failed to load going list.');
+        modalRows = data.approved || [];
+        renderGoingRows(modalRows);
+      }catch(err){
+        showToast('danger', err.message || 'Failed to load going list.');
+        document.getElementById('goingModalEmpty').classList.remove('d-none');
+      }finally{
+        loading.classList.add('d-none');
+      }
+    }
+
+    document.getElementById('goingSearch').addEventListener('input', () => renderGoingRows(modalRows));
+
+    async function loadItems(){
+      skeletonBox.classList.remove('d-none');
+      errorBox.classList.add('d-none');
+      listBox.classList.add('d-none');
+      emptyBox.classList.add('d-none');
+      try{
+        const res = await fetch(`/api/activations?view=${encodeURIComponent(activationView)}&_=${Date.now()}`, { credentials: 'same-origin', cache: 'no-store' });
+        const data = await res.json();
+        if(!res.ok || !data.ok) throw new Error(data.message || 'Failed to load activations');
+        leaderTrackingItems = data.items || [];
+        render(leaderTrackingItems);
+      }catch(err){
+        errorBox.textContent = err.message || 'Failed to load activations.';
+        errorBox.classList.remove('d-none');
+      }finally{
+        skeletonBox.classList.add('d-none');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if(window.bootstrap){
+        goingModal = new bootstrap.Modal(goingModalEl);
+      }
+      leaderTrackingEnableBtn.addEventListener('click', () => startLeaderTrackingFromList(leaderTrackingItems, true));
+      document.getElementById('upcomingViewBtn').addEventListener('click', () => setActivationView('upcoming'));
+      document.getElementById('pastViewBtn').addEventListener('click', () => setActivationView('past'));
+      loadItems();
+    });
+
+    function setActivationView(view){
+      if(view === activationView) return;
+      activationView = view;
+      const upcomingBtn = document.getElementById('upcomingViewBtn');
+      const pastBtn = document.getElementById('pastViewBtn');
+      upcomingBtn.className = `btn ${view === 'upcoming' ? 'btn-primary' : 'btn-outline-primary'}`;
+      pastBtn.className = `btn ${view === 'past' ? 'btn-primary' : 'btn-outline-primary'}`;
+      loadItems();
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

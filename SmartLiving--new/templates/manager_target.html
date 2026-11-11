@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Targets</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>main{margin-left:260px;padding:24px} @media(max-width:992px){main{margin-left:0}}</style></head>
+<body>{% include 'manager_sidebar.html' %}<main>
+<h3>My Targets</h3><p>Distribute each assigned target to your agents. Agents see their quotas after you save.</p>
+{% for category, message in get_flashed_messages(with_categories=true) %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}
+{% for t in results %}<section class="card p-3 mb-3">
+<div class="d-flex justify-content-between gap-3"><h4>{{ t.period|capitalize }} target</h4>
+<a class="btn btn-primary" href="{{ url_for('manager_target.distribute_target_get', target_id=t.target_id) }}">{{ 'Edit allocations' if t.agents else 'Distribute to agents' }}</a></div>
+<p>{{ t.start_date }} to {{ t.end_date }}</p>
+{% if t.allocation_pending %}<div class="alert alert-warning">The assigned targets have amounts left to distribute. Update agent allocations to match every target.</div>{% endif %}
+<p>Products: {{ t.achieved.product_achieved }} / {{ t.targets.product_target }} ? Cash: GHS {{ t.achieved.cash_achieved }} / {{ t.targets.cash_target }} ? New customers: {{ t.achieved.customer_achieved }} / {{ t.targets.customer_target }}</p>
+{% include 'partials/target_cash_channels.html' %}
+{% if t.agents %}<div class="table-responsive"><table class="table"><thead><tr><th>Agent</th><th>Products achieved / quota</th><th>Cash achieved / quota (GHS)</th><th>Customers achieved / quota</th><th>Product Cash (GHS)</th><th>SUSU Cash (GHS)</th></tr></thead><tbody>
+{% for a in t.agents %}<tr><td>{{ a.agent_name }}</td><td>{{ a.product_achieved }} / {{ a.product_quota }}</td><td>{{ a.cash_achieved }} / {{ a.cash_quota }}</td><td>{{ a.customer_achieved }} / {{ a.customer_quota }}</td><td>{{ a.product_cash_achieved }} / {{ a.product_cash_quota }}</td><td>{{ a.susu_cash_achieved }} / {{ a.susu_cash_quota }}</td></tr>{% endfor %}
+</tbody></table></div>{% else %}<div class="alert alert-warning">Awaiting your distribution. No agent quotas have been assigned.</div>{% endif %}
+</section>{% else %}<div class="alert alert-info">No active targets have been assigned to you yet.</div>{% endfor %}
+</main>{% include 'app_footer.html' %}</body></html>

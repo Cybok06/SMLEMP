@@ -1,0 +1,151 @@
+{# templates/hr_pages/partials/employee_daily_attendance_tab.html #}
+
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <h2 class="h6 mb-0">Daily Attendance Logs</h2>
+      <p class="small text-muted mb-0">
+        Exact daily report, lunch, and leave timestamps from the new attendance system.
+      </p>
+    </div>
+    <button class="btn btn-sm btn-outline-primary" type="button" id="hr-daily-att-refresh-btn">
+      <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+    </button>
+  </div>
+
+  <div class="card-body">
+    <div class="row g-3 mb-3">
+      <div class="col-12 col-md-3">
+        <div class="border rounded-3 p-3 h-100">
+          <div class="small text-muted mb-1">Days Logged</div>
+          <div class="h4 mb-0" id="hr-daily-att-days">--</div>
+        </div>
+      </div>
+      <div class="col-12 col-md-3">
+        <div class="border rounded-3 p-3 h-100">
+          <div class="small text-muted mb-1">Closed Days</div>
+          <div class="h4 mb-0 text-success" id="hr-daily-att-closed">--</div>
+        </div>
+      </div>
+      <div class="col-12 col-md-3">
+        <div class="border rounded-3 p-3 h-100">
+          <div class="small text-muted mb-1">Open Workdays</div>
+          <div class="h4 mb-0 text-primary" id="hr-daily-att-open">--</div>
+        </div>
+      </div>
+      <div class="col-12 col-md-3">
+        <div class="border rounded-3 p-3 h-100">
+          <div class="small text-muted mb-1">Lunch Open</div>
+          <div class="h4 mb-0 text-warning" id="hr-daily-att-lunch-open">--</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead class="table-light small">
+          <tr>
+            <th style="width:14%;">Date</th>
+            <th style="width:13%;">Status</th>
+            <th style="width:14%;">Report to Work</th>
+            <th style="width:14%;">Lunch Start</th>
+            <th style="width:14%;">Lunch Return</th>
+            <th style="width:14%;">Leave Office</th>
+            <th>Timeline</th>
+          </tr>
+        </thead>
+        <tbody id="hr-daily-att-body" class="small">
+          <tr>
+            <td colspan="7" class="text-muted fst-italic">Loading daily attendance records...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const employeeId = "{{ employee._id }}";
+  const bodyEl = document.getElementById('hr-daily-att-body');
+  const refreshBtn = document.getElementById('hr-daily-att-refresh-btn');
+  const daysEl = document.getElementById('hr-daily-att-days');
+  const closedEl = document.getElementById('hr-daily-att-closed');
+  const openEl = document.getElementById('hr-daily-att-open');
+  const lunchOpenEl = document.getElementById('hr-daily-att-lunch-open');
+
+  function statusBadge(status) {
+    const s = (status || 'Not Reported').trim();
+    let cls = 'badge rounded-pill ';
+    if (s === 'Closed') cls += 'bg-success-subtle text-success-emphasis';
+    else if (s === 'At Lunch') cls += 'bg-warning-subtle text-warning-emphasis';
+    else if (s === 'At Work') cls += 'bg-primary-subtle text-primary-emphasis';
+    else cls += 'bg-secondary-subtle text-secondary-emphasis';
+    return `<span class="${cls}">${s}</span>`;
+  }
+
+  function renderTimeline(events) {
+    if (!events || !events.length) {
+      return '<span class="text-muted fst-italic">No events</span>';
+    }
+    return events.slice(0, 4).map(ev => {
+      const label = ev.label || ev.action || '--';
+      const time = ev.at ? new Date(ev.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--';
+      return `<span class="badge text-bg-light border me-1 mb-1">${label} • ${time}</span>`;
+    }).join('');
+  }
+
+  function renderRows(records) {
+    if (!bodyEl) return;
+    bodyEl.innerHTML = '';
+    if (!records || !records.length) {
+      bodyEl.innerHTML = `<tr><td colspan="7" class="text-muted fst-italic">No daily attendance records yet.</td></tr>`;
+      return;
+    }
+
+    records.forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${r.date || ''}</td>
+        <td>${statusBadge(r.status)}</td>
+        <td>${r.report_to_work_time || '--'}</td>
+        <td>${r.lunch_start_time || '--'}</td>
+        <td>${r.lunch_return_time || '--'}</td>
+        <td>${r.leave_office_time || '--'}</td>
+        <td>${renderTimeline(r.events || [])}</td>
+      `;
+      bodyEl.appendChild(tr);
+    });
+  }
+
+  function renderSummary(summary) {
+    if (daysEl) daysEl.textContent = summary?.total_days_logged ?? 0;
+    if (closedEl) closedEl.textContent = summary?.closed_days ?? 0;
+    if (openEl) openEl.textContent = summary?.open_workdays ?? 0;
+    if (lunchOpenEl) lunchOpenEl.textContent = summary?.lunch_open_days ?? 0;
+  }
+
+  async function loadDailyAttendance() {
+    const resp = await fetch(`/hr/employee/${employeeId}/daily_attendance`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    const data = await resp.json();
+    if (!resp.ok || !data.ok) throw new Error(data.message || 'Failed to load daily attendance.');
+    renderSummary(data.summary || {});
+    renderRows(data.records || []);
+  }
+
+  refreshBtn?.addEventListener('click', () => {
+    loadDailyAttendance().catch(err => {
+      window.showToast && window.showToast('danger', err.message || 'Error loading daily attendance.');
+    });
+  });
+
+  loadDailyAttendance().catch(err => {
+    if (bodyEl) {
+      bodyEl.innerHTML = `<tr><td colspan="7" class="text-danger small">Failed to load daily attendance: ${err.message || 'Unknown error'}</td></tr>`;
+    }
+    window.showToast && window.showToast('danger', err.message || 'Error loading daily attendance.');
+  });
+})();
+</script>
