@@ -1,3 +1,0 @@
-kivy==2.3.1
-pyjnius==1.6.1
-requests==2.32.3
