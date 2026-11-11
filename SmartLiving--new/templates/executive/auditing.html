@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Auditing - Executive</title>
+  <link rel="icon" href="https://imagedelivery.net/h9fmMoa1o2c2P55TcWJGOg/10283f28-b9a0-4100-b254-19a854386800/public" type="image/png">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+  <style>
+    :root { --ink:#0f172a; --muted:#64748b; --card:#ffffff; --border:#e2e8f0; --shadow:0 8px 18px rgba(2,8,23,.08); }
+    body { background:#f6f7fb; color:var(--ink); }
+    .page-wrap { margin-left:260px; padding:20px; }
+    @media (max-width: 991px){ .page-wrap{ margin-left:0; } }
+    .card-soft { background:var(--card); border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow); }
+    .kpi { padding:14px; border-radius:14px; border:1px solid var(--border); background:#f8fafc; }
+    .kpi .label { font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:700; }
+    .kpi .value { font-size:1.2rem; font-weight:800; }
+    .table thead th { font-size:.75rem; text-transform:uppercase; letter-spacing:.08em; color:#6b7280; background:#f8fafc; position:sticky; top:0; }
+    .badge-soft { background:#eef2ff; color:#4338ca; border-radius:999px; padding:.2rem .6rem; font-size:.72rem; font-weight:700; }
+    .badge-open { background:#fff7ed; color:#9a3412; }
+    .badge-partial { background:#e0f2fe; color:#075985; }
+    .badge-settled { background:#dcfce7; color:#166534; }
+  </style>
+</head>
+<body>
+  {% include 'executive_sidebar.html' %}
+
+  <main class="page-wrap">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+      <div>
+        <div class="text-muted small">Executive</div>
+        <h3 class="fw-bold mb-0">Auditing</h3>
+        <div class="text-muted small">Track stolen money and lost items, paid once, and balance left.</div>
+      </div>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#auditModal">
+        <i class="bi bi-plus-circle"></i> Add New Record
+      </button>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-lg-3">
+        <div class="kpi">
+          <div class="label">Total Lost</div>
+          <div class="value">GHS {{ totals.total_lost|format_money }}</div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="kpi">
+          <div class="label">Total Paid</div>
+          <div class="value">GHS {{ totals.total_paid|format_money }}</div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="kpi">
+          <div class="label">Balance Left</div>
+          <div class="value">GHS {{ totals.total_left|format_money }}</div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="kpi">
+          <div class="label">Records</div>
+          <div class="value">{{ totals.count }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-12 col-lg-6">
+        <div class="card-soft p-3">
+          <div class="fw-semibold mb-2">Top 3 Owing (This Month)</div>
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Role</th>
+                  <th class="text-end">Amount Left</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for t in top_owing %}
+                <tr>
+                  <td>{{ t.name }}</td>
+                  <td>{{ t.role }}</td>
+                  <td class="text-end">GHS {{ t.amount|format_money }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                  <td colspan="3" class="text-muted text-center">No owing users this month.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-lg-6">
+        <div class="card-soft p-3">
+          <div class="fw-semibold mb-2">Amount Lost (This Month)</div>
+          <div class="display-6 fw-bold">GHS {{ lost_this_month|format_money }}</div>
+          <div class="text-muted small">From all theft and lost items recorded this month.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-soft p-3">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+        <div class="fw-semibold">Audit Records</div>
+        <form method="get" class="d-flex gap-2 align-items-end">
+          <div>
+            <label class="form-label small text-muted">Role</label>
+            <select name="role" class="form-select form-select-sm">
+              <option value="" {% if not current_role %}selected{% endif %}>All</option>
+              <option value="manager" {% if current_role == 'manager' %}selected{% endif %}>Manager</option>
+              <option value="admin" {% if current_role == 'admin' %}selected{% endif %}>Admin</option>
+              <option value="agent" {% if current_role == 'agent' %}selected{% endif %}>Agent</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label small text-muted">Status</label>
+            <select name="status" class="form-select form-select-sm">
+              <option value="" {% if not current_status %}selected{% endif %}>All</option>
+              <option value="Open" {% if current_status == 'Open' %}selected{% endif %}>Open</option>
+              <option value="Partial" {% if current_status == 'Partial' %}selected{% endif %}>Partial</option>
+              <option value="Settled" {% if current_status == 'Settled' %}selected{% endif %}>Settled</option>
+            </select>
+          </div>
+          <button class="btn btn-outline-primary btn-sm"><i class="bi bi-funnel"></i> Filter</button>
+        </form>
+      </div>
+
+      <div class="table-responsive" style="max-height:520px;">
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Role</th>
+              <th>User</th>
+              <th>Branch</th>
+              <th>Type</th>
+              <th>Description</th>
+              <th class="text-end">Lost</th>
+              <th class="text-end">Paid</th>
+              <th class="text-end">Left</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+            <tr>
+              <td>{{ row.incident_date }}</td>
+              <td>{{ row.subject_role }}</td>
+              <td>{{ row.subject_name }}</td>
+              <td>{{ row.subject_branch }}</td>
+              <td>{% if row.issue_type == 'Stolen Money' %}Theft{% else %}{{ row.issue_type }}{% endif %}</td>
+              <td>{{ row.description }}</td>
+              <td class="text-end">GHS {{ row.amount_lost|format_money }}</td>
+              <td class="text-end">GHS {{ row.amount_paid|format_money }}</td>
+              <td class="text-end">GHS {{ row.amount_left|format_money }}</td>
+              <td>
+                {% set status = row.status %}
+                {% if status == 'Settled' %}
+                  <span class="badge-soft badge-settled">Settled</span>
+                {% elif status == 'Partial' %}
+                  <span class="badge-soft badge-partial">Partial</span>
+                {% else %}
+                  <span class="badge-soft badge-open">Open</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="d-flex flex-wrap gap-1">
+                  <form method="post" action="{{ url_for('executive_auditing.auditing_update_paid') }}" class="d-flex flex-wrap gap-1 audit-update-form" data-lost="{{ row.amount_lost }}" data-paid="{{ row.amount_paid }}">
+                    <input type="hidden" name="audit_id" value="{{ row._id }}">
+                    <select name="update_field" class="form-select form-select-sm" style="width:120px;" aria-label="Choose amount to update">
+                      <option value="paid">Paid</option>
+                      <option value="lost">Lost</option>
+                    </select>
+                    <input type="number" step="0.01" min="0" name="amount_value" value="{{ row.amount_paid }}" class="form-control form-control-sm audit-amount-input" style="width:115px;" placeholder="Amount" aria-label="Amount">
+                    <button class="btn btn-sm btn-outline-primary">Update</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="11" class="text-center text-muted">No audit records yet.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card-soft p-3 mt-3">
+      <div class="fw-semibold mb-2">Agent Audit Statement</div>
+      <form class="row g-2 align-items-end" id="statementForm" method="get">
+        <div class="col-12 col-md-4">
+          <label class="form-label small text-muted">Agent (Search)</label>
+          <select id="stmtAgent" name="agent_id" class="form-select" required>
+            <option value="">Select agent</option>
+            {% for a in users_by_role.agent %}
+              <option value="{{ a.id }}">{{ a.label }}{% if a.branch %} ({{ a.branch }}){% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label small text-muted">Range</label>
+          <select id="stmtRange" name="range" class="form-select">
+            <option value="all_time">All Time</option>
+            <option value="last_6_months">Last 6 Months</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label small text-muted">Start</label>
+          <input id="stmtStart" type="date" name="start" class="form-control" disabled>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label small text-muted">End</label>
+          <input id="stmtEnd" type="date" name="end" class="form-control" disabled>
+        </div>
+        <div class="col-12 col-md-12 d-flex gap-2">
+          <button id="exportPdfBtn" type="button" class="btn btn-outline-primary">
+            <i class="bi bi-file-earmark-pdf"></i> Export PDF
+          </button>
+          <button id="exportExcelBtn" type="button" class="btn btn-outline-success">
+            <i class="bi bi-file-earmark-excel"></i> Export Excel
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <!-- New Record Modal -->
+  <div class="modal fade" id="auditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">New Audit Record</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form method="post" action="{{ url_for('executive_auditing.auditing_new') }}">
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-12 col-md-4">
+                <label class="form-label small text-muted">Role</label>
+                <select id="subjectRole" name="subject_role" class="form-select" required>
+                  <option value="">Choose role</option>
+                  <option value="manager">Manager</option>
+                  <option value="admin">Admin</option>
+                  <option value="agent">Agent</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-8">
+                <label class="form-label small text-muted">User (Search)</label>
+                <select id="subjectUser" name="subject_id" class="form-select" required>
+                  <option value="">Select role first</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label small text-muted">Type</label>
+                <select name="issue_type" class="form-select" required>
+                  <option value="Theft">Theft</option>
+                  <option value="Lost Item">Lost Item</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label small text-muted">Date</label>
+                <input type="date" name="incident_date" class="form-control" value="{{ today }}" required>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label small text-muted">Branch</label>
+                <input id="subjectBranch" type="text" class="form-control" readonly>
+              </div>
+              <div class="col-12">
+                <label class="form-label small text-muted">Description / Item</label>
+                <input type="text" name="description" class="form-control" placeholder="Describe stolen money or lost item" required>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label small text-muted">Amount Lost (GHS)</label>
+                <input id="amountLost" type="number" step="0.01" min="0" name="amount_lost" class="form-control" required>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label small text-muted">Paid Once (GHS)</label>
+                <input id="amountPaid" type="number" step="0.01" min="0" name="amount_paid" class="form-control" value="0">
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label small text-muted">Amount Left (GHS)</label>
+                <input id="amountLeft" type="number" step="0.01" class="form-control" readonly>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button id="recordBtn" class="btn btn-primary">
+              <span id="recordSpinner" class="spinner-border spinner-border-sm d-none"></span>
+              <span id="recordLabel"><i class="bi bi-check2-circle"></i> Save Record</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Progress Modal -->
+  <div class="modal fade" id="exportProgressModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Preparing Statement</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2 text-muted small" id="exportStatusText">Starting...</div>
+          <div class="progress">
+            <div id="exportProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%">0%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <script>
+    const usersByRole = {{ users_by_role | tojson }};
+
+    const roleSelect = document.getElementById('subjectRole');
+    const userSelect = document.getElementById('subjectUser');
+    const branchInput = document.getElementById('subjectBranch');
+    const amountLost = document.getElementById('amountLost');
+    const amountPaid = document.getElementById('amountPaid');
+    const amountLeft = document.getElementById('amountLeft');
+
+    function refreshUsers(role) {
+      const list = (usersByRole && usersByRole[role]) ? usersByRole[role] : [];
+      if (window.jQuery) {
+        const $user = $('#subjectUser');
+        $user.empty();
+        if (!list.length) {
+          $user.append(new Option('No users found', ''));
+        } else {
+          $user.append(new Option('Select user', ''));
+          list.forEach(u => {
+            const label = u.branch ? `${u.label} (${u.branch})` : u.label;
+            $user.append(new Option(label, u.id));
+          });
+        }
+        $user.val('').trigger('change');
+      } else {
+        userSelect.innerHTML = '';
+        if (!list.length) {
+          const opt = document.createElement('option');
+          opt.value = '';
+          opt.textContent = 'No users found';
+          userSelect.appendChild(opt);
+          return;
+        }
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Select user';
+        userSelect.appendChild(placeholder);
+        list.forEach(u => {
+          const opt = document.createElement('option');
+          opt.value = u.id;
+          opt.textContent = u.branch ? `${u.label} (${u.branch})` : u.label;
+          userSelect.appendChild(opt);
+        });
+      }
+    }
+
+    function updateLeft() {
+      const lost = parseFloat(amountLost.value || '0');
+      const paid = parseFloat(amountPaid.value || '0');
+      if (isNaN(lost) || isNaN(paid)) {
+        amountLeft.value = '';
+        return;
+      }
+      const left = Math.max(lost - paid, 0);
+      amountLeft.value = left.toFixed(2);
+    }
+
+    function setBranchFromSelection() {
+      const role = roleSelect.value;
+      const list = usersByRole[role] || [];
+      const selectedId = userSelect.value;
+      const match = list.find(u => u.id === selectedId);
+      branchInput.value = match ? (match.branch || '') : '';
+    }
+
+    roleSelect.addEventListener('change', (e) => {
+      refreshUsers(e.target.value);
+      branchInput.value = '';
+    });
+    amountLost.addEventListener('input', updateLeft);
+    amountPaid.addEventListener('input', updateLeft);
+    userSelect.addEventListener('change', setBranchFromSelection);
+    updateLeft();
+
+    if (window.jQuery) {
+      $(document).ready(function () {
+        $('#subjectRole').select2({
+          dropdownParent: $('#auditModal'),
+          width: '100%',
+          placeholder: 'Choose role'
+        });
+        $('#subjectUser').select2({
+          dropdownParent: $('#auditModal'),
+          width: '100%',
+          placeholder: 'Select user'
+        });
+
+        $('#stmtAgent').select2({
+          width: '100%',
+          placeholder: 'Select agent'
+        });
+
+        $('#subjectRole').on('change', function () {
+          refreshUsers(this.value);
+          branchInput.value = '';
+        });
+
+        $('#subjectUser').on('change', function () {
+          setBranchFromSelection();
+        });
+      });
+    }
+
+    const stmtRange = document.getElementById('stmtRange');
+    const stmtStart = document.getElementById('stmtStart');
+    const stmtEnd = document.getElementById('stmtEnd');
+    function syncStmtRange() {
+      const isCustom = stmtRange.value === 'custom';
+      stmtStart.disabled = !isCustom;
+      stmtEnd.disabled = !isCustom;
+    }
+    if (stmtRange) {
+      stmtRange.addEventListener('change', syncStmtRange);
+      syncStmtRange();
+    }
+
+    // Record submit loading state
+    const recordForm = document.querySelector('#auditModal form');
+    const recordBtn = document.getElementById('recordBtn');
+    const recordSpinner = document.getElementById('recordSpinner');
+    const recordLabel = document.getElementById('recordLabel');
+    if (recordForm && recordBtn) {
+      recordForm.addEventListener('submit', () => {
+        recordBtn.disabled = true;
+        if (recordSpinner) recordSpinner.classList.remove('d-none');
+        if (recordLabel) recordLabel.textContent = 'Recording...';
+      });
+    }
+
+    document.querySelectorAll('.audit-update-form').forEach((form) => {
+      const select = form.querySelector('select[name="update_field"]');
+      const input = form.querySelector('input[name="amount_value"]');
+      if (!select || !input) return;
+      select.addEventListener('change', () => {
+        input.value = select.value === 'lost' ? (form.dataset.lost || '0') : (form.dataset.paid || '0');
+        input.placeholder = select.value === 'lost' ? 'Lost Amount' : 'Paid Amount';
+      });
+    });
+
+    // Export with progress
+    const exportPdfBtn = document.getElementById('exportPdfBtn');
+    const exportExcelBtn = document.getElementById('exportExcelBtn');
+    const exportModalEl = document.getElementById('exportProgressModal');
+    const exportModal = exportModalEl ? new bootstrap.Modal(exportModalEl) : null;
+    const exportProgressBar = document.getElementById('exportProgressBar');
+    const exportStatusText = document.getElementById('exportStatusText');
+
+    async function startExport(format) {
+      const agentId = document.getElementById('stmtAgent').value;
+      const range = document.getElementById('stmtRange').value;
+      const start = document.getElementById('stmtStart').value;
+      const end = document.getElementById('stmtEnd').value;
+      if (!agentId) {
+        alert('Select an agent.');
+        return;
+      }
+      const formData = new FormData();
+      formData.append('format', format);
+      formData.append('agent_id', agentId);
+      formData.append('range', range);
+      formData.append('start', start);
+      formData.append('end', end);
+
+      if (exportProgressBar) {
+        exportProgressBar.style.width = '0%';
+        exportProgressBar.textContent = '0%';
+      }
+      if (exportStatusText) exportStatusText.textContent = 'Starting...';
+      exportModal && exportModal.show();
+
+      const res = await fetch('{{ url_for("executive_auditing.auditing_statement_start") }}', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        if (exportStatusText) exportStatusText.textContent = data.message || 'Failed to start export.';
+        return;
+      }
+      const jobId = data.job_id;
+      pollProgress(jobId);
+    }
+
+    async function pollProgress(jobId) {
+      const res = await fetch(`/executive/auditing/statement/progress/${jobId}`);
+      const data = await res.json();
+      if (!data.ok) {
+        if (exportStatusText) exportStatusText.textContent = data.message || 'Export failed.';
+        return;
+      }
+      const pct = Math.max(0, Math.min(100, Number(data.progress || 0)));
+      if (exportProgressBar) {
+        exportProgressBar.style.width = `${pct}%`;
+        exportProgressBar.textContent = `${pct}%`;
+      }
+      if (exportStatusText) exportStatusText.textContent = data.status === 'done' ? 'Complete' : 'Preparing...';
+
+      if (data.status === 'done') {
+        window.location = `/executive/auditing/statement/download/${jobId}`;
+        return;
+      }
+      if (data.status === 'error') {
+        if (exportStatusText) exportStatusText.textContent = data.message || 'Export failed.';
+        return;
+      }
+      setTimeout(() => pollProgress(jobId), 800);
+    }
+
+    if (exportPdfBtn) exportPdfBtn.addEventListener('click', () => startExport('pdf'));
+    if (exportExcelBtn) exportExcelBtn.addEventListener('click', () => startExport('excel'));
+  </script>
+</body>
+</html>

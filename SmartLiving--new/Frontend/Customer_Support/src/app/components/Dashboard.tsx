@@ -1,0 +1,65 @@
+import { WorkTimeSummary } from "./WorkTimeSummary";
+import { PersonalTargetProgress } from "./PerformanceSummary";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Ticket, Package, Phone, Star, ShieldCheck, TrendingUp, TrendingDown, ArrowUpRight, Clock, Users, RefreshCw, Activity, AlertTriangle } from "lucide-react";
+import { useTheme } from "./ThemeContext";
+
+type DashboardData = {
+  metrics: { openTickets:number; openTicketsDelta:number; activeDeliveries:number; activeDeliveriesDelta:number; callsToday:number; callsDelta:number; csatScore:number; surveyCount:number; slaCompliance:number; avgResolutionHours:number; totalCustomers:number; newCustomersThisMonth:number };
+  ticketTrend: Array<{day:string;opened:number;resolved:number}>;
+  recentTickets: Array<{id:string;subject:string;customer:string;priority:string;status:string;owner:string;slaRemaining:string;slaStatus:string}>;
+  recentCalls: Array<{id:string;customer:string;type:string;purpose:string;outcome:string;officer:string;duration:string;date:string;time:string}>;
+  activity: Array<{id:string;text:string;sub:string;type:string;occurredAt:string}>;
+  generatedAt:string;
+};
+
+const EMPTY: DashboardData = { metrics:{openTickets:0,openTicketsDelta:0,activeDeliveries:0,activeDeliveriesDelta:0,callsToday:0,callsDelta:0,csatScore:0,surveyCount:0,slaCompliance:0,avgResolutionHours:0,totalCustomers:0,newCustomersThisMonth:0}, ticketTrend:[], recentTickets:[], recentCalls:[], activity:[], generatedAt:"" };
+const STATUS: Record<string,{text:string;bg:string}> = { Open:{text:"#3B82F6",bg:"#DBEAFE"}, New:{text:"#3B82F6",bg:"#DBEAFE"}, Assigned:{text:"#6852ff",bg:"#ebe6ff"}, "In Progress":{text:"#6852ff",bg:"#ebe6ff"}, Pending:{text:"#D97706",bg:"#FEF3C7"}, Escalated:{text:"#DC2626",bg:"#FEE2E2"}, Resolved:{text:"#16A34A",bg:"#DCFCE7"}, Closed:{text:"#6B7280",bg:"#F3F6F5"} };
+const PRIORITY: Record<string,string> = {Critical:"#EF4444",High:"#F59E0B",Medium:"#3B82F6",Low:"#6852ff"};
+const ACTIVITY_COLOR: Record<string,string> = {ticket:"#6852ff",call:"#3B82F6",delivery:"#16A34A",task:"#F59E0B"};
+const compact = (value:number) => Intl.NumberFormat(undefined,{notation:"compact",maximumFractionDigits:1}).format(value);
+const ago = (value:string) => { const seconds=Math.max(0,Math.floor((Date.now()-new Date(value).getTime())/1000)); if(seconds<60)return `${seconds}s ago`; if(seconds<3600)return `${Math.floor(seconds/60)}m ago`; if(seconds<86400)return `${Math.floor(seconds/3600)}h ago`; return `${Math.floor(seconds/86400)}d ago`; };
+
+export function Dashboard() {
+  const { t } = useTheme();
+  const [data,setData] = useState<DashboardData>(EMPTY);
+  const [loading,setLoading] = useState(true);
+  const [refreshing,setRefreshing] = useState(false);
+  const [error,setError] = useState("");
+  const [activeTab,setActiveTab] = useState<"tickets"|"calls">("tickets");
+  const load = useCallback(async (refresh=false) => { refresh?setRefreshing(true):setLoading(true); setError(""); try { const response=await fetch("/api/customer-support/dashboard",{credentials:"same-origin"}); const result=await response.json(); if(!response.ok||!result.ok)throw new Error(result.message||"Unable to load dashboard."); setData(result); } catch(e) { setError(e instanceof Error?e.message:"Unable to load dashboard."); } finally { setLoading(false);setRefreshing(false); } },[]);
+  useEffect(()=>{ void load(); },[load]);
+  const Card=({children,p="24px"}:{children:ReactNode;p?:string})=><div style={{background:t.cardBg,border:`1px solid ${t.cardBorder}`,borderRadius:t.cardRadius,boxShadow:t.cardShadow,padding:p}}>{children}</div>;
+  const Label=({children}:{children:ReactNode})=><p style={{fontSize:".75rem",fontWeight:500,color:t.textMuted,textTransform:"uppercase",letterSpacing:".06em"}}>{children}</p>;
+  const go=(page:string)=>{window.location.hash=page;};
+  const primary=[
+    {label:"Open Tickets",value:data.metrics.openTickets,delta:data.metrics.openTicketsDelta,icon:Ticket,color:"#EF4444"},
+    {label:"Active Deliveries",value:data.metrics.activeDeliveries,delta:data.metrics.activeDeliveriesDelta,icon:Package,color:"#6852ff"},
+    {label:"Calls Today",value:data.metrics.callsToday,delta:data.metrics.callsDelta,icon:Phone,color:"#3B82F6"},
+  ];
+  const secondary=[
+    {label:"CSAT Score",value:data.metrics.surveyCount?data.metrics.csatScore.toFixed(1):"—",sub:data.metrics.surveyCount?`/ 5.0 · ${compact(data.metrics.surveyCount)} surveys`:"No surveys recorded",icon:Star,color:"#F59E0B"},
+    {label:"SLA Compliance",value:`${data.metrics.slaCompliance}%`,sub:"Target: 95%",icon:ShieldCheck,color:"#6852ff"},
+    {label:"Avg Resolution",value:`${data.metrics.avgResolutionHours}h`,sub:"Resolved tickets",icon:Clock,color:"#3B82F6"},
+    {label:"Total Customers",value:compact(data.metrics.totalCustomers),sub:`+${compact(data.metrics.newCustomersThisMonth)} this month`,icon:Users,color:"#7C3AED"},
+  ];
+
+  return <div className="flex h-full" style={{background:t.pageBg}}>
+    <div className="flex-1 overflow-y-auto min-w-0"><div style={{padding:"32px 32px 48px",maxWidth:"1600px"}}>
+      <div className="flex items-center justify-between mb-8"><div><h1 style={{fontSize:"1.6rem",fontWeight:700,color:t.textPrimary,letterSpacing:"-.04em",lineHeight:1}}>Customer Support Command Center</h1><p style={{fontSize:".9375rem",color:t.textTertiary,marginTop:6}}>Live operational data from Smart Living</p></div><button disabled={refreshing} onClick={()=>{window.dispatchEvent(new Event("customer-support-performance-changed"));void load(true);}} className="flex items-center gap-2 rounded-xl" style={{height:40,padding:"0 16px",background:t.surface,border:`1px solid ${t.border}`,color:t.textSecondary}}><RefreshCw size={14} className={refreshing?"animate-spin":""}/> Refresh</button></div>
+      {error&&<div className="flex items-center gap-2 mb-5 rounded-xl p-4" style={{background:"#FEE2E2",color:"#B91C1C"}}><AlertTriangle size={16}/>{error}<button onClick={()=>void load()} className="ml-auto underline">Retry</button></div>}
+      <WorkTimeSummary/>
+      <PersonalTargetProgress/>
+      {loading?<div className="grid grid-cols-3 gap-5 mb-6">{[1,2,3].map(i=><div key={i} className="animate-pulse h-36 rounded-2xl" style={{background:t.surfaceSubtle}}/>)}</div>:<>
+        <div className="grid grid-cols-3 gap-5 mb-6">{primary.map(k=>{const up=k.delta>=0;return <Card key={k.label}><div className="flex items-start justify-between mb-5"><Label>{k.label}</Label><div style={{width:38,height:38,borderRadius:12,background:`${k.color}14`,display:"flex",alignItems:"center",justifyContent:"center"}}><k.icon size={17} color={k.color}/></div></div><p style={{fontSize:"2rem",fontWeight:700,color:t.textPrimary,lineHeight:1,marginBottom:12}}>{compact(k.value)}</p><div className="flex items-center gap-2">{up?<TrendingUp size={13} color="#16A34A"/>:<TrendingDown size={13} color="#EF4444"/>}<span style={{fontSize:".8125rem",fontWeight:600,color:up?"#16A34A":"#EF4444"}}>{up?"+":""}{k.delta}</span><span style={{fontSize:".8125rem",color:t.textMuted}}>vs last week</span></div></Card>})}</div>
+        <div className="grid grid-cols-4 gap-5 mb-6">{secondary.map(k=><Card key={k.label} p="20px 24px"><div className="flex items-center justify-between mb-4"><Label>{k.label}</Label><k.icon size={15} color={k.color}/></div><p style={{fontSize:"1.625rem",fontWeight:700,color:t.textPrimary,lineHeight:1}}>{k.value}</p><p style={{fontSize:".8125rem",color:t.textMuted,marginTop:12}}>{k.sub}</p></Card>)}</div>
+        <div className="mb-6"><Card p="28px"><div className="flex items-center justify-between mb-6"><div><h3 style={{fontWeight:600,color:t.textPrimary}}>Ticket Volume</h3><p style={{fontSize:".8125rem",color:t.textMuted,marginTop:4}}>Opened vs resolved · last 7 days</p></div></div><ResponsiveContainer width="100%" height={200}><AreaChart data={data.ticketTrend} margin={{top:2,right:2,left:-20,bottom:0}}><CartesianGrid stroke={t.borderSubtle} vertical={false}/><XAxis dataKey="day" tick={{fontSize:12,fill:t.textMuted}} axisLine={false} tickLine={false}/><YAxis tick={{fontSize:11,fill:t.textMuted}} axisLine={false} tickLine={false}/><Tooltip/><Area type="monotone" dataKey="opened" stroke="#6852ff" fill="#6852ff22" strokeWidth={2} name="Opened"/><Area type="monotone" dataKey="resolved" stroke="#3B82F6" fill="#3B82F622" strokeWidth={2} name="Resolved"/></AreaChart></ResponsiveContainer></Card></div>
+        <Card p="0"><div className="flex items-center px-7 pt-6" style={{borderBottom:`1px solid ${t.borderSubtle}`}}>{([{"key":"tickets","label":"Recent Tickets","count":data.recentTickets.length},{"key":"calls","label":"Recent Calls","count":data.recentCalls.length}] as const).map(tab=><button key={tab.key} onClick={()=>setActiveTab(tab.key)} className="flex items-center gap-2 pb-4 mr-7" style={{fontSize:".9375rem",fontWeight:activeTab===tab.key?600:400,color:activeTab===tab.key?t.textPrimary:t.textTertiary,borderBottom:activeTab===tab.key?`2px solid ${t.accent}`:"2px solid transparent",marginBottom:-1}}>{tab.label}<span style={{fontSize:".75rem",padding:"2px 8px",borderRadius:99,background:t.surfaceSubtle}}>{tab.count}</span></button>)}<div className="flex-1"/><button onClick={()=>go(activeTab)} className="flex items-center gap-1 pb-4" style={{fontSize:".875rem",color:t.accent}}>View all <ArrowUpRight size={14}/></button></div>
+          <div className="overflow-x-auto"><table className="w-full"><thead><tr style={{background:t.tableHeaderBg}}>{(activeTab==="tickets"?["Ticket","Customer","Priority","Status","Assignee","SLA"]:["Call","Customer","Type","Purpose","Outcome","Officer"]).map(h=><th key={h} className="px-7 py-4 text-left" style={{fontSize:".75rem",color:t.textMuted,textTransform:"uppercase",borderBottom:`1px solid ${t.tableDivider}`}}>{h}</th>)}</tr></thead><tbody>{activeTab==="tickets"?data.recentTickets.map((row,i)=>{const sc=STATUS[row.status]||{text:t.textMuted,bg:t.surfaceSubtle};return <tr key={row.id} onClick={()=>go("tickets")} className="cursor-pointer" style={{borderBottom:i<data.recentTickets.length-1?`1px solid ${t.tableDivider}`:"none"}}><td className="px-7 py-4"><p style={{fontWeight:600,color:t.accent}}>{row.id}</p><p style={{fontSize:".8125rem",color:t.textMuted}}>{row.subject}</p></td><td className="px-7 py-4" style={{color:t.textSecondary}}>{row.customer}</td><td className="px-7 py-4"><span style={{color:PRIORITY[row.priority]}}>●</span> {row.priority}</td><td className="px-7 py-4"><span style={{padding:"4px 10px",borderRadius:8,background:sc.bg,color:sc.text}}>{row.status}</span></td><td className="px-7 py-4" style={{color:t.textSecondary}}>{row.owner}</td><td className="px-7 py-4" style={{color:row.slaStatus==="Breached"?"#EF4444":t.textTertiary}}>{row.slaRemaining}</td></tr>}):data.recentCalls.map((row,i)=><tr key={row.id} onClick={()=>go("calls")} className="cursor-pointer" style={{borderBottom:i<data.recentCalls.length-1?`1px solid ${t.tableDivider}`:"none"}}><td className="px-7 py-4"><p style={{fontWeight:600,color:t.accent}}>{row.id}</p><p style={{fontSize:".75rem",color:t.textMuted}}>{row.date} · {row.time}</p></td><td className="px-7 py-4" style={{color:t.textSecondary}}>{row.customer}</td><td className="px-7 py-4" style={{color:t.textSecondary}}>{row.type}</td><td className="px-7 py-4" style={{color:t.textSecondary}}>{row.purpose||"—"}</td><td className="px-7 py-4" style={{color:t.textSecondary}}>{row.outcome}</td><td className="px-7 py-4" style={{color:t.textSecondary}}>{row.officer}</td></tr>)}</tbody></table></div>
+        </Card>
+      </>}
+    </div></div>
+    <aside className="hidden xl:flex flex-shrink-0 flex-col" style={{width:304,background:"linear-gradient(180deg,#181327 0%,#120f1d 100%)"}}><div className="flex items-center justify-between" style={{padding:"24px 24px 16px"}}><div className="flex items-center gap-2"><Activity size={15} color="#9CA3AF"/><h3 style={{fontSize:".9375rem",fontWeight:600,color:"white"}}>Live Activity</h3></div><span style={{fontSize:".75rem",color:"#86EFAC"}}>● Live</span></div><div className="flex-1 overflow-y-auto px-3">{data.activity.map(item=><div key={item.id} className="flex items-start gap-3 rounded-xl p-3"><div style={{width:8,height:8,borderRadius:99,background:ACTIVITY_COLOR[item.type]||"#9CA3AF",marginTop:5}}/><div><p style={{fontSize:".875rem",color:"rgba(255,255,255,.88)"}}>{item.text}</p><p style={{fontSize:".75rem",color:"rgba(255,255,255,.48)",marginTop:3}}>{item.sub} · {ago(item.occurredAt)}</p></div></div>)}{!loading&&!data.activity.length&&<p className="p-4 text-sm" style={{color:"rgba(255,255,255,.48)"}}>No recent activity.</p>}</div><div style={{padding:16,borderTop:"1px solid rgba(255,255,255,.08)"}}><button onClick={()=>go("notifications")} className="w-full rounded-xl py-2.5" style={{fontSize:".875rem",color:"rgba(255,255,255,.76)",background:"rgba(255,255,255,.06)"}}>View all activity</button></div></aside>
+  </div>;
+}

@@ -1,0 +1,242 @@
+{% if identity and identity.is_authenticated and identity.available_roles and identity.available_roles|length > 1 %}
+<div class="sidebar-role-switcher">
+  <button class="sidebar-role-switcher-btn" id="roleSwitcherBtn" type="button" aria-expanded="false">
+    <span class="sidebar-role-switcher-copy">
+      <small>Current Role</small>
+      <strong>{{ identity.role.replace('_', ' ').title() }}</strong>
+    </span>
+    <i class="bi bi-chevron-up sidebar-role-switcher-caret"></i>
+  </button>
+
+  <div class="sidebar-role-switcher-menu d-none" id="roleSwitcherMenu">
+    <div class="sidebar-role-switcher-title">Switch Role</div>
+    {% for role_item in identity.available_roles %}
+      <button
+        class="sidebar-role-switcher-option {% if role_item.role == identity.role %}active{% endif %}"
+        type="button"
+        data-role="{{ role_item.role }}"
+      >
+        <span>{{ role_item.role_label }}</span>
+        {% if role_item.is_primary %}<small>Primary</small>{% endif %}
+      </button>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="role-switcher-loading" id="roleSwitcherLoading">
+  <div class="role-switcher-loading-card">
+    <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
+    <div class="role-switcher-loading-title" id="roleSwitcherLoadingTitle">Switching Role...</div>
+    <div class="role-switcher-loading-copy">Loading the selected dashboard and preparing your workspace.</div>
+  </div>
+</div>
+
+<style>
+  .sidebar-role-switcher {
+    position: relative;
+    margin-bottom: 12px;
+  }
+
+  .sidebar-role-switcher-btn {
+    width: 100%;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.92));
+    color: #fff;
+    border-radius: 16px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    box-shadow: 0 16px 34px rgba(15, 23, 42, 0.2);
+  }
+
+  .sidebar-role-switcher-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    min-width: 0;
+    text-align: left;
+  }
+
+  .sidebar-role-switcher-copy small {
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.64);
+    font-weight: 800;
+  }
+
+  .sidebar-role-switcher-copy strong {
+    font-size: 0.95rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sidebar-role-switcher-caret {
+    font-size: 0.95rem;
+    transition: transform 0.18s ease;
+  }
+
+  .sidebar-role-switcher-btn[aria-expanded="true"] .sidebar-role-switcher-caret {
+    transform: rotate(180deg);
+  }
+
+  .sidebar-role-switcher-menu {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(100% + 10px);
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    box-shadow: 0 20px 44px rgba(15, 23, 42, 0.18);
+    padding: 10px;
+    z-index: 30;
+  }
+
+  .sidebar-role-switcher-title {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #64748b;
+    font-weight: 800;
+    padding: 4px 8px 8px;
+  }
+
+  .sidebar-role-switcher-option {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    text-align: left;
+    color: #0f172a;
+  }
+
+  .sidebar-role-switcher-option:hover,
+  .sidebar-role-switcher-option.active {
+    background: #eef2ff;
+    color: #1d4ed8;
+  }
+
+  .sidebar-role-switcher-option small {
+    color: #64748b;
+    font-size: 0.72rem;
+    font-weight: 800;
+  }
+
+  .role-switcher-loading {
+    position: fixed;
+    inset: 0;
+    z-index: 2600;
+    background: rgba(15, 23, 42, 0.58);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s ease;
+  }
+
+  .role-switcher-loading.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .role-switcher-loading-card {
+    min-width: 260px;
+    max-width: 92vw;
+    background: #fff;
+    border-radius: 22px;
+    padding: 24px 22px;
+    box-shadow: 0 28px 65px rgba(15, 23, 42, 0.26);
+    text-align: center;
+  }
+
+  .role-switcher-loading-card .spinner-border {
+    width: 2.3rem;
+    height: 2.3rem;
+  }
+
+  .role-switcher-loading-title {
+    margin-top: 14px;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .role-switcher-loading-copy {
+    margin-top: 4px;
+    font-size: 0.86rem;
+    color: #64748b;
+  }
+</style>
+
+<script>
+(function () {
+  const btn = document.getElementById('roleSwitcherBtn');
+  const menu = document.getElementById('roleSwitcherMenu');
+  const loading = document.getElementById('roleSwitcherLoading');
+  const loadingTitle = document.getElementById('roleSwitcherLoadingTitle');
+  if (!btn || !menu || btn.dataset.bound === '1') return;
+
+  btn.dataset.bound = '1';
+
+  btn.addEventListener('click', function () {
+    const isExpanded = btn.getAttribute('aria-expanded') === 'true';
+    btn.setAttribute('aria-expanded', String(!isExpanded));
+    menu.classList.toggle('d-none', isExpanded);
+  });
+
+  document.addEventListener('click', function (event) {
+    if (!menu.contains(event.target) && !btn.contains(event.target)) {
+      menu.classList.add('d-none');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  menu.querySelectorAll('[data-role]').forEach(function (option) {
+    option.addEventListener('click', async function () {
+      const role = this.getAttribute('data-role');
+      if (!role) return;
+      const roleLabel = (this.textContent || role).trim();
+      btn.disabled = true;
+      menu.querySelectorAll('[data-role]').forEach(function (el) {
+        el.disabled = true;
+      });
+      if (loadingTitle) loadingTitle.textContent = `Switching to ${roleLabel}...`;
+      if (loading) loading.classList.add('show');
+
+      try {
+        const resp = await fetch('{{ url_for("login.switch_role") }}', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ role })
+        });
+        const data = await resp.json();
+        if (!resp.ok || !data.ok) throw new Error(data.message || 'Unable to switch role.');
+        window.location.href = data.redirect_url || '/';
+      } catch (err) {
+        if (loading) loading.classList.remove('show');
+        btn.disabled = false;
+        menu.querySelectorAll('[data-role]').forEach(function (el) {
+          el.disabled = false;
+        });
+        btn.setAttribute('aria-expanded', 'false');
+        menu.classList.add('d-none');
+        if (window.showToast) window.showToast('danger', err.message || 'Unable to switch role.');
+      }
+    });
+  });
+})();
+</script>
+{% endif %}

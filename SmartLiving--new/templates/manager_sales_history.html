@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ page_title or 'Sales History' }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="icon" href="https://imagedelivery.net/h9fmMoa1o2c2P55TcWJGOg/10283f28-b9a0-4100-b254-19a854386800/public" type="image/png">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    body { background:#f5f7fb; }
+    .page-wrap { margin-top: 8px; }
+    .card-kpi { border: 0; border-radius: 14px; box-shadow: 0 8px 24px rgba(15,23,42,.08); }
+    .kpi-label { font-size: .78rem; color:#64748b; text-transform: uppercase; letter-spacing:.04em; }
+    .kpi-value { font-size: 1.3rem; font-weight: 700; color:#0f172a; }
+    .chart-card { border:0; border-radius:14px; box-shadow:0 8px 24px rgba(15,23,42,.08); }
+    .chart-box { height: 280px; }
+    .table thead th { white-space: nowrap; cursor: pointer; }
+    .row-click { cursor:pointer; }
+    .loading-mask {
+      position:absolute; inset:0; background:rgba(255,255,255,.72);
+      display:flex; align-items:center; justify-content:center; z-index:10;
+      border-radius:14px;
+    }
+    .empty-state { text-align:center; padding:36px 12px; color:#64748b; }
+  </style>
+</head>
+<body>
+  {% include sidebar_template %}
+  <div class="container-fluid page-wrap px-3 px-lg-4 py-3">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+      <div>
+        <h4 class="mb-1">{{ page_title or 'Sales History' }}</h4>
+        <div class="text-muted small">
+          {{ viewer_label or 'Viewer' }}: <strong>{{ viewer_value or '-' }}</strong>
+          {% if branch_value %} | {{ branch_label or 'Scope' }}: <strong>{{ branch_value }}</strong>{% endif %}
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <select id="rangeMode" class="form-select form-select-sm" style="width:170px;">
+          <option value="today">Today</option>
+          <option value="week">This Week</option>
+          <option value="month" selected>This Month</option>
+          <option value="custom">Custom Range</option>
+        </select>
+        <input id="startDate" type="date" class="form-control form-control-sm" value="{{ default_start }}" style="width:150px;" disabled>
+        <input id="endDate" type="date" class="form-control form-control-sm" value="{{ default_end }}" style="width:150px;" disabled>
+        <button id="btnLoad" class="btn btn-sm btn-primary"><i class="bi bi-arrow-clockwise me-1"></i>Load</button>
+      </div>
+    </div>
+
+    <div id="rootCard" class="position-relative">
+      <div id="loadingMask" class="loading-mask d-none">
+        <div class="text-center">
+          <div class="spinner-border text-primary mb-2"></div>
+          <div class="small text-muted">Loading sales history...</div>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-6 col-md-4 col-xl-3"><div class="card card-kpi p-3"><div class="kpi-label">Total Sales</div><div id="kTotalSales" class="kpi-value">0.00</div></div></div>
+        <div class="col-6 col-md-4 col-xl-3"><div class="card card-kpi p-3"><div class="kpi-label">Payments Count</div><div id="kPaymentsCount" class="kpi-value">0</div></div></div>
+        <div class="col-6 col-md-4 col-xl-3"><div class="card card-kpi p-3"><div class="kpi-label">Customers Paid</div><div id="kCustomersPaid" class="kpi-value">0</div></div></div>
+        <div class="col-6 col-md-4 col-xl-3"><div class="card card-kpi p-3"><div class="kpi-label">Active Agents</div><div id="kActiveAgents" class="kpi-value">0</div></div></div>
+        <div class="col-6 col-md-4 col-xl-3"><div class="card card-kpi p-3"><div class="kpi-label">Daily Avg Sales</div><div id="kDailyAvg" class="kpi-value">0.00</div></div></div>
+        <div class="col-6 col-md-4 col-xl-3"><div class="card card-kpi p-3"><div class="kpi-label">Best Agent</div><div id="kBestAgent" class="kpi-value" style="font-size:1rem;">-</div></div></div>
+        <div class="col-6 col-md-4 col-xl-3"><div class="card card-kpi p-3"><div class="kpi-label">Total Attendance</div><div id="kAttendance" class="kpi-value">0</div></div></div>
+        <div class="col-6 col-md-4 col-xl-3"><div class="card card-kpi p-3"><div class="kpi-label">Total Work Days</div><div id="kWorkDays" class="kpi-value">0</div></div></div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-lg-6">
+          <div class="card chart-card p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="fw-semibold">Daily Sales Trend</div>
+              <small id="rangeLabel" class="text-muted"></small>
+            </div>
+            <div class="chart-box"><canvas id="dailyTrendChart"></canvas></div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card chart-card p-3">
+            <div class="fw-semibold mb-2">Sales per Agent</div>
+            <div class="chart-box"><canvas id="agentSalesChart"></canvas></div>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="card chart-card p-3">
+            <div class="fw-semibold mb-2">Active vs Inactive Agents</div>
+            <div class="chart-box"><canvas id="activeInactiveChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card chart-card p-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="fw-semibold">Agent Breakdown</div>
+          <small class="text-muted">Click row for drilldown</small>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0" id="agentTable">
+            <thead class="table-light">
+              <tr>
+                <th data-sort="agent_name">Agent Name</th>
+                <th data-sort="branch">Branch</th>
+                <th data-sort="total_sales" class="text-end">Total Sales</th>
+                <th data-sort="payments_count" class="text-end">Payments Count</th>
+                <th data-sort="customers_paid" class="text-end">Customers Paid</th>
+                <th data-sort="work_days" class="text-end">Work Days</th>
+                <th data-sort="avg_per_day" class="text-end">Avg Per Day</th>
+                <th data-sort="performance_pct" class="text-end">Performance %</th>
+              </tr>
+            </thead>
+            <tbody id="agentTableBody"></tbody>
+          </table>
+        </div>
+        <div id="emptyState" class="empty-state d-none">
+          <i class="bi bi-inbox fs-2"></i>
+          <div class="mt-2">No sales found for selected date range.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="agentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Agent Drilldown: <span id="mAgentName">-</span></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-lg-6">
+              <div class="fw-semibold mb-2">Daily Breakdown</div>
+              <div class="table-responsive">
+                <table class="table table-sm">
+                  <thead><tr><th>Date</th><th class="text-end">Sales</th><th class="text-end">Payments</th><th class="text-end">Customers</th></tr></thead>
+                  <tbody id="mDailyBody"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <div class="fw-semibold mb-2">Payment Method Distribution</div>
+              <ul id="mMethodList" class="list-group list-group-flush"></ul>
+              <div class="small text-muted mt-2">
+                Cash vs Others: <span id="mCashVsOthers">-</span>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <div class="fw-semibold mb-2">Top 5 Customers by Amount</div>
+              <div class="table-responsive">
+                <table class="table table-sm">
+                  <thead><tr><th>Name</th><th>Phone</th><th class="text-end">Sales</th></tr></thead>
+                  <tbody id="mTopCustomersBody"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <div class="fw-semibold mb-2">Customers Who Paid</div>
+              <div class="table-responsive">
+                <table class="table table-sm">
+                  <thead><tr><th>Name</th><th>Phone</th><th class="text-end">Sales</th><th class="text-end">Payments</th></tr></thead>
+                  <tbody id="mCustomersBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const API_BASE = "{{ api_base }}";
+    const state = {
+      table: [],
+      sortBy: "total_sales",
+      sortDir: "desc",
+      range: { mode: "month", start: "{{ default_start }}", end: "{{ default_end }}" },
+      charts: { daily: null, perAgent: null, activeInactive: null },
+      dataRequest: null,
+      detailRequest: null,
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const asMoney = (n) => Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    function toggleLoading(show){ $("loadingMask").classList.toggle("d-none", !show); }
+
+    function buildQuery(){
+      const params = new URLSearchParams();
+      const mode = $("rangeMode").value;
+      params.set("range", mode);
+      if (mode === "custom"){
+        params.set("start", $("startDate").value || "");
+        params.set("end", $("endDate").value || "");
+      }
+      state.range.mode = mode;
+      state.range.start = $("startDate").value || "";
+      state.range.end = $("endDate").value || "";
+      return params.toString();
+    }
+
+    function setRangeInputState(){
+      const isCustom = $("rangeMode").value === "custom";
+      $("startDate").disabled = !isCustom;
+      $("endDate").disabled = !isCustom;
+    }
+
+    function renderSummary(summary, range){
+      $("kTotalSales").textContent = asMoney(summary.total_sales);
+      $("kPaymentsCount").textContent = summary.total_payments_count || 0;
+      $("kCustomersPaid").textContent = summary.total_customers_paid || 0;
+      $("kActiveAgents").textContent = `${summary.total_active_agents || 0}/${summary.total_agents || 0}`;
+      $("kDailyAvg").textContent = asMoney(summary.daily_average_sales);
+      $("kBestAgent").textContent = summary.best_performing_agent || "-";
+      $("kAttendance").textContent = summary.total_attendance || 0;
+      $("kWorkDays").textContent = summary.total_work_days || 0;
+      $("rangeLabel").textContent = `${range.label}: ${range.start} to ${range.end}`;
+    }
+
+    function renderTable(){
+      const body = $("agentTableBody");
+      body.innerHTML = "";
+      if (!state.table.length){
+        $("emptyState").classList.remove("d-none");
+        return;
+      }
+      $("emptyState").classList.add("d-none");
+
+      const rows = [...state.table].sort((a,b)=>{
+        const k = state.sortBy;
+        const va = a[k], vb = b[k];
+        if (typeof va === "string") return state.sortDir === "asc" ? va.localeCompare(vb) : vb.localeCompare(va);
+        return state.sortDir === "asc" ? (Number(va||0)-Number(vb||0)) : (Number(vb||0)-Number(va||0));
+      });
+
+      rows.forEach(r=>{
+        const tr = document.createElement("tr");
+        tr.className = "row-click";
+        tr.dataset.agentId = r.agent_id;
+        tr.innerHTML = `
+          <td>${r.agent_name || "-"}</td>
+          <td>${r.branch || "-"}</td>
+          <td class="text-end">${asMoney(r.total_sales)}</td>
+          <td class="text-end">${r.payments_count || 0}</td>
+          <td class="text-end">${r.customers_paid || 0}</td>
+          <td class="text-end">${r.work_days || 0}</td>
+          <td class="text-end">${asMoney(r.avg_per_day)}</td>
+          <td class="text-end">${Number(r.performance_pct || 0).toFixed(1)}%</td>
+        `;
+        tr.addEventListener("click", ()=>openAgentModal(r.agent_id, r.agent_name));
+        body.appendChild(tr);
+      });
+    }
+
+    function rebuildCharts(charts){
+      const daily = charts.daily_sales_trend || [];
+      const perAgent = charts.sales_per_agent || [];
+      const ai = charts.active_vs_inactive_agents || { active: 0, inactive: 0 };
+
+      if (state.charts.daily) state.charts.daily.destroy();
+      if (state.charts.perAgent) state.charts.perAgent.destroy();
+      if (state.charts.activeInactive) state.charts.activeInactive.destroy();
+
+      state.charts.daily = new Chart($("dailyTrendChart"), {
+        type: "line",
+        data: {
+          labels: daily.map(d=>d.date),
+          datasets: [{ label:"Daily Sales", data: daily.map(d=>d.sales), borderColor:"#2563eb", backgroundColor:"rgba(37,99,235,.18)", tension:.25, fill:true }]
+        },
+        options: { responsive:true, maintainAspectRatio:false }
+      });
+
+      state.charts.perAgent = new Chart($("agentSalesChart"), {
+        type: "bar",
+        data: {
+          labels: perAgent.map(a=>a.agent_name),
+          datasets: [{ label:"Sales", data: perAgent.map(a=>a.sales), backgroundColor:"#0ea5e9" }]
+        },
+        options: { responsive:true, maintainAspectRatio:false }
+      });
+
+      state.charts.activeInactive = new Chart($("activeInactiveChart"), {
+        type: "doughnut",
+        data: {
+          labels:["Active","Inactive"],
+          datasets:[{ data:[ai.active||0, ai.inactive||0], backgroundColor:["#22c55e","#e2e8f0"] }]
+        },
+        options: { responsive:true, maintainAspectRatio:false }
+      });
+    }
+
+    async function loadData(){
+      if (state.dataRequest){
+        state.dataRequest.abort();
+      }
+      state.dataRequest = new AbortController();
+      $("btnLoad").disabled = true;
+      toggleLoading(true);
+      try{
+        const res = await fetch(`${API_BASE}/data?${buildQuery()}`, {
+          credentials:"same-origin",
+          signal: state.dataRequest.signal
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.message || "Failed to load");
+        renderSummary(data.summary || {}, data.range || {});
+        state.table = data.table || [];
+        renderTable();
+        rebuildCharts(data.charts || {});
+      }catch(err){
+        if (err && err.name === "AbortError") return;
+        console.error(err);
+        state.table = [];
+        renderTable();
+      }finally{
+        state.dataRequest = null;
+        $("btnLoad").disabled = false;
+        toggleLoading(false);
+      }
+    }
+
+    async function openAgentModal(agentId, agentName){
+      if (state.detailRequest){
+        state.detailRequest.abort();
+      }
+      state.detailRequest = new AbortController();
+      $("mAgentName").textContent = agentName || "-";
+      $("mDailyBody").innerHTML = `<tr><td colspan="4" class="text-center text-muted py-3">Loading...</td></tr>`;
+      $("mTopCustomersBody").innerHTML = `<tr><td colspan="3" class="text-center text-muted py-3">Loading...</td></tr>`;
+      $("mCustomersBody").innerHTML = `<tr><td colspan="4" class="text-center text-muted py-3">Loading...</td></tr>`;
+      $("mMethodList").innerHTML = `<li class="list-group-item text-muted">Loading...</li>`;
+      const query = new URLSearchParams();
+      query.set("range", $("rangeMode").value);
+      if ($("rangeMode").value === "custom"){
+        query.set("start", $("startDate").value || "");
+        query.set("end", $("endDate").value || "");
+      }
+      try{
+        const res = await fetch(`${API_BASE}/agent/${encodeURIComponent(agentId)}/details?${query.toString()}`, {
+          credentials:"same-origin",
+          signal: state.detailRequest.signal
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) return;
+
+        $("mDailyBody").innerHTML = (data.daily_breakdown || []).map(r => `
+          <tr><td>${r.date || "-"}</td><td class="text-end">${asMoney(r.sales)}</td><td class="text-end">${r.payments_count || 0}</td><td class="text-end">${r.customers_paid || 0}</td></tr>
+        `).join("");
+
+        $("mTopCustomersBody").innerHTML = (data.top_customers || []).map(r => `
+          <tr><td>${r.name || "-"}</td><td>${r.phone || "-"}</td><td class="text-end">${asMoney(r.total_sales)}</td></tr>
+        `).join("");
+
+        $("mCustomersBody").innerHTML = (data.customers_paid || []).map(r => `
+          <tr><td>${r.name || "-"}</td><td>${r.phone || "-"}</td><td class="text-end">${asMoney(r.total_sales)}</td><td class="text-end">${r.payments_count || 0}</td></tr>
+        `).join("");
+        if (data.customers_paid_truncated){
+          $("mCustomersBody").insertAdjacentHTML(
+            "beforeend",
+            `<tr><td colspan="4" class="text-muted text-center py-2">Showing first ${data.customers_paid.length} of ${data.customers_paid_total_count} customers for performance.</td></tr>`
+          );
+        }
+
+        $("mMethodList").innerHTML = (data.payment_methods || []).map(m => `
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>${m.method || "Unknown"}</span>
+            <span>${m.count || 0} payments | ${asMoney(m.amount)}</span>
+          </li>
+        `).join("");
+
+        const cv = data.payment_methods_cash_vs_others || { cash: 0, others: 0 };
+        $("mCashVsOthers").textContent = `Cash ${asMoney(cv.cash)} vs Others ${asMoney(cv.others)}`;
+
+        bootstrap.Modal.getOrCreateInstance($("agentModal")).show();
+      }catch(err){
+        if (!(err && err.name === "AbortError")){
+          console.error(err);
+        }
+      }finally{
+        state.detailRequest = null;
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", ()=>{
+      setRangeInputState();
+      $("rangeMode").addEventListener("change", setRangeInputState);
+      $("btnLoad").addEventListener("click", loadData);
+
+      document.querySelectorAll("#agentTable thead th[data-sort]").forEach(th=>{
+        th.addEventListener("click", ()=>{
+          const k = th.dataset.sort;
+          if (state.sortBy === k) state.sortDir = state.sortDir === "asc" ? "desc" : "asc";
+          else { state.sortBy = k; state.sortDir = "desc"; }
+          renderTable();
+        });
+      });
+
+      loadData();
+    });
+  </script>
+</body>
+</html>

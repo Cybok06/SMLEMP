@@ -1,0 +1,655 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Activation Details</title>
+  <link rel="icon" href="https://imagedelivery.net/h9fmMoa1o2c2P55TcWJGOg/10283f28-b9a0-4100-b254-19a854386800/public" type="image/png" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <style>
+    body { background: #f5f7fb; }
+    .page-wrap { margin-left: 260px; padding: 20px; }
+    @media (max-width: 991px) { .page-wrap { margin-left: 0; } }
+    .card-soft { border: 1px solid #e6ebf2; border-radius: 16px; box-shadow: 0 8px 24px rgba(15,23,42,.05); }
+    .status-upcoming { background: #dcfce7; color: #166534; }
+    .status-closed { background: #e5e7eb; color: #374151; }
+    .status-cancelled { background: #fee2e2; color: #991b1b; }
+  </style>
+</head>
+<body>
+  {% include 'admin_sidebar.html' %}
+
+  <div class="page-wrap">
+    <div class="container-fluid">
+      <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+        <div>
+          <h4 class="mb-1" id="actTitle">{{ activation.title }}</h4>
+          <div class="text-muted small">Activation review and approval workflow</div>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-primary" id="toggleEditBtn" type="button"><i class="bi bi-pencil-square"></i> Edit</button>
+          <a class="btn btn-outline-secondary" href="{{ url_for('activations.admin_activations_page') }}">Back to list</a>
+        </div>
+      </div>
+
+      <div id="errorBox" class="alert alert-danger d-none"></div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-xl-8">
+          <div class="card card-soft">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <h5 class="mb-0" id="actTitle2">{{ activation.title }}</h5>
+                <span id="actStatus" class="badge status-{{ activation.status }}">{{ activation.status }}</span>
+              </div>
+              <div class="small text-muted mb-2"><i class="bi bi-geo-alt"></i> <span id="actLocation">{{ activation.location }}</span></div>
+              <div class="small text-muted mb-2"><i class="bi bi-clock"></i> <span id="actTime"></span></div>
+              <div class="small text-muted mb-2"><i class="bi bi-broadcast"></i> <span id="runtimeStateText">Not started</span></div>
+              <div class="small text-muted mb-2"><i class="bi bi-stopwatch"></i> <span id="runtimeCounter">00:00:00</span></div>
+              <div class="small text-muted mb-3" id="runtimeMeta">Runtime has not started yet.</div>
+              <div class="small mb-3" id="actNotes">{{ activation.notes or 'No notes.' }}</div>
+              <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-success btn-sm d-none" id="startBtn">Start Activation</button>
+                <button class="btn btn-outline-danger btn-sm d-none" id="endBtn">End Activation</button>
+                <button class="btn btn-outline-dark btn-sm" id="closeBtn">Close</button>
+                <button class="btn btn-outline-warning btn-sm" id="cancelBtn">Cancel</button>
+                <button class="btn btn-outline-danger btn-sm" id="deleteBtn">Delete</button>
+                <button class="btn btn-outline-primary btn-sm" id="openGoingModalBtn">View going list</button>
+                <a class="btn btn-outline-primary btn-sm" href="/admin/activations/{{ activation.id }}/leader-tracking">Leader Tracking Map</a>
+                <a class="btn btn-outline-secondary btn-sm" id="viewLeadsBtn" href="{{ url_for('activation_leads.admin_activation_leads_page') }}?activation_id={{ activation.id }}">View Leads</a>
+                <a class="btn btn-outline-secondary btn-sm" id="viewMetricsBtn" href="{{ url_for('admin_activation_metrics.activation_metrics_page') }}?activation_id={{ activation.id }}">View Metrics</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-4 col-xl-2"><div class="card card-soft"><div class="card-body text-center"><div class="small text-muted">Approved</div><div class="h4 mb-0" id="approvedCount">0</div></div></div></div>
+        <div class="col-12 col-md-4 col-xl-2"><div class="card card-soft"><div class="card-body text-center"><div class="small text-muted">Pending</div><div class="h4 mb-0" id="pendingCount">0</div></div></div></div>
+      </div>
+
+      <div class="card card-soft mb-3 d-none" id="editCard">
+        <div class="card-body">
+          <h6 class="mb-3">Edit Activation</h6>
+          <form id="editForm" class="row g-3" novalidate>
+            <div class="col-12 col-lg-4">
+              <label class="form-label" for="title">Title</label>
+              <input id="title" class="form-control" required />
+            </div>
+            <div class="col-12 col-lg-3">
+              <label class="form-label" for="location">Location</label>
+              <input id="location" class="form-control" required />
+            </div>
+            <div class="col-12 col-lg-3">
+              <label class="form-label" for="activationDateTime">Date & Time</label>
+              <input id="activationDateTime" class="form-control" type="datetime-local" required />
+            </div>
+            <div class="col-12 col-lg-2 d-flex align-items-end">
+              <button class="btn btn-primary w-100" id="saveBtn" type="submit">Save</button>
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="notes">Notes</label>
+              <textarea id="notes" class="form-control" rows="2"></textarea>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-xl-5">
+          <div class="card card-soft h-100">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                  <h6 class="mb-1">Activation Leader</h6>
+                  <div class="small text-muted">Select one leader for the whole activation team. New activation customers and transactions will route to that leader.</div>
+                </div>
+              </div>
+              <form id="leaderForm" class="row g-3">
+                <div class="col-12">
+                  <label class="form-label" for="teamLeader">Team Leader</label>
+                  <select id="teamLeader" class="form-select">
+                    <option value="">Select leader</option>
+                  </select>
+                </div>
+                <div class="col-12">
+                  <div class="d-flex gap-2 flex-wrap">
+                    <button class="btn btn-primary" id="saveLeaderBtn" type="submit">Save Leader</button>
+                    <button class="btn btn-outline-danger" id="clearLeaderBtn" type="button">Clear Leader</button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-xl-7">
+          <div class="card card-soft h-100">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                  <h6 class="mb-1">Leader Summary</h6>
+                  <div class="small text-muted">Current activation leader and the agent activity routed under that leader.</div>
+                </div>
+                <span class="badge text-bg-secondary" id="leaderBadge">No leader selected</span>
+              </div>
+              <div id="leaderSummaryEmpty" class="alert alert-info d-none">No leader selected yet.</div>
+              <div id="leaderSummaryList" class="vstack gap-3"></div>
+              <div class="border rounded-4 p-3 mt-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <div class="fw-semibold">Leader Location Status</div>
+                  <span class="badge text-bg-secondary" id="leaderLocationBadge">Waiting</span>
+                </div>
+                <div class="small text-muted" id="leaderLocationMeta">Leader location permission will be requested on the leader's activation pages.</div>
+                <div class="small mt-2" id="leaderLocationLatest">No location updates yet.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-soft">
+        <div class="card-body">
+          <ul class="nav nav-tabs" id="rsvpTabs" role="tablist">
+            <li class="nav-item"><button class="nav-link active" data-tab="approved" type="button">Approved</button></li>
+            <li class="nav-item"><button class="nav-link" data-tab="pending" type="button">Pending</button></li>
+            <li class="nav-item"><button class="nav-link" data-tab="rejected" type="button">Rejected</button></li>
+          </ul>
+          <div class="d-flex justify-content-end mt-3"><input id="tabSearch" class="form-control form-control-sm" style="max-width:320px;" placeholder="Search name, role, branch" /></div>
+          <div id="tabEmpty" class="alert alert-info mt-3 d-none">No records.</div>
+          <div id="tabList" class="list-group list-group-flush mt-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="goingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-fullscreen-sm-down">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Attendees</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex gap-2 mb-3">
+            <input id="goingSearch" class="form-control form-control-sm" placeholder="Search name, role, branch" />
+            <select id="goingView" class="form-select form-select-sm" style="max-width: 170px;">
+              <option value="approved">Approved only</option>
+              <option value="pending">Approved + Pending</option>
+            </select>
+          </div>
+          <div id="goingModalEmpty" class="alert alert-info d-none">No attendees to show.</div>
+          <div id="goingModalList" class="list-group list-group-flush"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer"></div>
+
+  <script>
+    const activationId = '{{ activation.id }}';
+    const errorBox = document.getElementById('errorBox');
+    let activeTab = 'approved';
+    let tabRows = [];
+    let modalApproved = [];
+    let modalPending = [];
+    let approvedPeople = [];
+    let leaderSummary = null;
+    let activationData = null;
+    let runtimeTick = null;
+    const goingModalEl = document.getElementById('goingModal');
+    let modal = null;
+
+    function fmtDate(iso){
+      if(!iso) return '--';
+      const d = new Date(iso);
+      if(Number.isNaN(d.getTime())) return '--';
+      return d.toLocaleString([], { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function toInputDate(iso){
+      if(!iso) return '';
+      const d = new Date(iso);
+      if(Number.isNaN(d.getTime())) return '';
+      const p = n => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+    }
+
+    function fmtDuration(totalSeconds){
+      const safe = Math.max(0, Number(totalSeconds) || 0);
+      const hours = Math.floor(safe / 3600);
+      const minutes = Math.floor((safe % 3600) / 60);
+      const seconds = Math.floor(safe % 60);
+      return [hours, minutes, seconds].map(v => String(v).padStart(2, '0')).join(':');
+    }
+
+    function runtimeStateLabel(state){
+      if(state === 'running') return 'Running';
+      if(state === 'ended') return 'Ended';
+      if(state === 'started') return 'Started';
+      return 'Not started';
+    }
+
+    function refreshRuntimeView(){
+      const a = activationData || {};
+      const stateText = document.getElementById('runtimeStateText');
+      const counter = document.getElementById('runtimeCounter');
+      const meta = document.getElementById('runtimeMeta');
+      const startBtn = document.getElementById('startBtn');
+      const endBtn = document.getElementById('endBtn');
+      const startedAt = a.startedAt ? new Date(a.startedAt) : null;
+      const endedAt = a.endedAt ? new Date(a.endedAt) : null;
+      let seconds = Number(a.runtimeSeconds || 0);
+
+      if(a.runtimeState === 'running' && startedAt && !Number.isNaN(startedAt.getTime())){
+        seconds = Math.max(0, Math.floor((Date.now() - startedAt.getTime()) / 1000));
+      }
+
+      stateText.textContent = runtimeStateLabel(a.runtimeState);
+      counter.textContent = fmtDuration(seconds);
+
+      if(a.runtimeState === 'running' && startedAt){
+        meta.textContent = `Started: ${fmtDate(a.startedAt)}`;
+      } else if(a.runtimeState === 'ended' && startedAt && endedAt){
+        meta.textContent = `Started: ${fmtDate(a.startedAt)} | Ended: ${fmtDate(a.endedAt)}`;
+      } else if(a.runtimeState === 'started' && startedAt){
+        meta.textContent = `Started: ${fmtDate(a.startedAt)} | Waiting for end time.`;
+      } else {
+        meta.textContent = a.isToday ? 'This activation can be started today by admin.' : 'Runtime has not started yet.';
+      }
+
+      startBtn.classList.toggle('d-none', !a.canStart);
+      endBtn.classList.toggle('d-none', !a.canEnd);
+    }
+
+    function syncRuntimeTicker(){
+      if(runtimeTick){
+        clearInterval(runtimeTick);
+        runtimeTick = null;
+      }
+      refreshRuntimeView();
+      if((activationData || {}).runtimeState === 'running'){
+        runtimeTick = setInterval(refreshRuntimeView, 1000);
+      }
+    }
+
+    function showToast(type, message){
+      const host = document.getElementById('toastContainer');
+      if(!host || !window.bootstrap) return;
+      const el = document.createElement('div');
+      el.className = `toast align-items-center text-bg-${type} border-0`;
+      el.setAttribute('role', 'alert');
+      el.setAttribute('aria-live', 'assertive');
+      el.setAttribute('aria-atomic', 'true');
+      el.innerHTML = `<div class="d-flex"><div class="toast-body">${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>`;
+      host.appendChild(el);
+      const t = bootstrap.Toast.getOrCreateInstance(el, { delay: 2600 });
+      t.show();
+      el.addEventListener('hidden.bs.toast', () => el.remove());
+    }
+
+    function renderTabRows(){
+      const q = (document.getElementById('tabSearch').value || '').trim().toLowerCase();
+      const rows = tabRows.filter(r => (`${r.name||''} ${r.role||''} ${r.branch||''}`).toLowerCase().includes(q));
+      const list = document.getElementById('tabList');
+      const empty = document.getElementById('tabEmpty');
+      list.innerHTML = '';
+      if(!rows.length){
+        empty.classList.remove('d-none');
+        return;
+      }
+      empty.classList.add('d-none');
+
+      rows.forEach(r => {
+        const item = document.createElement('div');
+        item.className = 'list-group-item px-0';
+        let actions = '';
+        if(activeTab === 'pending'){
+          actions = `<div class="d-flex gap-2"><button class="btn btn-success btn-sm" data-action="approve" data-userid="${r.userId}">Approve</button><button class="btn btn-outline-danger btn-sm" data-action="reject" data-userid="${r.userId}">Reject</button></div>`;
+        }
+        item.innerHTML = `<div class="d-flex justify-content-between align-items-start"><div><div class="fw-semibold">${r.name || 'Unknown User'}</div><div class="small text-muted text-capitalize">${r.role || '--'}${r.branch ? ` - ${r.branch}` : ''}</div><div class="small text-muted">Requested: ${fmtDate(r.requestedAt)}</div></div>${actions}</div>`;
+        list.appendChild(item);
+      });
+
+      list.querySelectorAll('[data-action]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const uid = btn.dataset.userid;
+          const action = btn.dataset.action;
+          if(action === 'reject' && !confirm('Reject this request?')) return;
+          btn.disabled = true;
+          try{
+            const res = await fetch(`/api/activations/${activationId}/requests/${uid}/${action}`, { method: 'PATCH', credentials: 'same-origin' });
+            const data = await res.json();
+            if(!res.ok || !data.ok) throw new Error(data.message || 'Update failed');
+            showToast('success', data.message || 'Updated');
+            await loadAll();
+          }catch(err){
+            showToast('danger', err.message || 'Update failed');
+            btn.disabled = false;
+          }
+        });
+      });
+    }
+
+    async function fetchTab(status){
+      const res = await fetch(`/api/activations/${activationId}/requests?status=${status}`, { credentials: 'same-origin' });
+      const data = await res.json();
+      if(!res.ok || !data.ok) throw new Error(data.message || 'Failed to load requests');
+      tabRows = data.items || [];
+      renderTabRows();
+    }
+
+    async function loadDetails(){
+      const res = await fetch(`/api/activations/${activationId}`, { credentials: 'same-origin' });
+      const data = await res.json();
+      if(!res.ok || !data.ok) throw new Error(data.message || 'Failed to load details');
+      const a = data.activation;
+      document.getElementById('actTitle').textContent = a.title || '';
+      document.getElementById('actTitle2').textContent = a.title || '';
+      document.getElementById('actLocation').textContent = a.location || '--';
+      document.getElementById('actTime').textContent = fmtDate(a.activationDateTime);
+      document.getElementById('actNotes').textContent = a.notes || 'No notes.';
+      document.getElementById('approvedCount').textContent = data.approvedCount || 0;
+      document.getElementById('pendingCount').textContent = data.pendingCount || 0;
+      const st = document.getElementById('actStatus');
+      st.textContent = a.status || 'upcoming';
+      st.className = `badge status-${a.status || 'upcoming'}`;
+      activationData = a;
+      syncRuntimeTicker();
+
+      document.getElementById('title').value = a.title || '';
+      document.getElementById('location').value = a.location || '';
+      document.getElementById('activationDateTime').value = toInputDate(a.activationDateTime);
+      document.getElementById('notes').value = a.notes || '';
+    }
+
+    async function loadGoing(includePending){
+      const qs = includePending ? '?include=pending' : '';
+      const res = await fetch(`/api/activations/${activationId}/going${qs}`, { credentials: 'same-origin' });
+      const data = await res.json();
+      if(!res.ok || !data.ok) throw new Error(data.message || 'Failed to load attendees');
+      modalApproved = data.approved || [];
+      modalPending = data.pending || [];
+      renderGoingModal();
+    }
+
+    function renderLeaderOptions(currentLeaderId){
+      const leaderEl = document.getElementById('teamLeader');
+      leaderEl.innerHTML = '<option value="">Select leader</option>';
+      approvedPeople.forEach(person => {
+        const label = `${person.name || 'Unknown'}${person.branch ? ` - ${person.branch}` : ''}`;
+        leaderEl.insertAdjacentHTML('beforeend', `<option value="${person.userId}">${label}</option>`);
+      });
+      leaderEl.value = approvedPeople.some(p => p.userId === currentLeaderId) ? currentLeaderId : '';
+    }
+
+    function renderLeaderSummary(){
+      const list = document.getElementById('leaderSummaryList');
+      const empty = document.getElementById('leaderSummaryEmpty');
+      const badge = document.getElementById('leaderBadge');
+      list.innerHTML = '';
+      if(!leaderSummary || !leaderSummary.leaderId){
+        badge.textContent = 'No leader selected';
+        empty.classList.remove('d-none');
+        return;
+      }
+      badge.textContent = leaderSummary.leaderName || 'Leader selected';
+      empty.classList.add('d-none');
+      const summaryNote = leaderSummary.ownershipActive
+        ? 'Current activation ownership routes new customer work and new transactions to this leader while the activation is running.'
+        : (leaderSummary.leaderState === 'not_started'
+            ? 'A leader has been selected. Routing will start when admin starts the activation.'
+            : 'Leader routing is currently off for this activation.');
+      const breakdown = (leaderSummary.summary?.agentBreakdown || []).map(row =>
+        `<tr><td>${row.name || 'Unknown Agent'}</td><td>${row.customerCount || 0}</td><td>${row.productTotal || 0}</td><td>GHS ${Number(row.paymentTotal || 0).toFixed(2)}</td></tr>`
+      ).join('') || `<tr><td colspan="4" class="text-muted">No activity yet.</td></tr>`;
+      const products = ((leaderSummary.summary || {}).topProducts || []).map(p => `${p.name} x${p.quantity}`).join(', ') || 'No products yet';
+      list.innerHTML = `
+        <div class="border rounded-4 p-3">
+          <div class="fw-semibold">${leaderSummary.leaderName || '--'}</div>
+          <div class="small text-muted">${summaryNote}</div>
+          <div class="row g-2 mt-2">
+            <div class="col-6 col-md-3"><div class="border rounded-3 p-2"><div class="small text-muted">Customers</div><div class="fw-bold">${(leaderSummary.summary || {}).totalCustomers || 0}</div></div></div>
+            <div class="col-6 col-md-3"><div class="border rounded-3 p-2"><div class="small text-muted">Payments</div><div class="fw-bold">GHS ${Number((leaderSummary.summary || {}).totalAmount || 0).toFixed(2)}</div></div></div>
+            <div class="col-6 col-md-3"><div class="border rounded-3 p-2"><div class="small text-muted">Products</div><div class="fw-bold">${(leaderSummary.summary || {}).totalProducts || 0}</div></div></div>
+            <div class="col-12 col-md-3"><div class="border rounded-3 p-2"><div class="small text-muted">Top Products</div><div class="fw-bold small">${products}</div></div></div>
+          </div>
+          <div class="table-responsive mt-3">
+            <table class="table table-sm align-middle mb-0">
+              <thead><tr><th>Agent</th><th>Customers</th><th>Products</th><th>Payments</th></tr></thead>
+              <tbody>${breakdown}</tbody>
+            </table>
+          </div>
+        </div>`;
+    }
+
+    async function readJsonSafe(res){
+      const text = await res.text();
+      try{
+        return text ? JSON.parse(text) : {};
+      }catch(_err){
+        return {
+          ok: false,
+          message: res.ok ? 'Unexpected server response.' : `Request failed with status ${res.status}.`
+        };
+      }
+    }
+
+    async function loadLeaderSummary(){
+      const leaderRes = await fetch(`/api/activations/${activationId}/leader`, { credentials: 'same-origin' });
+      const leaderData = await readJsonSafe(leaderRes);
+      if(!leaderRes.ok || !leaderData.ok) throw new Error(leaderData.message || 'Failed to load leader info');
+      approvedPeople = leaderData.approvedPeople || [];
+      leaderSummary = leaderData;
+      renderLeaderOptions(leaderData.leaderId || '');
+      renderLeaderSummary();
+
+      let locationData = null;
+      try{
+        const locationRes = await fetch(`/admin/activations/${activationId}/leader-location-data`, { credentials: 'same-origin' });
+        locationData = await readJsonSafe(locationRes);
+        if(!locationRes.ok || !locationData.ok) throw new Error(locationData.message || 'Failed to load leader location');
+      }catch(_err){
+        locationData = {
+          trackingRequired: false,
+          leaderName: leaderData.leaderName || '',
+          latest: null
+        };
+      }
+
+      const badge = document.getElementById('leaderLocationBadge');
+      const meta = document.getElementById('leaderLocationMeta');
+      const latest = document.getElementById('leaderLocationLatest');
+      const trackingActive = Boolean(locationData.trackingRequired && leaderData.ownershipActive);
+      badge.textContent = trackingActive ? 'Tracking Required' : (leaderData.leaderState === 'not_started' ? 'Waiting To Start' : 'Tracking Off');
+      badge.className = `badge ${trackingActive ? 'text-bg-success' : 'text-bg-secondary'}`;
+      meta.textContent = locationData.leaderName
+        ? (trackingActive
+            ? `Leader: ${locationData.leaderName}. Browser permission will be requested from this leader.`
+            : 'Leader selected. Location tracking will begin only after the activation starts.')
+        : 'Select a leader to enable location tracking.';
+      if(locationData.latest){
+        latest.textContent = `Latest: ${fmtDate(locationData.latest.recordedAt)} | Lat ${Number(locationData.latest.latitude).toFixed(6)}, Lng ${Number(locationData.latest.longitude).toFixed(6)} | Accuracy ${Number(locationData.latest.accuracy || 0).toFixed(1)}m`;
+      } else {
+        latest.textContent = 'No location updates yet.';
+      }
+    }
+
+    function renderGoingModal(){
+      const q = (document.getElementById('goingSearch').value || '').trim().toLowerCase();
+      const mode = document.getElementById('goingView').value;
+      const list = document.getElementById('goingModalList');
+      const empty = document.getElementById('goingModalEmpty');
+      list.innerHTML = '';
+      let rows = mode === 'pending' ? modalApproved.concat(modalPending) : modalApproved.slice();
+      rows = rows.filter(r => (`${r.name||''} ${r.role||''} ${r.branch||''} ${r.status||''}`).toLowerCase().includes(q));
+      if(!rows.length){
+        empty.classList.remove('d-none');
+        return;
+      }
+      empty.classList.add('d-none');
+      rows.forEach(r => {
+        const b = r.status === 'pending' ? '<span class="badge text-bg-warning">Pending</span>' : '<span class="badge text-bg-success">Approved</span>';
+        const item = document.createElement('div');
+        item.className = 'list-group-item px-0';
+        item.innerHTML = `<div class="d-flex justify-content-between"><div><div class="fw-semibold">${r.name || 'Unknown User'}</div><div class="small text-muted text-capitalize">${r.role || '--'}${r.branch ? ` - ${r.branch}` : ''}</div></div>${b}</div>`;
+        list.appendChild(item);
+      });
+    }
+
+    async function loadAll(){
+      errorBox.classList.add('d-none');
+      try{
+        await loadDetails();
+        await fetchTab(activeTab);
+        await loadLeaderSummary();
+      }catch(err){
+        errorBox.textContent = err.message || 'Failed to load activation.';
+        errorBox.classList.remove('d-none');
+      }
+    }
+
+    async function patchAction(path, method='PATCH', body=null){
+      const opts = { method, credentials: 'same-origin', headers: { 'Content-Type': 'application/json' } };
+      if(body) opts.body = JSON.stringify(body);
+      const res = await fetch(path, opts);
+      const data = await res.json();
+      if(!res.ok || !data.ok) throw new Error(data.message || 'Request failed');
+      return data;
+    }
+
+    document.getElementById('editForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        title: document.getElementById('title').value.trim(),
+        location: document.getElementById('location').value.trim(),
+        activationDateTime: document.getElementById('activationDateTime').value,
+        notes: document.getElementById('notes').value.trim()
+      };
+      if(!payload.title || !payload.location || !payload.activationDateTime){
+        showToast('warning', 'Title, location and date/time are required.');
+        return;
+      }
+      const btn = document.getElementById('saveBtn');
+      btn.disabled = true;
+      try{
+        await patchAction(`/api/activations/${activationId}`, 'PATCH', payload);
+        showToast('success', 'Activation updated.');
+        await loadAll();
+      }catch(err){
+        showToast('danger', err.message || 'Update failed');
+      }finally{ btn.disabled = false; }
+    });
+
+    document.getElementById('closeBtn').addEventListener('click', async () => {
+      try{ await patchAction(`/api/activations/${activationId}/close`, 'PATCH'); showToast('success', 'Activation closed.'); await loadAll(); }catch(err){ showToast('danger', err.message || 'Failed'); }
+    });
+    document.getElementById('cancelBtn').addEventListener('click', async () => {
+      try{ await patchAction(`/api/activations/${activationId}/cancel`, 'PATCH'); showToast('success', 'Activation cancelled.'); await loadAll(); }catch(err){ showToast('danger', err.message || 'Failed'); }
+    });
+    document.getElementById('startBtn').addEventListener('click', async () => {
+      try{ await patchAction(`/api/activations/${activationId}/start`, 'PATCH'); showToast('success', 'Activation started.'); await loadAll(); }catch(err){ showToast('danger', err.message || 'Failed'); }
+    });
+    document.getElementById('endBtn').addEventListener('click', async () => {
+      try{ await patchAction(`/api/activations/${activationId}/end`, 'PATCH'); showToast('success', 'Activation ended.'); await loadAll(); }catch(err){ showToast('danger', err.message || 'Failed'); }
+    });
+    document.getElementById('deleteBtn').addEventListener('click', async () => {
+      if(!confirm('Delete this activation and all requests?')) return;
+      try{ await patchAction(`/api/activations/${activationId}`, 'DELETE'); showToast('success', 'Activation deleted.'); window.location.href = '/admin/activations'; }catch(err){ showToast('danger', err.message || 'Failed'); }
+    });
+
+    document.querySelectorAll('#rsvpTabs [data-tab]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        document.querySelectorAll('#rsvpTabs .nav-link').forEach(x => x.classList.remove('active'));
+        btn.classList.add('active');
+        activeTab = btn.dataset.tab;
+        await fetchTab(activeTab);
+      });
+    });
+
+    document.getElementById('tabSearch').addEventListener('input', renderTabRows);
+
+    document.getElementById('openGoingModalBtn').addEventListener('click', async () => {
+      document.getElementById('goingSearch').value = '';
+      document.getElementById('goingView').value = 'approved';
+      document.getElementById('goingModalList').innerHTML = '';
+      document.getElementById('goingModalEmpty').classList.add('d-none');
+      if(!modal && window.bootstrap){
+        modal = new bootstrap.Modal(goingModalEl);
+      }
+      if(modal){
+        modal.show();
+      }
+      try{ await loadGoing(true); }catch(err){ showToast('danger', err.message || 'Failed to load attendees'); }
+    });
+
+    document.getElementById('goingSearch').addEventListener('input', renderGoingModal);
+    document.getElementById('goingView').addEventListener('change', renderGoingModal);
+    document.getElementById('toggleEditBtn').addEventListener('click', () => {
+      const card = document.getElementById('editCard');
+      card.classList.toggle('d-none');
+      if(!card.classList.contains('d-none')){
+        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+
+    document.getElementById('leaderForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const leaderId = document.getElementById('teamLeader').value;
+      if(!leaderId){
+        showToast('warning', 'Select a leader first.');
+        return;
+      }
+      const btn = document.getElementById('saveLeaderBtn');
+      btn.disabled = true;
+      try{
+        const res = await fetch(`/api/activations/${activationId}/leader`, {
+          method: 'PATCH',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leaderId })
+        });
+        const data = await res.json();
+        if(!res.ok || !data.ok) throw new Error(data.message || 'Failed to save leader');
+        showToast('success', data.message || 'Leader saved.');
+        await loadLeaderSummary();
+      }catch(err){
+        showToast('danger', err.message || 'Failed to save leader');
+      }finally{
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById('clearLeaderBtn').addEventListener('click', async () => {
+      if(!confirm('Clear the activation leader?')) return;
+      const btn = document.getElementById('clearLeaderBtn');
+      btn.disabled = true;
+      try{
+        const res = await fetch(`/api/activations/${activationId}/leader`, {
+          method: 'PATCH',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leaderId: '' })
+        });
+        const data = await res.json();
+        if(!res.ok || !data.ok) throw new Error(data.message || 'Failed to clear leader');
+        showToast('success', data.message || 'Leader cleared.');
+        await loadLeaderSummary();
+      }catch(err){
+        showToast('danger', err.message || 'Failed to clear leader');
+      }finally{
+        btn.disabled = false;
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if(window.bootstrap){
+        modal = new bootstrap.Modal(goingModalEl);
+      }
+      loadAll();
+    });
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

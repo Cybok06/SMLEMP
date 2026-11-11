@@ -1,0 +1,289 @@
+{% if purchases and purchases|length > 0 %}
+  <div class="d-flex flex-column gap-3">
+    {% for purchase in purchases %}
+      <div class="product-card">
+        <div class="d-flex align-items-start gap-3 flex-wrap">
+          {% if purchase.product and purchase.product.image_url %}
+            <img class="product-thumb" src="{{ purchase.product.image_url }}" alt="{{ purchase.product.name }}">
+          {% else %}
+            <div class="product-thumb d-flex align-items-center justify-content-center text-muted">No Image</div>
+          {% endif %}
+          <div class="flex-grow-1">
+            {% set pstatus = (purchase.product.status or purchase.status or "active")|lower %}
+            {% set packaging_status = (purchase.product.packaging_status or "")|lower %}
+            {% if pstatus not in ["delivered", "closed"] and packaging_status in ["packaging", "delivering", "delivered"] %}
+              {% set pstatus = packaging_status %}
+            {% endif %}
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <div class="fw-semibold">{{ purchase.product.name or "Unnamed Product" }}</div>
+              {% if purchase.amount_left == 0 %}
+                <span class="badge bg-success">Paid off</span>
+              {% endif %}
+              {% if purchase.pending_undelivered %}
+                <span class="badge bg-danger">Open undelivered products</span>
+              {% endif %}
+              {% if pstatus == "active" %}
+                <span class="badge bg-success" data-status-badge="1">Active</span>
+              {% elif pstatus == "completed" %}
+                <span class="badge bg-primary" data-status-badge="1">Completed</span>
+              {% elif pstatus == "submitted_for_packaging" %}
+                <span class="badge bg-info text-dark" data-status-badge="1">Submitted</span>
+              {% elif pstatus in ["packaged", "packaging"] %}
+                <span class="badge bg-warning text-dark" data-status-badge="1">Packaging</span>
+              {% elif pstatus == "delivering" %}
+                <span class="badge text-bg-primary" data-status-badge="1">Delivering</span>
+              {% elif pstatus == "delivered" %}
+                <span class="badge bg-success" data-status-badge="1">Delivered</span>
+              {% endif %}
+              {% if purchase.product and purchase.product.status == "closed" %}
+                <span class="badge bg-danger">Closed</span>
+              {% endif %}
+              {% if purchase.product and purchase.product.transfer_status == "transferred_out" %}
+                <span class="badge bg-dark">Transferred</span>
+              {% endif %}
+            </div>
+            {% if purchase.inventory_reason %}
+              <div class="alert alert-warning mt-2 mb-2"><strong>Inventory reason:</strong> {{ purchase.inventory_reason }}</div>
+            {% endif %}
+            <div class="product-meta mt-2">
+              <div>
+                <small>Price</small>
+                GHS {{ "{:,.2f}".format(purchase.product.price or 0) }}
+              </div>
+              <div>
+                <small>Quantity</small>
+                {{ purchase.product.quantity or "N/A" }}
+              </div>
+              <div>
+                <small>Total</small>
+                GHS {{ "{:,.2f}".format(purchase.product.total or 0) }}
+              </div>
+              <div>
+                <small>Amount Paid</small>
+                GHS {{ "{:,.2f}".format(purchase.amount_paid or 0) }}
+              </div>
+              <div>
+                <small>Amount Left</small>
+                GHS {{ "{:,.2f}".format(purchase.amount_left or 0) }}
+              </div>
+              <div>
+                <small>Purchase Type</small>
+                {{ purchase.purchase_type or "N/A" }}
+              </div>
+              <div>
+                <small>Purchase Date</small>
+                {{ purchase.purchase_date[:10] if purchase.purchase_date else "N/A" }}
+              </div>
+              <div>
+                <small>End Date</small>
+                {{ purchase.end_date[:10] if purchase.end_date else "N/A" }}
+              </div>
+            </div>
+
+            {% if purchase.progress is not none %}
+            <div class="mt-3">
+              <div class="d-flex justify-content-between small muted mb-1">
+                <span>Progress</span>
+                <span class="progress-label">{{ purchase.progress|int }}%</span>
+              </div>
+              <div class="progress">
+                <div class="progress-bar bg-primary" data-progress="{{ purchase.progress|int }}" style="width:0%"></div>
+              </div>
+            </div>
+            {% endif %}
+
+            <div class="mt-3 d-flex flex-wrap gap-2">
+              {% if purchase.delivery_evidence and purchase.delivery_evidence.url %}
+              <a class="btn btn-outline-success btn-sm" href="{{ purchase.delivery_evidence.url }}" target="_blank" rel="noopener noreferrer">View delivery photo</a>
+              {% endif %}
+              <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#productComponentsModal{{ loop.index0 }}">
+                <i class="bi bi-grid-3x3-gap me-1"></i> View Products on Card
+              </button>
+            </div>
+          </div>
+          <div class="ms-auto">
+            {% if (session.get('agent_id') or session.get('manager_id')) and purchase.amount_left == 0 and pstatus not in ["packaging", "packaged", "delivering", "delivered", "closed", "submitted_for_packaging"] and purchase.product.transfer_status != "transferred_out" %}
+              <form data-packaging-form="1" method="POST" action="{{ url_for('view.submit_for_packaging', customer_id=customer_id, product_index=loop.index0) }}">
+                <button type="submit" class="btn btn-success btn-sm">
+                  <i class="bi bi-box-seam me-1"></i> Submit for packaging
+                </button>
+              </form>
+            {% endif %}
+            {% if session.get('agent_id') and purchase.amount_left <= 0 and pstatus in ["packaging", "packaged", "delivering"] and purchase.product.transfer_status != "transferred_out" %}
+              <form class="mt-2" data-delivery-form="1" method="POST" action="{{ url_for('view.mark_product_delivered', customer_id=customer_id, product_index=loop.index0) }}">
+                <button type="submit" class="btn btn-primary btn-sm">
+                  <i class="bi bi-truck me-1"></i> Mark Delivered
+                </button>
+              </form>
+            {% endif %}
+            {% if session.get('agent_id') and pstatus not in ["delivered", "closed"] and purchase.product.transfer_status != "transferred_out" %}
+              <button class="btn btn-outline-danger btn-sm mt-2" data-bs-toggle="modal" data-bs-target="#undeliveredModal{{ loop.index0 }}">
+                <i class="bi bi-exclamation-triangle me-1"></i> Undelivered
+              </button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Undelivered Modal -->
+      {% if session.get('agent_id') %}
+      <div class="modal fade" id="undeliveredModal{{ loop.index0 }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-fullscreen-sm-down modal-dialog-centered">
+          <div class="modal-content">
+            <div class="saving-overlay d-none">
+              <div class="spinner-border text-primary" role="status" aria-label="Saving"></div>
+              <div class="mt-2 small">Saving...</div>
+            </div>
+            <form class="undelivered-form" data-url="{{ url_for('undelivered_items.create_undelivered_record', customer_id=customer_id, product_index=loop.index0) }}">
+              <div class="modal-header">
+                <h5 class="modal-title">Undelivered products · {{ purchase.product.name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <div class="alert alert-warning py-2 small">
+                  Select missing items and quantities. This does not remove any data.
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">Expected delivery date (optional)</label>
+                  <input type="date" class="form-control expected-date">
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">Note (optional)</label>
+                  <textarea class="form-control note" rows="2" placeholder="Add any notes..."></textarea>
+                </div>
+
+                <div class="mb-2 fw-semibold">Select from inventory</div>
+                <div class="input-group mb-2">
+                  <input type="search" class="form-control missing-inventory-search" aria-label="Search inventory" placeholder="Search inventory products">
+                  <button type="button" class="btn btn-outline-primary search-missing-inventory">Search</button>
+                </div>
+                <div class="d-flex gap-2 mb-2">
+                  <select class="form-select missing-inventory-select" aria-label="Inventory product"><option value="">Loading inventory...</option></select>
+                  <button type="button" class="btn btn-outline-primary add-missing-inventory">Add product</button>
+                </div>
+                <div class="small text-muted mb-2 missing-inventory-feedback" role="status"></div>
+                <div class="list-group mb-3 missing-inventory-rows"></div>
+                <div class="mb-2 fw-semibold">Products already on this card</div>
+                {% if purchase.components_catalog and purchase.components_catalog|length > 0 %}
+                  <div class="list-group mb-3">
+                    {% for c in purchase.components_catalog %}
+                      <label class="list-group-item d-flex align-items-center gap-2">
+                        <input class="form-check-input me-1 undelivered-check"
+                               type="checkbox"
+                               data-id="{{ c.inventory_id }}"
+                               data-name="{{ c.name }}"
+                               data-image="{{ c.image_url }}"
+                               data-required="{{ c.required_qty }}">
+                        <span class="flex-grow-1">
+                          {{ c.name }} <small class="text-muted">({{ c.required_qty }})</small>
+                        </span>
+                        <input type="number" class="form-control form-control-sm undelivered-qty"
+                               style="max-width:120px;" min="1" value="{{ c.required_qty }}">
+                      </label>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <div class="text-muted small mb-3">Choose from inventory above or add a manual product below.</div>
+                {% endif %}
+
+                <div class="mb-2 fw-semibold">Manual Items</div>
+                <div class="manual-items"></div>
+                <button type="button" class="btn btn-outline-secondary btn-sm add-manual">
+                  <i class="bi bi-plus-circle me-1"></i> Add manual item
+                </button>
+
+                <div class="alert alert-danger mt-3 d-none form-error"></div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">
+                  <span class="spinner-border spinner-border-sm me-1 d-none"></span>
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="modal fade" id="productComponentsModal{{ loop.index0 }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Products on Card · {{ purchase.product.name or "Unnamed Product" }}</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              {% if purchase.components_catalog and purchase.components_catalog|length > 0 %}
+                <div class="row g-3">
+                  {% for c in purchase.components_catalog %}
+                    <div class="col-12 col-md-6">
+                      <div class="border rounded-3 h-100 p-3">
+                        <div class="d-flex gap-3">
+                          <div>
+                            {% if c.image_url %}
+                              <button
+                                type="button"
+                                class="btn p-0 border-0 bg-transparent"
+                                data-component-image-trigger="1"
+                                data-image-url="{{ c.image_url }}"
+                                data-image-title="{{ c.name }}"
+                              >
+                                <img
+                                  class="product-thumb"
+                                  src="{{ c.image_url }}"
+                                  alt="{{ c.name }}"
+                                  style="cursor: zoom-in;"
+                                >
+                              </button>
+                            {% else %}
+                              <div class="product-thumb d-flex align-items-center justify-content-center text-muted">No Image</div>
+                            {% endif %}
+                          </div>
+                          <div class="flex-grow-1">
+                            <div class="fw-semibold">{{ c.name }}</div>
+                            <div class="small text-muted mt-1">
+                              Required Qty: {{ c.required_qty }}
+                            </div>
+                            {% if c.category %}
+                              <div class="small text-muted">Category: {{ c.category }}</div>
+                            {% endif %}
+                            {% if c.brand %}
+                              <div class="small text-muted">Brand: {{ c.brand }}</div>
+                            {% endif %}
+                            <div class="small text-muted text-uppercase mt-2">{{ c.source_collection|replace('_', ' ') }}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <div class="text-muted">No product components found for this card yet.</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="modal fade" id="componentImagePreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="componentImagePreviewTitle">Product Image</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-center">
+          <img id="componentImagePreviewImg" src="" alt="" class="img-fluid rounded-3">
+        </div>
+      </div>
+    </div>
+  </div>
+{% else %}
+  <div class="card p-3 text-muted">No products purchased yet.</div>
+{% endif %}

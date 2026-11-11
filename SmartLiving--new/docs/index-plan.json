@@ -1,0 +1,4336 @@
+{
+  "indexes": [
+    {
+      "collection": "expense_budgets",
+      "keys": [
+        [
+          "year",
+          1
+        ],
+        [
+          "kind",
+          1
+        ],
+        [
+          "category",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "accounting_routes/budget.py:28"
+    },
+    {
+      "collection": "manager_expenses",
+      "keys": [
+        [
+          "status",
+          1
+        ],
+        [
+          "created_at",
+          1
+        ],
+        [
+          "category",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "accounting_routes/budget.py:29"
+    },
+    {
+      "collection": "manager_expenses",
+      "keys": [
+        [
+          "status",
+          1
+        ],
+        [
+          "created_at",
+          1
+        ],
+        [
+          "manager_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "accounting_routes/budget.py:30"
+    },
+    {
+      "collection": "users",
+      "keys": [
+        [
+          "role",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "accounting_routes/budget.py:31"
+    },
+    {
+      "collection": "ar_receipts",
+      "keys": "date_dt",
+      "options": {},
+      "source": "accounting_routes/profit_loss.py:51"
+    },
+    {
+      "collection": "ap_bills",
+      "keys": "bill_date_dt",
+      "options": {},
+      "source": "accounting_routes/profit_loss.py:52"
+    },
+    {
+      "collection": "expenses",
+      "keys": "date",
+      "options": {},
+      "source": "accounting_routes/profit_loss.py:53"
+    },
+    {
+      "collection": "expenses",
+      "keys": "category",
+      "options": {},
+      "source": "accounting_routes/profit_loss.py:54"
+    },
+    {
+      "collection": "manager_expenses",
+      "keys": [
+        [
+          "status",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ],
+        [
+          "category",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "accounting_routes/profit_loss.py:55"
+    },
+    {
+      "collection": "manager_expenses",
+      "keys": "category",
+      "options": {},
+      "source": "accounting_routes/profit_loss.py:56"
+    },
+    {
+      "collection": "stock_entries",
+      "keys": "purchased_at",
+      "options": {},
+      "source": "accounting_routes/profit_loss.py:57"
+    },
+    {
+      "collection": "loan_schedules",
+      "keys": "period_date_dt",
+      "options": {},
+      "source": "accounting_routes/profit_loss.py:58"
+    },
+    {
+      "collection": "prepayments",
+      "keys": [
+        [
+          "status",
+          1
+        ],
+        [
+          "date_dt",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "accounting_routes/profit_loss.py:59"
+    },
+    {
+      "collection": "prepayment_recognition_queue",
+      "keys": "status",
+      "options": {},
+      "source": "accounting_routes/profit_loss.py:60"
+    },
+    {
+      "collection": "inventory",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "name",
+          1
+        ]
+      ],
+      "options": {
+        "background": true
+      },
+      "source": "add_inventory.py:35"
+    },
+    {
+      "collection": "products",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "name",
+          1
+        ]
+      ],
+      "options": {
+        "background": true
+      },
+      "source": "add_product.py:31"
+    },
+    {
+      "collection": "sales_close",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "date",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "admin_sales_close.py:16"
+    },
+    {
+      "collection": "sales_close",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "updated_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "admin_sales_close.py:17"
+    },
+    {
+      "collection": "admin_withdrawals",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "admin_sales_close.py:19"
+    },
+    {
+      "collection": "admin_withdrawals",
+      "keys": [
+        [
+          "by_admin_id",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "admin_sales_close.py:20"
+    },
+    {
+      "collection": "orders",
+      "keys": [
+        [
+          "updated_at",
+          -1
+        ]
+      ],
+      "options": {
+        "background": true
+      },
+      "source": "Backend/inventory/branch_requests_store.py:18"
+    },
+    {
+      "collection": "orders",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "updated_at",
+          -1
+        ]
+      ],
+      "options": {
+        "background": true
+      },
+      "source": "Backend/inventory/branch_requests_store.py:19"
+    },
+    {
+      "collection": "inventory_products",
+      "keys": [
+        [
+          "sku",
+          1
+        ]
+      ],
+      "options": {
+        "background": true
+      },
+      "source": "Backend/inventory/branch_requests_store.py:20"
+    },
+    {
+      "collection": "inventory_branch_locations",
+      "keys": [
+        [
+          "branch",
+          1
+        ],
+        [
+          "status",
+          1
+        ],
+        [
+          "name",
+          1
+        ]
+      ],
+      "options": {
+        "background": true
+      },
+      "source": "Backend/inventory/branch_requests_store.py:21"
+    },
+    {
+      "collection": "inventory_deduction_attempts",
+      "keys": [
+        [
+          "package_id",
+          1
+        ],
+        [
+          "request_id",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "Backend/inventory/packaging_stock.py:18"
+    },
+    {
+      "collection": "inventory_deduction_attempts",
+      "keys": [
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "Backend/inventory/packaging_stock.py:19"
+    },
+    {
+      "collection": "inventory_delivery_movements",
+      "keys": [
+        [
+          "created_at",
+          -1
+        ],
+        [
+          "branch",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "Backend/inventory/packaging_stock.py:20"
+    },
+    {
+      "collection": "inventory_purchase_orders",
+      "keys": "funding_request_key",
+      "options": {
+        "unique": true,
+        "sparse": true
+      },
+      "source": "Backend/inventory/purchase_funding.py:61"
+    },
+    {
+      "collection": "inventory_delivery_deductions",
+      "keys": [
+        [
+          "package_id",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true,
+        "name": "uniq_delivery_deduction_package"
+      },
+      "source": "Backend/inventory/stock_deductions_store.py:48"
+    },
+    {
+      "collection": "inventory_delivery_deductions",
+      "keys": [
+        [
+          "idempotency_key",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true,
+        "name": "uniq_delivery_deduction_key"
+      },
+      "source": "Backend/inventory/stock_deductions_store.py:49"
+    },
+    {
+      "collection": "inventory_delivery_deductions",
+      "keys": [
+        [
+          "confirmed_at",
+          -1
+        ]
+      ],
+      "options": {
+        "name": "delivery_deduction_confirmed_at"
+      },
+      "source": "Backend/inventory/stock_deductions_store.py:50"
+    },
+    {
+      "collection": "inventory_delivery_movements",
+      "keys": [
+        [
+          "deduction_id",
+          1
+        ],
+        [
+          "product_id",
+          1
+        ]
+      ],
+      "options": {
+        "name": "delivery_movement_deduction"
+      },
+      "source": "Backend/inventory/stock_deductions_store.py:51"
+    },
+    {
+      "collection": "packages",
+      "keys": [
+        [
+          "created_at",
+          -1
+        ],
+        [
+          "_id",
+          -1
+        ]
+      ],
+      "options": {
+        "name": "stock_deduction_created_at"
+      },
+      "source": "Backend/inventory/stock_deductions_store.py:52"
+    },
+    {
+      "collection": "packages",
+      "keys": [
+        [
+          "submitted_at",
+          -1
+        ],
+        [
+          "_id",
+          -1
+        ]
+      ],
+      "options": {
+        "name": "stock_deduction_submitted_at"
+      },
+      "source": "Backend/inventory/stock_deductions_store.py:53"
+    },
+    {
+      "collection": "inventory_suppliers",
+      "keys": [
+        [
+          "name_key",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "Backend/inventory/suppliers_api.py:35"
+    },
+    {
+      "collection": "inventory_suppliers",
+      "keys": [
+        [
+          "code",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "Backend/inventory/suppliers_api.py:36"
+    },
+    {
+      "collection": "inventory_purchase_orders",
+      "keys": [
+        [
+          "po_number",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "Backend/inventory/suppliers_api.py:37"
+    },
+    {
+      "collection": "inventory_purchase_orders",
+      "keys": [
+        [
+          "status",
+          1
+        ],
+        [
+          "expected_delivery",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "Backend/inventory/suppliers_api.py:38"
+    },
+    {
+      "collection": "inventory_procurement_requests",
+      "keys": [
+        [
+          "request_number",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "Backend/inventory/suppliers_api.py:39"
+    },
+    {
+      "collection": "inventory_procurement_requests",
+      "keys": [
+        [
+          "status",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "Backend/inventory/suppliers_api.py:40"
+    },
+    {
+      "collection": "inventory_cost_updates",
+      "keys": [
+        [
+          "update_number",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "Backend/inventory/suppliers_api.py:41"
+    },
+    {
+      "collection": "inventory_cost_updates",
+      "keys": [
+        [
+          "effective_date",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "Backend/inventory/suppliers_api.py:42"
+    },
+    {
+      "collection": "supplier_deliveries",
+      "keys": [
+        [
+          "po_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "Backend/inventory/suppliers_api.py:43"
+    },
+    {
+      "collection": "tasks",
+      "keys": [
+        [
+          "kind",
+          1
+        ],
+        [
+          "status",
+          1
+        ],
+        [
+          "due_date",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "customer_support_backend/delivery_reviews_api.py:18"
+    },
+    {
+      "collection": "tasks",
+      "keys": [
+        [
+          "package_id",
+          1
+        ],
+        [
+          "kind",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "customer_support_backend/delivery_reviews_api.py:19"
+    },
+    {
+      "collection": "packages",
+      "keys": [
+        [
+          "status",
+          1
+        ],
+        [
+          "support_followup_task_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "customer_support_backend/delivery_reviews_api.py:20"
+    },
+    {
+      "collection": "card_closures",
+      "keys": [
+        [
+          "action",
+          1
+        ],
+        [
+          "support_followup_task_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "customer_support_backend/delivery_reviews_api.py:21"
+    },
+    {
+      "collection": "tasks",
+      "keys": [
+        [
+          "repeat_purchase.agent_id",
+          1
+        ],
+        [
+          "repeat_purchase.status",
+          1
+        ],
+        [
+          "repeat_purchase.next_followup_date",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "customer_support_backend/repeat_purchases_api.py:26"
+    },
+    {
+      "collection": "tasks",
+      "keys": [
+        [
+          "repeat_purchase.created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "customer_support_backend/repeat_purchases_api.py:27"
+    },
+    {
+      "collection": "customer_support_targets",
+      "keys": [
+        [
+          "officer_id",
+          1
+        ],
+        [
+          "effective_from",
+          -1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "customer_support_backend/targets_api.py:26"
+    },
+    {
+      "collection": "customer_support_field_visits",
+      "keys": [
+        [
+          "officer_id",
+          1
+        ],
+        [
+          "started_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "customer_support_backend/targets_api.py:27"
+    },
+    {
+      "collection": "customer_support_field_visits",
+      "keys": [
+        [
+          "officer_id",
+          1
+        ],
+        [
+          "started_at",
+          1
+        ],
+        [
+          "ended_at",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "customer_support_backend/targets_api.py:28"
+    },
+    {
+      "collection": "customer_support_calls",
+      "keys": [
+        [
+          "officer_id",
+          1
+        ],
+        [
+          "started_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "customer_support_backend/targets_api.py:29"
+    },
+    {
+      "collection": "customer_support_manual_activities",
+      "keys": [
+        [
+          "created_by",
+          1
+        ],
+        [
+          "category",
+          1
+        ],
+        [
+          "occurred_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "customer_support_backend/targets_api.py:30"
+    },
+    {
+      "collection": "customer_support_manual_activities",
+      "keys": [
+        [
+          "field_visit_id",
+          1
+        ],
+        [
+          "category",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "customer_support_backend/targets_api.py:31"
+    },
+    {
+      "collection": "customer_support_calls",
+      "keys": [
+        [
+          "device_id",
+          1
+        ],
+        [
+          "external_call_id",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true,
+        "partialFilterExpression": {
+          "source": "android",
+          "device_id": {
+            "$type": "string"
+          },
+          "external_call_id": {
+            "$type": "string"
+          }
+        },
+        "name": "uniq_android_device_call"
+      },
+      "source": "customer_support_backend/tickets_calls_api.py:60"
+    },
+    {
+      "collection": "whatsapp_posts",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "date",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "dashboard_agent.py:166"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "date",
+          1
+        ],
+        [
+          "payment_type",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "executive_dashboard.py:41"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "date",
+          1
+        ],
+        [
+          "payment_type",
+          1
+        ],
+        [
+          "created_at",
+          1
+        ],
+        [
+          "agent_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "executive_dashboard.py:42"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "created_at",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "executive_dashboard.py:43"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "date",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "executive_dashboard.py:44"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "date",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "executive_dashboard.py:45"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "date_registered",
+          1
+        ],
+        [
+          "agent_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "executive_dashboard.py:46"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "lead_stage",
+          1
+        ],
+        [
+          "date_registered",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "executive_dashboard.py:47"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "lead_stage",
+          1
+        ],
+        [
+          "lead_converted_at",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "executive_dashboard.py:48"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "lead_registered_at",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "executive_dashboard.py:49"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "lead_converted_at",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "executive_dashboard.py:50"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "lead_registered_at",
+          1
+        ],
+        [
+          "lead_converted_at",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "executive_dashboard.py:51"
+    },
+    {
+      "collection": "manager_expenses",
+      "keys": [
+        [
+          "created_at",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "executive_dashboard.py:52"
+    },
+    {
+      "collection": "manager_expenses",
+      "keys": [
+        [
+          "status",
+          1
+        ],
+        [
+          "created_at",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "executive_dashboard.py:53"
+    },
+    {
+      "collection": "manager_expenses",
+      "keys": [
+        [
+          "category",
+          1
+        ],
+        [
+          "created_at",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "executive_dashboard.py:54"
+    },
+    {
+      "collection": "executive_targets",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "period",
+          1
+        ],
+        [
+          "is_active",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "executive_dashboard.py:55"
+    },
+    {
+      "collection": "executive_targets",
+      "keys": [
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "executive_dashboard.py:56"
+    },
+    {
+      "collection": "sales_close",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "date",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "executive_sales_close.py:34"
+    },
+    {
+      "collection": "sales_close",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "updated_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "executive_sales_close.py:35"
+    },
+    {
+      "collection": "manager_expenses",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "date",
+          -1
+        ],
+        [
+          "status",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "executive_sales_close.py:36"
+    },
+    {
+      "collection": "deleted",
+      "keys": [
+        [
+          "deleted_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "executive_users.py:54"
+    },
+    {
+      "collection": "deleted",
+      "keys": [
+        [
+          "type",
+          1
+        ],
+        [
+          "original.username",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "executive_users.py:55"
+    },
+    {
+      "collection": "hr_recruits",
+      "keys": "request_id",
+      "options": {
+        "unique": true,
+        "partialFilterExpression": {
+          "request_id": {
+            "$type": "string"
+          }
+        }
+      },
+      "source": "hr_backend/branch_recruitment.py:200"
+    },
+    {
+      "collection": "hr_recruits",
+      "keys": "open_phone",
+      "options": {
+        "unique": true,
+        "partialFilterExpression": {
+          "open_phone": {
+            "$type": "string"
+          }
+        }
+      },
+      "source": "hr_backend/branch_recruitment.py:217"
+    },
+    {
+      "collection": "users",
+      "keys": "recruitment_candidate_id",
+      "options": {
+        "unique": true,
+        "sparse": true
+      },
+      "source": "hr_backend/branch_recruitment.py:302"
+    },
+    {
+      "collection": "users",
+      "keys": "username",
+      "options": {
+        "unique": true
+      },
+      "source": "hr_backend/branch_recruitment.py:303"
+    },
+    {
+      "collection": "hr_recruits",
+      "keys": [
+        [
+          "status",
+          1
+        ],
+        [
+          "submitted_at",
+          -1
+        ]
+      ],
+      "options": {
+        "background": true
+      },
+      "source": "hr_backend/hr_recruits.py:28"
+    },
+    {
+      "collection": "hr_recruits",
+      "keys": [
+        [
+          "submitted_at",
+          -1
+        ]
+      ],
+      "options": {
+        "background": true
+      },
+      "source": "hr_backend/hr_recruits.py:29"
+    },
+    {
+      "collection": "hr_recruits",
+      "keys": [
+        [
+          "full_name",
+          1
+        ],
+        [
+          "phone",
+          1
+        ],
+        [
+          "position_applied",
+          1
+        ]
+      ],
+      "options": {
+        "background": true
+      },
+      "source": "hr_backend/hr_recruits.py:30"
+    },
+    {
+      "collection": "hr_roles",
+      "keys": "key",
+      "options": {
+        "unique": true
+      },
+      "source": "hr_backend/hr_roles.py:33"
+    },
+    {
+      "collection": "hr_roles",
+      "keys": "name",
+      "options": {
+        "unique": true
+      },
+      "source": "hr_backend/hr_roles.py:34"
+    },
+    {
+      "collection": "staff_loans",
+      "keys": "request_id",
+      "options": {
+        "unique": true
+      },
+      "source": "hr_backend/staff_loans.py:122"
+    },
+    {
+      "collection": "staff_loan_manual_staff",
+      "keys": "staff_code",
+      "options": {
+        "unique": true
+      },
+      "source": "hr_backend/staff_loans.py:150"
+    },
+    {
+      "collection": "inventory_closings",
+      "keys": [
+        [
+          "year",
+          1
+        ],
+        [
+          "manager_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "inventory_products.py:33"
+    },
+    {
+      "collection": "inventory_closings",
+      "keys": [
+        [
+          "year",
+          1
+        ],
+        [
+          "branch_name",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "inventory_products.py:34"
+    },
+    {
+      "collection": "inventory_closings",
+      "keys": [
+        [
+          "status",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "inventory_products.py:35"
+    },
+    {
+      "collection": "closing_jobs",
+      "keys": [
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "inventory_products.py:36"
+    },
+    {
+      "collection": "stock_closings",
+      "keys": [
+        [
+          "closing_year",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "inventory_products.py:37"
+    },
+    {
+      "collection": "stock_closings",
+      "keys": [
+        [
+          "status",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "inventory_products.py:38"
+    },
+    {
+      "collection": "stock_closing_lines",
+      "keys": [
+        [
+          "closing_year",
+          1
+        ],
+        [
+          "manager_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "inventory_products.py:39"
+    },
+    {
+      "collection": "inventory_settings",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "inventory_products.py:48"
+    },
+    {
+      "collection": "inventory_settings",
+      "keys": [
+        [
+          "updated_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "inventory_products.py:49"
+    },
+    {
+      "collection": "users",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "role",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "manager_dashboard.py:20"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "date",
+          1
+        ],
+        [
+          "payment_type",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "manager_dashboard.py:21"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "manager_dashboard.py:22"
+    },
+    {
+      "collection": "executive_targets",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "period",
+          1
+        ],
+        [
+          "is_active",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "manager_dashboard.py:23"
+    },
+    {
+      "collection": "manager_expenses",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "manager_dashboard.py:24"
+    },
+    {
+      "collection": "manager_expenses",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "status",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "manager_dashboard.py:25"
+    },
+    {
+      "collection": "manager_expenses",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "manager_expense.py:38"
+    },
+    {
+      "collection": "manager_expenses",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "date",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "manager_expense.py:39"
+    },
+    {
+      "collection": "manager_expenses",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "category",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "manager_expense.py:40"
+    },
+    {
+      "collection": "manager_expenses",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "status",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "manager_expense.py:41"
+    },
+    {
+      "collection": "inventory_settings",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "manager_inventory.py:23"
+    },
+    {
+      "collection": "inventory_settings",
+      "keys": [
+        [
+          "updated_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "manager_inventory.py:24"
+    },
+    {
+      "collection": "sales_close",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "date",
+          -1
+        ],
+        [
+          "updated_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "manager_sales_close.py:17"
+    },
+    {
+      "collection": "sales_close",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "date",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "manager_sales_close.py:18"
+    },
+    {
+      "collection": "sales_close",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "updated_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "manager_sales_close.py:19"
+    },
+    {
+      "collection": "manager_expenses",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "date",
+          -1
+        ],
+        [
+          "status",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "manager_sales_close.py:20"
+    },
+    {
+      "collection": "users",
+      "keys": [
+        [
+          "role",
+          1
+        ],
+        [
+          "manager_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "manager_sales_close.py:21"
+    },
+    {
+      "collection": "users",
+      "keys": "username",
+      "options": {
+        "unique": true
+      },
+      "source": "push.py:29"
+    },
+    {
+      "collection": "users",
+      "keys": [
+        [
+          "role",
+          1
+        ],
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "name",
+          1
+        ]
+      ],
+      "options": {
+        "background": true
+      },
+      "source": "recruitment.py:12"
+    },
+    {
+      "collection": "users",
+      "keys": [
+        [
+          "role",
+          1
+        ],
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "phone",
+          1
+        ]
+      ],
+      "options": {
+        "background": true
+      },
+      "source": "recruitment.py:13"
+    },
+    {
+      "collection": "users",
+      "keys": [
+        [
+          "role",
+          1
+        ],
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "date_registered",
+          -1
+        ]
+      ],
+      "options": {
+        "background": true
+      },
+      "source": "recruitment.py:14"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "activation",
+          1
+        ],
+        [
+          "activation_id",
+          1
+        ],
+        [
+          "date_registered",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/activation_leads.py:26"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "activation",
+          1
+        ],
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "date_registered",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/activation_leads.py:27"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "activation",
+          1
+        ],
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "date_registered",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/activation_leads.py:28"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "activation",
+          1
+        ],
+        [
+          "activation_registered_by_id",
+          1
+        ],
+        [
+          "date_registered",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/activation_leads.py:29"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "activation",
+          1
+        ],
+        [
+          "registered_by_agent_id",
+          1
+        ],
+        [
+          "date_registered",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/activation_leads.py:30"
+    },
+    {
+      "collection": "activation_rsvps",
+      "keys": [
+        [
+          "activationId",
+          1
+        ],
+        [
+          "status",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/activation_leads.py:31"
+    },
+    {
+      "collection": "activations",
+      "keys": [
+        [
+          "status",
+          1
+        ],
+        [
+          "activationDateTime",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/activations.py:37"
+    },
+    {
+      "collection": "activations",
+      "keys": [
+        [
+          "createdAt",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/activations.py:38"
+    },
+    {
+      "collection": "activation_rsvps",
+      "keys": [
+        [
+          "activationId",
+          1
+        ],
+        [
+          "userId",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "routes/activations.py:39"
+    },
+    {
+      "collection": "activation_rsvps",
+      "keys": [
+        [
+          "activationId",
+          1
+        ],
+        [
+          "status",
+          1
+        ],
+        [
+          "requestedAt",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/activations.py:40"
+    },
+    {
+      "collection": "activation_leader_locations",
+      "keys": [
+        [
+          "activationId",
+          1
+        ],
+        [
+          "leaderId",
+          1
+        ],
+        [
+          "recordedAt",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/activations.py:41"
+    },
+    {
+      "collection": "user_daily_activities",
+      "keys": [
+        [
+          "user_id",
+          1
+        ],
+        [
+          "activity_date",
+          -1
+        ],
+        [
+          "created_at",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/activities.py:38"
+    },
+    {
+      "collection": "user_daily_activities",
+      "keys": [
+        [
+          "activity_date",
+          -1
+        ],
+        [
+          "role",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/activities.py:39"
+    },
+    {
+      "collection": "user_daily_activities",
+      "keys": [
+        [
+          "updated_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/activities.py:40"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "activation",
+          1
+        ],
+        [
+          "date_registered",
+          -1
+        ],
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "lead_stage",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/admin_activation_metrics.py:24"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "activation_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/admin_activation_metrics.py:25"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "activation_id",
+          1
+        ],
+        [
+          "activation_registered_by_id",
+          1
+        ],
+        [
+          "date_registered",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/admin_activation_metrics.py:26"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "activation_id",
+          1
+        ],
+        [
+          "registered_by_agent_id",
+          1
+        ],
+        [
+          "date_registered",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/admin_activation_metrics.py:27"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "activation_id",
+          1
+        ],
+        [
+          "recorded_by_agent_id",
+          1
+        ],
+        [
+          "date",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/admin_activation_metrics.py:28"
+    },
+    {
+      "collection": "activation_rsvps",
+      "keys": [
+        [
+          "activationId",
+          1
+        ],
+        [
+          "status",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/admin_activation_metrics.py:29"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "date",
+          1
+        ],
+        [
+          "payment_type",
+          1
+        ],
+        [
+          "customer_id",
+          1
+        ]
+      ],
+      "options": {
+        "name": "idx_agent_date_type_customer"
+      },
+      "source": "routes/agent_sales_history.py:29"
+    },
+    {
+      "collection": "users",
+      "keys": [
+        [
+          "role",
+          1
+        ]
+      ],
+      "options": {
+        "name": "idx_users_role_only"
+      },
+      "source": "routes/agent_sales_history.py:33"
+    },
+    {
+      "collection": "attendance_workdays",
+      "keys": [
+        [
+          "user_id",
+          1
+        ],
+        [
+          "attendance_date",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "routes/attendance.py:277"
+    },
+    {
+      "collection": "attendance_workdays",
+      "keys": [
+        [
+          "user_id",
+          1
+        ],
+        [
+          "attendance_date",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "routes/attendance.py:31"
+    },
+    {
+      "collection": "attendance_workdays",
+      "keys": [
+        [
+          "attendance_date",
+          -1
+        ],
+        [
+          "role",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/attendance.py:32"
+    },
+    {
+      "collection": "attendance_workdays",
+      "keys": [
+        [
+          "updated_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/attendance.py:33"
+    },
+    {
+      "collection": "product_cards_stock",
+      "keys": [
+        [
+          "product_key",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "routes/cards_tracker.py:86"
+    },
+    {
+      "collection": "product_cards_stock",
+      "keys": [
+        [
+          "product_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/cards_tracker.py:87"
+    },
+    {
+      "collection": "product_cards_balances",
+      "keys": [
+        [
+          "owner_type",
+          1
+        ],
+        [
+          "owner_id",
+          1
+        ],
+        [
+          "product_key",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "routes/cards_tracker.py:88"
+    },
+    {
+      "collection": "product_cards_balances",
+      "keys": [
+        [
+          "owner_type",
+          1
+        ],
+        [
+          "owner_id",
+          1
+        ],
+        [
+          "product_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/cards_tracker.py:89"
+    },
+    {
+      "collection": "product_cards_transfers",
+      "keys": [
+        [
+          "product_id",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/cards_tracker.py:90"
+    },
+    {
+      "collection": "product_cards_transfers",
+      "keys": [
+        [
+          "product_key",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/cards_tracker.py:91"
+    },
+    {
+      "collection": "product_cards_transfers",
+      "keys": [
+        [
+          "from_id",
+          1
+        ],
+        [
+          "to_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/cards_tracker.py:92"
+    },
+    {
+      "collection": "product_cards_sales",
+      "keys": [
+        [
+          "product_id",
+          1
+        ],
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/cards_tracker.py:93"
+    },
+    {
+      "collection": "cards_stock_exec",
+      "keys": [
+        [
+          "product_key",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "routes/cards_tracker.py:94"
+    },
+    {
+      "collection": "cards_stock_manager",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "product_key",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "routes/cards_tracker.py:95"
+    },
+    {
+      "collection": "cards_stock_agent",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "product_key",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "routes/cards_tracker.py:96"
+    },
+    {
+      "collection": "cards_transfers",
+      "keys": [
+        [
+          "product_key",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/cards_tracker.py:97"
+    },
+    {
+      "collection": "cards_transfers",
+      "keys": [
+        [
+          "from_id",
+          1
+        ],
+        [
+          "to_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/cards_tracker.py:98"
+    },
+    {
+      "collection": "cards_adjustments",
+      "keys": [
+        [
+          "product_key",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/cards_tracker.py:99"
+    },
+    {
+      "collection": "card_closures",
+      "keys": [
+        [
+          "at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/closed_cards_history.py:26"
+    },
+    {
+      "collection": "card_closures",
+      "keys": [
+        [
+          "by_user",
+          1
+        ],
+        [
+          "at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/closed_cards_history.py:27"
+    },
+    {
+      "collection": "card_closures",
+      "keys": [
+        [
+          "customer_id",
+          1
+        ],
+        [
+          "at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/closed_cards_history.py:28"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/closed_cards_history.py:29"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/closed_cards_history.py:30"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "branch",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/closed_cards_history.py:31"
+    },
+    {
+      "collection": "users",
+      "keys": [
+        [
+          "role",
+          1
+        ],
+        [
+          "manager_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/closed_cards_history.py:32"
+    },
+    {
+      "collection": "inventory_products_outflow",
+      "keys": [
+        [
+          "source",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/closed_cards_history.py:33"
+    },
+    {
+      "collection": "inventory_products_outflow",
+      "keys": [
+        [
+          "by_user",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/closed_cards_history.py:34"
+    },
+    {
+      "collection": "packages",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/completed_cards.py:53"
+    },
+    {
+      "collection": "packages",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/completed_cards.py:54"
+    },
+    {
+      "collection": "packages",
+      "keys": [
+        [
+          "agent_branch",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/completed_cards.py:55"
+    },
+    {
+      "collection": "packages",
+      "keys": [
+        [
+          "customer_id",
+          1
+        ],
+        [
+          "product_index",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/completed_cards.py:56"
+    },
+    {
+      "collection": "inventory_products_outflow",
+      "keys": [
+        [
+          "customer_id",
+          1
+        ],
+        [
+          "packaged_product_index",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/completed_cards.py:57"
+    },
+    {
+      "collection": "surplus_cash",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "date",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/executive_surplus_cash.py:19"
+    },
+    {
+      "collection": "surplus_cash",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "date",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/executive_surplus_cash.py:20"
+    },
+    {
+      "collection": "surplus_cash",
+      "keys": [
+        [
+          "branch",
+          1
+        ],
+        [
+          "date",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/executive_surplus_cash.py:21"
+    },
+    {
+      "collection": "executive_targets",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "period",
+          1
+        ],
+        [
+          "is_active",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/executive_target.py:23"
+    },
+    {
+      "collection": "executive_targets",
+      "keys": [
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/executive_target.py:24"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "date",
+          1
+        ],
+        [
+          "payment_type",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/executive_target.py:25"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "date_registered",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/executive_target.py:26"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "purchases.purchase_date",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/executive_target.py:27"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "purchases.agent_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/executive_target.py:28"
+    },
+    {
+      "collection": "executive_targets",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "period",
+          1
+        ],
+        [
+          "is_active",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/executive_targets_analytics.py:20"
+    },
+    {
+      "collection": "executive_targets",
+      "keys": [
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/executive_targets_analytics.py:21"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "date",
+          1
+        ],
+        [
+          "payment_type",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/executive_targets_analytics.py:22"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "date_registered",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/executive_targets_analytics.py:23"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "purchases.purchase_date",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/executive_targets_analytics.py:24"
+    },
+    {
+      "collection": "external_api_keys",
+      "keys": [
+        [
+          "key_prefix",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "routes/external_access.py:79"
+    },
+    {
+      "collection": "external_api_keys",
+      "keys": [
+        [
+          "user_name",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/external_access.py:80"
+    },
+    {
+      "collection": "external_api_keys",
+      "keys": [
+        [
+          "active",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/external_access.py:81"
+    },
+    {
+      "collection": "external_api_request_logs",
+      "keys": [
+        [
+          "api_key_id",
+          1
+        ],
+        [
+          "at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/external_access.py:82"
+    },
+    {
+      "collection": "external_api_request_logs",
+      "keys": [
+        [
+          "status_code",
+          1
+        ],
+        [
+          "at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/external_access.py:83"
+    },
+    {
+      "collection": "external_api_request_logs",
+      "keys": [
+        [
+          "route",
+          1
+        ],
+        [
+          "at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/external_access.py:84"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "status",
+          1
+        ],
+        [
+          "status_updated_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/external_access.py:85"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "card_closed_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/external_access.py:86"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "date",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/external_access.py:87"
+    },
+    {
+      "collection": "card_closures",
+      "keys": [
+        [
+          "action",
+          1
+        ],
+        [
+          "at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/external_access.py:88"
+    },
+    {
+      "collection": "packages",
+      "keys": [
+        [
+          "status",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/external_access.py:89"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "date_registered",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/external_access.py:90"
+    },
+    {
+      "collection": "users",
+      "keys": [
+        [
+          "date_registered",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/external_access.py:91"
+    },
+    {
+      "collection": "users",
+      "keys": [
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/external_access.py:92"
+    },
+    {
+      "collection": "products",
+      "keys": [
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/external_access.py:93"
+    },
+    {
+      "collection": "payrolls",
+      "keys": [
+        [
+          "payroll_month",
+          1
+        ],
+        [
+          "status",
+          1
+        ],
+        [
+          "updated_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/hr_payroll.py:23"
+    },
+    {
+      "collection": "payrolls",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "payroll_month",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "routes/hr_payroll.py:24"
+    },
+    {
+      "collection": "users",
+      "keys": [
+        [
+          "role",
+          1
+        ],
+        [
+          "branch",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/hr_payroll.py:25"
+    },
+    {
+      "collection": "payroll_settings",
+      "keys": [
+        [
+          "scope",
+          1
+        ],
+        [
+          "branch",
+          1
+        ],
+        [
+          "month",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "routes/hr_payroll.py:27"
+    },
+    {
+      "collection": "payroll_settings",
+      "keys": [
+        [
+          "month",
+          1
+        ],
+        [
+          "updated_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/hr_payroll.py:28"
+    },
+    {
+      "collection": "payroll_records",
+      "keys": [
+        [
+          "employee_id",
+          1
+        ],
+        [
+          "month",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "routes/hr_payroll.py:29"
+    },
+    {
+      "collection": "payroll_records",
+      "keys": [
+        [
+          "month",
+          1
+        ],
+        [
+          "role",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/hr_payroll.py:30"
+    },
+    {
+      "collection": "payroll_deductions",
+      "keys": [
+        [
+          "employee_id",
+          1
+        ],
+        [
+          "month",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/hr_payroll.py:31"
+    },
+    {
+      "collection": "payroll_deductions",
+      "keys": [
+        [
+          "month",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/hr_payroll.py:32"
+    },
+    {
+      "collection": "inventory",
+      "keys": [
+        [
+          "stock_scope",
+          1
+        ],
+        [
+          "name",
+          1
+        ]
+      ],
+      "options": {
+        "background": true
+      },
+      "source": "routes/inventory/orders.py:37"
+    },
+    {
+      "collection": "inventory",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "name",
+          1
+        ]
+      ],
+      "options": {
+        "background": true
+      },
+      "source": "routes/inventory/orders.py:38"
+    },
+    {
+      "collection": "orders",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "updated_at",
+          -1
+        ]
+      ],
+      "options": {
+        "background": true
+      },
+      "source": "routes/inventory/orders.py:39"
+    },
+    {
+      "collection": "orders",
+      "keys": [
+        [
+          "updated_at",
+          -1
+        ]
+      ],
+      "options": {
+        "background": true
+      },
+      "source": "routes/inventory/orders.py:40"
+    },
+    {
+      "collection": "supplier_deliveries",
+      "keys": [
+        [
+          "ref_no",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "routes/inventory/supplier_deliveries.py:115"
+    },
+    {
+      "collection": "supplier_deliveries",
+      "keys": [
+        [
+          "status",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/inventory/supplier_deliveries.py:116"
+    },
+    {
+      "collection": "supplier_deliveries",
+      "keys": [
+        [
+          "supplier.name",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/inventory/supplier_deliveries.py:117"
+    },
+    {
+      "collection": "supplier_deliveries",
+      "keys": [
+        [
+          "items.product_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/inventory/supplier_deliveries.py:118"
+    },
+    {
+      "collection": "supplier_deliveries",
+      "keys": [
+        [
+          "expected_date",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/inventory/supplier_deliveries.py:119"
+    },
+    {
+      "collection": "inventory_products",
+      "keys": [
+        [
+          "name",
+          1
+        ],
+        [
+          "category",
+          1
+        ],
+        [
+          "brand",
+          1
+        ]
+      ],
+      "options": {
+        "background": true
+      },
+      "source": "routes/manager/orders.py:27"
+    },
+    {
+      "collection": "inventory_products",
+      "keys": [
+        [
+          "sku",
+          1
+        ]
+      ],
+      "options": {
+        "background": true
+      },
+      "source": "routes/manager/orders.py:28"
+    },
+    {
+      "collection": "orders",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "updated_at",
+          -1
+        ]
+      ],
+      "options": {
+        "background": true
+      },
+      "source": "routes/manager/orders.py:29"
+    },
+    {
+      "collection": "payrolls",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "payroll_month",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "routes/manager_payroll.py:21"
+    },
+    {
+      "collection": "payrolls",
+      "keys": [
+        [
+          "payroll_month",
+          1
+        ],
+        [
+          "status",
+          1
+        ],
+        [
+          "updated_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/manager_payroll.py:22"
+    },
+    {
+      "collection": "users",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "role",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/manager_payroll.py:23"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "date",
+          1
+        ],
+        [
+          "payment_type",
+          1
+        ],
+        [
+          "agent_id",
+          1
+        ]
+      ],
+      "options": {
+        "name": "idx_mgr_date_type_agent"
+      },
+      "source": "routes/manager_sales_history.py:29"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "date",
+          1
+        ],
+        [
+          "payment_type",
+          1
+        ],
+        [
+          "customer_id",
+          1
+        ]
+      ],
+      "options": {
+        "name": "idx_mgr_agent_date_type_customer"
+      },
+      "source": "routes/manager_sales_history.py:33"
+    },
+    {
+      "collection": "users",
+      "keys": [
+        [
+          "role",
+          1
+        ],
+        [
+          "manager_id",
+          1
+        ]
+      ],
+      "options": {
+        "name": "idx_users_role_manager"
+      },
+      "source": "routes/manager_sales_history.py:37"
+    },
+    {
+      "collection": "surplus_cash",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "date",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/manager_surplus_cash.py:17"
+    },
+    {
+      "collection": "surplus_cash",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "date",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/manager_surplus_cash.py:18"
+    },
+    {
+      "collection": "surplus_cash",
+      "keys": [
+        [
+          "branch",
+          1
+        ],
+        [
+          "date",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/manager_surplus_cash.py:19"
+    },
+    {
+      "collection": "inventory_products_outflow",
+      "keys": [
+        [
+          "created_at",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/reports_insights.py:687"
+    },
+    {
+      "collection": "inventory_products_outflow",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/reports_insights.py:688"
+    },
+    {
+      "collection": "inventory_products_outflow",
+      "keys": [
+        [
+          "agent_branch",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/reports_insights.py:689"
+    },
+    {
+      "collection": "inventory_products_outflow",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/reports_insights.py:690"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "customer_id",
+          1
+        ],
+        [
+          "date",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/reports_insights.py:691"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "date",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/reports_insights.py:692"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "manager_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/reports_insights.py:693"
+    },
+    {
+      "collection": "returns_inwards",
+      "keys": [
+        [
+          "return_date_dt",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "routes/returns_inwards.py:34"
+    },
+    {
+      "collection": "returns_inwards",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/returns_inwards.py:35"
+    },
+    {
+      "collection": "returns_inwards",
+      "keys": [
+        [
+          "status",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/returns_inwards.py:36"
+    },
+    {
+      "collection": "returns_inwards",
+      "keys": [
+        [
+          "customer_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "routes/returns_inwards.py:37"
+    },
+    {
+      "collection": "returns_inwards",
+      "keys": [
+        [
+          "return_no",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "routes/returns_inwards.py:38"
+    },
+    {
+      "collection": "activity_logs",
+      "keys": [
+        [
+          "user_id",
+          1
+        ],
+        [
+          "timestamp",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "services/activity_audit.py:16"
+    },
+    {
+      "collection": "activity_logs",
+      "keys": [
+        [
+          "day",
+          1
+        ],
+        [
+          "user_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "services/activity_audit.py:17"
+    },
+    {
+      "collection": "activity_logs",
+      "keys": [
+        [
+          "month",
+          1
+        ],
+        [
+          "user_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "services/activity_audit.py:18"
+    },
+    {
+      "collection": "activity_logs",
+      "keys": [
+        [
+          "action",
+          1
+        ],
+        [
+          "timestamp",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "services/activity_audit.py:19"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "customer_id",
+          1
+        ],
+        [
+          "product_index",
+          1
+        ],
+        [
+          "payment_type",
+          1
+        ],
+        [
+          "date",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "services/customer_liability_service.py:33"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "payment_type",
+          1
+        ],
+        [
+          "date",
+          -1
+        ],
+        [
+          "customer_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "services/customer_liability_service.py:34"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "payment_type",
+          1
+        ],
+        [
+          "date",
+          -1
+        ],
+        [
+          "customer_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "services/customer_liability_service.py:35"
+    },
+    {
+      "collection": "packages",
+      "keys": [
+        [
+          "customer_id",
+          1
+        ],
+        [
+          "product_index",
+          1
+        ],
+        [
+          "status",
+          1
+        ],
+        [
+          "delivered_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "services/customer_liability_service.py:36"
+    },
+    {
+      "collection": "undelivered_items",
+      "keys": [
+        [
+          "customer_id",
+          1
+        ],
+        [
+          "product_index",
+          1
+        ],
+        [
+          "status",
+          1
+        ],
+        [
+          "updated_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "services/customer_liability_service.py:37"
+    },
+    {
+      "collection": "liability_settings",
+      "keys": [
+        [
+          "key",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "services/customer_liability_service.py:38"
+    },
+    {
+      "collection": "hr_customer_handovers",
+      "keys": [
+        [
+          "exit_id",
+          1
+        ],
+        [
+          "customer_id",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "services/exit_handovers.py:84"
+    },
+    {
+      "collection": "hr_customer_handovers",
+      "keys": [
+        [
+          "from_user_id",
+          1
+        ],
+        [
+          "captured_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "services/exit_handovers.py:85"
+    },
+    {
+      "collection": "hr_customer_handovers",
+      "keys": [
+        [
+          "to_user_id",
+          1
+        ],
+        [
+          "captured_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "services/exit_handovers.py:86"
+    },
+    {
+      "collection": "login_logs",
+      "keys": [
+        [
+          "user_id",
+          1
+        ],
+        [
+          "timestamp",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "services/login_audit.py:14"
+    },
+    {
+      "collection": "login_logs",
+      "keys": [
+        [
+          "username",
+          1
+        ],
+        [
+          "timestamp",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "services/login_audit.py:15"
+    },
+    {
+      "collection": "login_logs",
+      "keys": [
+        [
+          "role",
+          1
+        ],
+        [
+          "timestamp",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "services/login_audit.py:16"
+    },
+    {
+      "collection": "login_logs",
+      "keys": [
+        [
+          "ip",
+          1
+        ],
+        [
+          "timestamp",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "services/login_audit.py:17"
+    },
+    {
+      "collection": "users",
+      "keys": [
+        [
+          "username",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "services/login_audit.py:24"
+    },
+    {
+      "collection": "users",
+      "keys": [
+        [
+          "role",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "services/login_audit.py:25"
+    },
+    {
+      "collection": "users",
+      "keys": [
+        [
+          "branch",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "services/login_audit.py:26"
+    },
+    {
+      "collection": "users",
+      "keys": [
+        [
+          "status",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "services/login_audit.py:27"
+    },
+    {
+      "collection": "product_cards_v2",
+      "keys": [
+        [
+          "product_id",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "services/product_cards_service.py:46"
+    },
+    {
+      "collection": "product_cards_v2",
+      "keys": [
+        [
+          "product_key",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "services/product_cards_service.py:47"
+    },
+    {
+      "collection": "product_card_balances_v2",
+      "keys": [
+        [
+          "holder_role",
+          1
+        ],
+        [
+          "holder_user_id",
+          1
+        ],
+        [
+          "product_id",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "services/product_cards_service.py:48"
+    },
+    {
+      "collection": "product_card_balances_v2",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "holder_role",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "services/product_cards_service.py:49"
+    },
+    {
+      "collection": "product_card_transfers_v2",
+      "keys": [
+        [
+          "product_id",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "services/product_cards_service.py:50"
+    },
+    {
+      "collection": "product_card_transfers_v2",
+      "keys": [
+        [
+          "from_role",
+          1
+        ],
+        [
+          "from_user_id",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "services/product_cards_service.py:51"
+    },
+    {
+      "collection": "product_card_transfers_v2",
+      "keys": [
+        [
+          "to_role",
+          1
+        ],
+        [
+          "to_user_id",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "services/product_cards_service.py:52"
+    },
+    {
+      "collection": "product_card_consumptions_v2",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "product_id",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "services/product_cards_service.py:53"
+    },
+    {
+      "collection": "product_card_consumptions_v2",
+      "keys": [
+        [
+          "sale_ref",
+          1
+        ]
+      ],
+      "options": {
+        "unique": true
+      },
+      "source": "services/product_cards_service.py:54"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "date",
+          1
+        ],
+        [
+          "amount",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "services/profit_loss_service.py:42"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "date_dt",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "services/profit_loss_service.py:43"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "services/profit_loss_service.py:44"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "services/profit_loss_service.py:45"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "customer_id",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "services/profit_loss_service.py:46"
+    },
+    {
+      "collection": "users",
+      "keys": [
+        [
+          "role",
+          1
+        ],
+        [
+          "name",
+          1
+        ]
+      ],
+      "options": {
+        "background": true
+      },
+      "source": "transfer.py:18"
+    },
+    {
+      "collection": "users",
+      "keys": [
+        [
+          "role",
+          1
+        ],
+        [
+          "phone",
+          1
+        ]
+      ],
+      "options": {
+        "background": true
+      },
+      "source": "transfer.py:19"
+    },
+    {
+      "collection": "users",
+      "keys": [
+        [
+          "role",
+          1
+        ],
+        [
+          "manager_id",
+          1
+        ]
+      ],
+      "options": {
+        "background": true
+      },
+      "source": "transfer.py:20"
+    },
+    {
+      "collection": "users",
+      "keys": [
+        [
+          "role",
+          1
+        ],
+        [
+          "date_registered",
+          -1
+        ]
+      ],
+      "options": {
+        "background": true
+      },
+      "source": "transfer.py:21"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "name",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "view.py:46"
+    },
+    {
+      "collection": "customers",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "phone_number",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "view.py:47"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "agent_id",
+          1
+        ],
+        [
+          "date",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "view.py:48"
+    },
+    {
+      "collection": "payments",
+      "keys": [
+        [
+          "customer_id",
+          1
+        ],
+        [
+          "date",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "view.py:49"
+    },
+    {
+      "collection": "packages",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "view.py:50"
+    },
+    {
+      "collection": "inventory_products_outflow",
+      "keys": [
+        [
+          "manager_id",
+          1
+        ],
+        [
+          "created_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "view.py:51"
+    },
+    {
+      "collection": "inventory_products_outflow",
+      "keys": [
+        [
+          "customer_id",
+          1
+        ],
+        [
+          "packaged_product_index",
+          1
+        ]
+      ],
+      "options": {},
+      "source": "view.py:52"
+    },
+    {
+      "collection": "customer_change_history",
+      "keys": [
+        [
+          "customer_id",
+          1
+        ],
+        [
+          "changed_at",
+          -1
+        ]
+      ],
+      "options": {},
+      "source": "view.py:53"
+    }
+  ],
+  "unresolved": []
+}

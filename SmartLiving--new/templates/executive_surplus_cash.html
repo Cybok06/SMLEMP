@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Surplus Cash - Executive</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+  <style>
+    :root{ --ink:#111827; --muted:#6b7280; --border:rgba(148,163,184,.35); --shadow:0 8px 18px rgba(2,8,23,.08); }
+    body{ background:#f6f7fb; color:var(--ink); }
+    .page-wrap{ margin-left:260px; padding:20px; max-width:none; }
+    @media (max-width: 991px){ .page-wrap{ margin-left:0; } }
+    .card-soft{ border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow); background:#fff; }
+    .kpi{ padding:14px; border-radius:14px; border:1px solid var(--border); background:#f8fafc; }
+    .kpi .label{ font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:700; }
+    .kpi .value{ font-size:1.2rem; font-weight:800; color:#111827; }
+    .skeleton{ display:inline-block; min-width:80px; height:18px; border-radius:8px; background:linear-gradient(90deg,#eef2f7 25%,#e6edf7 37%,#eef2f7 63%); background-size:400% 100%; animation:shimmer 1.2s ease-in-out infinite; }
+    @keyframes shimmer{ 0%{background-position:100% 0;} 100%{background-position:-100% 0;} }
+    .table thead th{ font-size:.75rem; text-transform:uppercase; letter-spacing:.08em; color:#6b7280; background:#f8fafc; position:sticky; top:0; }
+    .breadcrumb{ margin-bottom:0; }
+    .filter-pill{ border:1px solid var(--border); border-radius:999px; padding:6px 12px; font-size:.78rem; font-weight:600; color:#6b7280; text-decoration:none; background:#fff; }
+    .filter-pill.active{ background:#0d6efd; color:#fff; border-color:#0d6efd; }
+  </style>
+</head>
+<body>
+  {% include 'executive_sidebar.html' %}
+
+  <main class="page-wrap">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+      <div>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb small text-muted">
+            <li class="breadcrumb-item">Executive</li>
+            <li class="breadcrumb-item active" aria-current="page">Surplus Cash</li>
+          </ol>
+        </nav>
+        <h3 class="fw-bold mb-0">Surplus Cash</h3>
+      </div>
+      <button id="openRecordModal" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Record Surplus
+      </button>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-md-2"><div class="kpi"><div class="label">Range</div><div class="value" id="kpiRange"><span class="skeleton"></span></div></div></div>
+      <div class="col-6 col-md-2"><div class="kpi"><div class="label">Today</div><div class="value" id="kpiToday"><span class="skeleton"></span></div></div></div>
+      <div class="col-6 col-md-2"><div class="kpi"><div class="label">This Week</div><div class="value" id="kpiWeek"><span class="skeleton"></span></div></div></div>
+      <div class="col-6 col-md-2"><div class="kpi"><div class="label">This Month</div><div class="value" id="kpiMonth"><span class="skeleton"></span></div></div></div>
+      <div class="col-6 col-md-2"><div class="kpi"><div class="label">All Time</div><div class="value" id="kpiTotal"><span class="skeleton"></span></div></div></div>
+      <div class="col-6 col-md-2">
+        <a id="exportBtn" class="btn btn-outline-secondary w-100 mt-2 mt-md-0" href="#">
+          <i class="bi bi-download"></i> Export CSV
+        </a>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-lg-6">
+        <div class="card-soft p-3">
+          <div class="fw-semibold mb-2">By Branch</div>
+          <canvas id="branchChart" height="180"></canvas>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="card-soft p-3">
+          <div class="fw-semibold mb-2">By Manager</div>
+          <canvas id="managerChart" height="180"></canvas>
+        </div>
+      </div>
+      <div class="col-12">
+        <div class="card-soft p-3">
+          <div class="fw-semibold mb-2">Daily Surplus</div>
+          <canvas id="dailyChart" height="160"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-soft p-3 mb-3">
+      <div class="d-flex flex-wrap gap-2 align-items-end">
+        <div style="min-width:160px;">
+          <label class="form-label small text-muted">Branch</label>
+          <select id="fBranch" class="form-select"></select>
+        </div>
+        <div style="min-width:200px;">
+          <label class="form-label small text-muted">Manager</label>
+          <select id="fManager" class="form-select"></select>
+        </div>
+        <div style="min-width:200px;">
+          <label class="form-label small text-muted">Agent</label>
+          <select id="fAgent" class="form-select"></select>
+        </div>
+        <div>
+          <label class="form-label small text-muted">Start</label>
+          <input id="fStart" type="date" class="form-control">
+        </div>
+        <div>
+          <label class="form-label small text-muted">End</label>
+          <input id="fEnd" type="date" class="form-control">
+        </div>
+        <div>
+          <label class="form-label small text-muted">Sort</label>
+          <select id="sortSelect" class="form-select">
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="amount_desc">Amount (High)</option>
+            <option value="amount_asc">Amount (Low)</option>
+          </select>
+        </div>
+      </div>
+      <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
+        <div class="input-group" style="max-width:320px;">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input id="searchInput" type="text" class="form-control" placeholder="Search name/phone/note">
+        </div>
+        <div class="d-flex gap-2">
+          <button class="filter-pill" data-preset="today">Today</button>
+          <button class="filter-pill" data-preset="week">This Week</button>
+          <button class="filter-pill" data-preset="month">This Month</button>
+        </div>
+        <button id="applyFilters" class="btn btn-outline-primary ms-auto"><i class="bi bi-funnel"></i> Apply</button>
+      </div>
+    </div>
+
+    <div class="card-soft p-3">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="fw-semibold">History</div>
+        <div class="text-muted small" id="historyMeta">--</div>
+      </div>
+      <div class="table-responsive" style="max-height:420px;">
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Manager</th>
+              <th>Agent</th>
+              <th>Branch</th>
+              <th>Note</th>
+              <th class="text-end">Amount</th>
+              <th>Role</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody">
+            <tr><td colspan="7" class="text-muted">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="d-flex justify-content-between align-items-center mt-2">
+        <div class="text-muted small" id="rangeMeta">Showing 0–0 of 0</div>
+        <nav>
+          <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
+        </nav>
+      </div>
+    </div>
+  </main>
+
+  <!-- Record Modal -->
+  <div class="modal fade" id="recordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Record Surplus</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12 col-md-4">
+              <label class="form-label small text-muted">Manager</label>
+              <select id="recManager" class="form-select"></select>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label small text-muted">Agent</label>
+              <select id="recAgent" class="form-select"></select>
+            </div>
+            <div class="col-12 col-md-2">
+              <label class="form-label small text-muted">Amount</label>
+              <input id="recAmount" type="number" step="0.01" class="form-control" placeholder="0.00">
+            </div>
+            <div class="col-12 col-md-2">
+              <label class="form-label small text-muted">Date</label>
+              <input id="recDate" type="date" class="form-control" value="{{ today }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label small text-muted">Note</label>
+              <textarea id="recNote" class="form-control" rows="3" placeholder="Optional note..."></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button id="recBtn" type="button" class="btn btn-primary">
+            <span class="spinner-border spinner-border-sm d-none" id="recordSpinner"></span>
+            <span id="recordLabel">Record Surplus</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
+    <div id="toast" class="toast align-items-center text-bg-dark" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body" id="toastBody">Saved</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <script src="{{ url_for('static', filename='js/surplus_executive.js') }}"></script>
+</body>
+</html>

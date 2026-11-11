@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Add Payment</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- CSS libs -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+  <link rel="icon" href="https://res.cloudinary.com/dljpgzbto/image/upload/v1743993646/company-logo_dksb23.jpg" type="image/png">
+
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; margin: 0; padding: 0; }
+    .container { max-width: 640px; margin: 36px auto; background: #fff; padding: 28px; border-radius: 16px; box-shadow: 0 10px 26px rgba(15,23,42,.08); }
+    h2 { margin: 0; color: #111827; font-weight: 700; }
+    label { margin-top: 12px; font-weight: 500; color: #111827; }
+    input, select { width: 100%; padding: 11px 13px; margin-top: 5px; border-radius: 11px; border: 1.5px solid #b8c3d6; box-shadow: 0 2px 8px rgba(15,23,42,.06); transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease; }
+    input:hover, select:hover, .form-control:hover, .form-select:hover { border-color: #7c93b7; }
+    input:focus, select:focus, .form-control:focus, .form-select:focus {
+      border-color: #2563eb; box-shadow: 0 0 0 4px rgba(37,99,235,.13); outline: 0;
+    }
+
+    /* Submit button + inline spinner */
+    #submitBtn { width: 100%; margin-top: 20px; padding: 12px; background-color: #007BFF; border: none; color: #fff; font-size: 16px; border-radius: 8px; transition: background-color .3s ease; display:flex; align-items:center; justify-content:center; gap:.5rem; }
+    #submitBtn:hover { background-color: #0056b3; }
+    .btn-spinner {
+      display: inline-block; width: 1rem; height: 1rem; border: .2rem solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%;
+      animation: spin .8s linear infinite; vertical-align:middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .flash-message { padding: 10px; background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; border-radius: 8px; margin-bottom: 15px; text-align: center; }
+    footer { background-color: #8a2be2; color: white; padding: 10px 0; text-align: center; margin-top: 50px; }
+    .navbar { background-color: #ffffff; border-bottom: 1px solid #dee2e6; }
+    .btn-toggle-mode { background: none; border: none; color: #333; font-size: 1.5em; cursor: pointer; }
+
+    .section-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: #f9fafb;
+      box-shadow: 0 4px 14px rgba(15,23,42,.06);
+    }
+    .summary-row { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-top: 14px; }
+    .summary-cards { flex: 1; display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .summary-card { background:#f3f4f6; border:1px solid #e5e7eb; border-radius:12px; padding:12px 14px; }
+    .summary-card .label { font-size: 0.8rem; color:#6b7280; text-transform:uppercase; letter-spacing:.04em; }
+    .summary-card .value { font-size:1.2rem; font-weight:700; color:#111827; }
+    @media (max-width: 576px) {
+      .summary-row { flex-direction: column; align-items: stretch; }
+      .summary-cards { grid-template-columns: 1fr; }
+    }
+    .header-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .mode-badge { font-size:.75rem; letter-spacing:.08em; text-transform:uppercase; padding:.25rem .6rem; border-radius:999px; background:#eef2ff; color:#4338ca; border:1px solid #c7d2fe; }
+    .subtle-text { color:#6b7280; font-size:.9rem; }
+
+    /* View payments pill */
+    .view-payments-link {
+      background: linear-gradient(to right, #0dfd65, #06b36f);
+      color: #fff; font-weight: 600; border-radius: 30px;
+      box-shadow: 0 8px 16px rgba(13,253,101,.25);
+      text-decoration: none; transition: all .2s ease;
+      padding: 12px 30px; display: inline-block;
+    }
+    .view-payments-link:hover { background: linear-gradient(to right, #06b36f, #039f58); box-shadow: 0 10px 20px rgba(13,253,101,.35); color: #fff; }
+
+    /* ------ Face ID-style loading ring ------ */
+    .faceid-wrap { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; }
+    .faceid-ring {
+      width: 96px; height: 96px; border-radius: 50%; position: relative;
+      background: radial-gradient(circle at 50% 50%, rgba(0,123,255,.08) 0 45%, transparent 46% 100%);
+    }
+    .faceid-arc, .faceid-arc:before, .faceid-arc:after {
+      position: absolute; inset: 0; border-radius: 50%;
+      border: 4px solid transparent; content: "";
+    }
+    .faceid-arc { border-top-color: #0d6efd; animation: spin 1.2s linear infinite; }
+    .faceid-arc:before { border-right-color: #0d6efd; animation: spin 1.2s linear infinite reverse; }
+    .faceid-arc:after { border-bottom-color: #0d6efd; animation: spin 1.6s linear infinite; }
+    .loading-text { margin-top: 16px; font-weight: 600; color: #0b1320; }
+    body.dark-mode .loading-text { color: #f8f9fa; }
+
+    /* ------ Success check animation ------ */
+    .checkmark { width: 120px; height: 120px; display:block; margin: 0 auto; }
+    .checkmark__circle {
+      stroke: #28a745; stroke-width: 4; stroke-miterlimit: 10; fill: none;
+      animation: stroke 0.6s ease-in-out forwards;
+    }
+    .checkmark__check {
+      transform-origin: 50% 50%; stroke: #28a745; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; fill: none;
+      stroke-dasharray: 48; stroke-dashoffset: 48; animation: draw 0.35s 0.6s ease-out forwards;
+    }
+    @keyframes stroke { from { stroke-dasharray: 0 380; } to { stroke-dasharray: 380 380; } }
+    @keyframes draw { to { stroke-dashoffset: 0; } }
+
+    /* --- Simple SMS toggle (accessible) --- */
+    .sms-toggle-wrap { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .sms-badge { font-size: .85rem; padding: .2rem .6rem; border-radius: 999px; }
+    .sms-badge.off { background:#f3f4f6; color:#374151; border:1px solid #e5e7eb; }
+    .sms-badge.on  { background:#dcfce7; color:#14532d; border:1px solid #bbf7d0; }
+    .sms-switch.btn { min-width: 130px; }
+
+    /* Select2 align to Bootstrap */
+    .select2-container .select2-selection--single {
+      height: 42px;
+      border-radius: 10px;
+      border: 1.5px solid #b8c3d6;
+      box-shadow: 0 2px 8px rgba(15,23,42,.06);
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+      line-height: 42px;
+      padding-left: 12px;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+      height: 42px;
+    }
+    .completed-warning {
+      display: none;
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #fff4e5;
+      color: #92400e;
+      border: 1px solid #facc15;
+      font-weight: 600;
+    }
+
+    /* Premium payment modal */
+    .payment-modal .modal-content {
+      border: 1px solid rgba(148,163,184,.28) !important;
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: 0 28px 80px rgba(15,23,42,.26);
+    }
+    .payment-modal .modal-header {
+      padding: 20px 22px;
+      color: #fff;
+      border: 0;
+      background: linear-gradient(125deg, #0f172a 0%, #1e3a8a 58%, #2563eb 100%);
+    }
+    .payment-modal .modal-title { font-weight: 750; letter-spacing: -.01em; }
+    .payment-modal .modal-header .btn-close { filter: invert(1) brightness(2); opacity: .9; }
+    .payment-modal .modal-body { padding: 22px; background: linear-gradient(180deg, #fff, #f8fafc); }
+    .payment-modal .modal-footer { padding: 16px 22px 20px; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+    .payment-modal .field-label { display:block; margin: 0 0 7px; font-size: .82rem; font-weight: 700; color:#334155; letter-spacing:.015em; }
+    .payment-modal .input-shell { position:relative; }
+    .payment-modal .input-shell .phone-prefix {
+      position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#64748b; font-weight:700; pointer-events:none;
+    }
+    .payment-modal .input-shell input { padding-left: 52px; min-height: 48px; margin:0; background:#fff; }
+    .network-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+    .network-option { position:relative; margin:0; cursor:pointer; }
+    .network-option input { position:absolute; opacity:0; pointer-events:none; }
+    .network-card {
+      min-height:112px; padding:12px 8px 10px; border:1.5px solid #cbd5e1; border-radius:14px; background:#fff;
+      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:#334155;
+      box-shadow:0 3px 10px rgba(15,23,42,.05); transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
+    }
+    .network-card img { width:52px; height:42px; object-fit:contain; border-radius:8px; background:#fff; }
+    .network-card span { font-size:.78rem; line-height:1.15; font-weight:700; text-align:center; }
+    .network-option:hover .network-card { transform:translateY(-2px); border-color:#60a5fa; box-shadow:0 9px 20px rgba(37,99,235,.13); }
+    .network-option input:checked + .network-card { border-color:#2563eb; background:#eff6ff; box-shadow:0 0 0 3px rgba(37,99,235,.13), 0 8px 18px rgba(37,99,235,.12); }
+    .network-option input:focus-visible + .network-card { outline:3px solid rgba(37,99,235,.28); outline-offset:2px; }
+    .secure-note { display:flex; gap:9px; align-items:flex-start; padding:11px 12px; border:1px solid #dbeafe; border-radius:12px; background:#eff6ff; color:#475569; font-size:.82rem; }
+    .secure-note i { color:#2563eb; font-size:1rem; }
+    .payment-modal .btn { border-radius:10px; padding:9px 18px; font-weight:650; }
+    .payment-modal .btn-primary { background:linear-gradient(135deg,#1d4ed8,#2563eb); border-color:#2563eb; box-shadow:0 7px 16px rgba(37,99,235,.22); }
+    @media (max-width: 420px) {
+      .network-grid { grid-template-columns:1fr; }
+      .network-card { min-height:72px; flex-direction:row; justify-content:flex-start; padding:10px 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+{% include 'side_bar.html' %}
+
+<!-- Main Content -->
+<div class="container">
+  <div class="header-row mb-2">
+    <h2>Add Payment</h2>
+    <span class="mode-badge">PRODUCT</span>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="flash-message">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div class="d-flex flex-column flex-md-row justify-content-end align-items-md-center gap-2 mt-2 mb-2">
+    <button type="button" id="toggleSusuBtn" class="btn btn-warning btn-sm w-100 w-md-auto">🔁 Switch to SUSU Mode</button>
+  </div>
+
+  {% include 'partials/payment_printer.html' %}
+
+  <form id="paymentForm" method="POST">
+    <!-- Customer Dropdown -->
+    <label for="customer_id">Select Customer</label>
+    <select name="customer_id" class="form-select" required>
+      {% for customer in customers %}
+        <option value="{{ customer._id }}" data-archived="{{ '1' if customer.archived else '0' }}">
+          {{ customer.name }} ({{ customer.phone_number }}){% if customer.archived %} [ARCHIVED]{% endif %}
+        </option>
+      {% endfor %}
+    </select>
+
+    <!-- Product Section -->
+    <div id="product-section">
+      <label for="product_id">Select Product</label>
+      <select name="product_id" id="productSelect" class="form-select">
+        <option value="">Select a product</option>
+      </select>
+    </div>
+
+    <!-- Hidden Field for SUSU Mode -->
+    <input type="hidden" name="is_susu" id="isSusuInput" value="no">
+    <!-- Hidden for SMS toggle (DEFAULT OFF) -->
+    <input type="hidden" name="send_sms" id="sendSmsInput" value="no">
+    <!-- Hidden for force insert (set only if user confirms duplicate) -->
+    <input type="hidden" name="force" id="forceInput" value="no">
+
+    <!-- Summary + SMS row -->
+    <div class="summary-row">
+      <div class="summary-cards" id="paidSummary" style="display:none;">
+        <div class="summary-card">
+          <div class="label">Total Paid</div>
+          <div class="value">GHS <span id="paidAmount">0.00</span></div>
+        </div>
+        <div class="summary-card">
+          <div class="label">Amount Left</div>
+          <div class="value">GHS <span id="leftAmount">0.00</span></div>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span id="smsStatus" class="sms-badge off">SMS: Off</span>
+        <button type="button" id="smsToggleBtn" class="btn btn-outline-secondary sms-switch" aria-pressed="false">
+          Turn SMS On
+        </button>
+      </div>
+    </div>
+
+    <label for="paymentMethod">Payment Method</label>
+    <select id="paymentMethod" name="method" class="form-select" required>
+      <option value="Cash" selected>Cash</option>
+      <option value="MoMo">Mobile Money (Paystack)</option>
+    </select>
+    <input type="hidden" name="momo_prepare" id="momoPrepareInput" value="no">
+    <input type="hidden" name="momo_phone" id="momoPhoneInput" value="">
+    <input type="hidden" name="momo_provider" id="momoProviderInput" value="">
+
+    <!-- Amount -->
+    <label for="amount">Amount (GH₵)</label>
+    <input type="number" name="amount" class="form-control" step="0.01" required>
+    <div id="completedWarning" class="completed-warning">This product is completed. No further payment can be recorded.</div>
+    <div class="subtle-text mt-1">Enter amount in GHS</div>
+
+    <!-- Submit Button (with spinner placeholder) -->
+    <button type="submit" id="submitBtn">
+      <span class="btn-label">Submit Payment</span>
+      <span class="btn-spinner" style="display:none;"></span>
+    </button>
+  </form>
+</div>
+
+<!-- Footer -->
+<footer><p>&copy; 2025 SMART LIVING. All Rights Reserved.</p></footer>
+
+<!-- Loading Modal (Face ID style) -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0">
+      <div class="modal-body">
+        <div class="faceid-wrap text-center">
+          <div class="faceid-ring">
+            <div class="faceid-arc"></div>
+          </div>
+          <div class="loading-text">Processing payment…</div>
+          <div class="text-muted mt-2" style="font-size:.9rem;">Please keep this window open</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mobile Money details modal (Paystack charge is initiated by our backend) -->
+<div class="modal fade payment-modal" id="momoDetailsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-phone me-2"></i>Mobile Money Payment</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <label for="momoPhone" class="field-label">Number making payment</label>
+        <div class="input-shell">
+          <span class="phone-prefix"><i class="bi bi-telephone"></i></span>
+          <input type="tel" id="momoPhone" class="form-control" inputmode="tel" autocomplete="tel" placeholder="053 039 3625" maxlength="16">
+        </div>
+        <div class="field-label mt-4" id="momoProviderLabel">Select Mobile Money Network</div>
+        <select id="momoProvider" class="visually-hidden" aria-labelledby="momoProviderLabel" tabindex="-1">
+          <option value="mtn">MTN MoMo</option>
+          <option value="atl">AT Money</option>
+          <option value="vod">Telecel Cash</option>
+        </select>
+        <div class="network-grid" role="radiogroup" aria-labelledby="momoProviderLabel">
+          <label class="network-option">
+            <input type="radio" name="momoNetworkChoice" value="mtn" checked>
+            <span class="network-card"><img src="{{ url_for('serve_payment_network_image', filename='mtn_momo.jpg') }}" alt="MTN MoMo"><span>MTN MoMo</span></span>
+          </label>
+          <label class="network-option">
+            <input type="radio" name="momoNetworkChoice" value="vod">
+            <span class="network-card"><img src="{{ url_for('serve_payment_network_image', filename='telecel.png') }}" alt="Telecel Cash"><span>Telecel Cash</span></span>
+          </label>
+          <label class="network-option">
+            <input type="radio" name="momoNetworkChoice" value="atl">
+            <span class="network-card"><img src="{{ url_for('serve_payment_network_image', filename='at_money.png') }}" alt="AT Money"><span>AT Money</span></span>
+          </label>
+        </div>
+        <div class="secure-note mt-3"><i class="bi bi-shield-check"></i><span>The payer will receive a secure authorization prompt on this phone.</span></div>
+        <div id="momoModalError" class="text-danger small mt-2" style="display:none;"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="continueMomoBtn">Continue</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- OTP requested by Paystack for this Mobile Money charge -->
+<div class="modal fade payment-modal" id="momoOtpModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0">
+      <div class="modal-header">
+        <h5 class="modal-title">Enter Mobile Money OTP</h5>
+      </div>
+      <div class="modal-body">
+        <p id="momoOtpPrompt" class="text-muted">Enter the one-time password sent to the payer phone.</p>
+        <label for="momoOtp">One-time password</label>
+        <input type="text" id="momoOtp" class="form-control" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" maxlength="10" placeholder="Enter OTP">
+        <div id="momoOtpError" class="text-danger small mt-2" style="display:none;"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="submitMomoOtpBtn">Submit OTP</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Waiting for the payer to authorize Mobile Money -->
+<div class="modal fade payment-modal" id="momoWaitingModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0">
+      <div class="modal-body text-center p-4">
+        <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
+        <h5 class="mt-3">Approve the MoMo payment</h5>
+        <p id="momoWaitingText" class="text-muted mb-2">Please approve the payment prompt on the payer phone.</p>
+        <p id="momoReferenceText" class="small text-muted mb-0"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0">
+      <div class="modal-body text-center p-4">
+        <svg class="checkmark" viewBox="0 0 52 52" aria-hidden="true">
+          <circle class="checkmark__circle" cx="26" cy="26" r="24"></circle>
+          <path class="checkmark__check" d="M14 27 L22 34 L38 18"></path>
+        </svg>
+        <h5 class="mt-3 mb-2">Payment Recorded</h5>
+        <p id="successDetails" class="text-muted mb-3"></p>
+        <button type="button" class="btn btn-primary mb-3" id="printReceiptBtn" disabled>
+          <i class="bi bi-printer me-1"></i> Print Receipt (Short Printer)
+        </button>
+        <div class="d-flex gap-2 justify-content-center mt-2">
+          <button class="btn btn-outline-secondary" id="addAnotherBtn">Add Another</button>
+          <a class="view-payments-link" id="viewPaymentsLink" href="/payments">View Payments</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script id="customers-data" type="application/json">
+  {{ customers | tojson }}
+</script>
+
+<script>
+(function(){
+  const VIEW_PAYMENTS_URL = "/payments"; // <-- change if your route is different
+  const PRODUCT_PAID_URL = "{{ url_for('payment.get_product_paid') }}";
+  const STORAGE_KEY = "smartliving.add_payment.selected_customer_id";
+
+  const customers = JSON.parse(document.getElementById('customers-data').textContent || '[]');
+  const customerSelect = $('select[name="customer_id"]');
+  const productSelect = $('#productSelect');
+  const productSection = $('#product-section');
+  const isSusuInput = $('#isSusuInput');
+  const susuBtn = $('#toggleSusuBtn');
+  const form = document.getElementById('paymentForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const submitSpinner = submitBtn.querySelector('.btn-spinner');
+  const submitLabel = submitBtn.querySelector('.btn-label');
+  const forceInput = document.getElementById('forceInput');
+  const paidSummary = document.getElementById('paidSummary');
+  const paidAmount = document.getElementById('paidAmount');
+  const leftAmount = document.getElementById('leftAmount');
+  const amountInput = form.querySelector('input[name="amount"]');
+  const completedWarning = document.getElementById('completedWarning');
+  const paymentMethod = document.getElementById('paymentMethod');
+  const momoPrepareInput = document.getElementById('momoPrepareInput');
+  const momoPhoneInput = document.getElementById('momoPhoneInput');
+  const momoProviderInput = document.getElementById('momoProviderInput');
+  const momoPhone = document.getElementById('momoPhone');
+  const momoProvider = document.getElementById('momoProvider');
+  const momoNetworkChoices = document.querySelectorAll('input[name="momoNetworkChoice"]');
+  const continueMomoBtn = document.getElementById('continueMomoBtn');
+  const momoModalError = document.getElementById('momoModalError');
+  const momoWaitingText = document.getElementById('momoWaitingText');
+  const momoReferenceText = document.getElementById('momoReferenceText');
+  const momoOtp = document.getElementById('momoOtp');
+  const momoOtpPrompt = document.getElementById('momoOtpPrompt');
+  const momoOtpError = document.getElementById('momoOtpError');
+  const submitMomoOtpBtn = document.getElementById('submitMomoOtpBtn');
+
+  // SMS toggle bits
+  const sendSmsInput = document.getElementById('sendSmsInput'); // hidden field
+  const smsToggleBtn = document.getElementById('smsToggleBtn');
+  const smsStatus = document.getElementById('smsStatus');
+
+  let isSusuMode = false;
+  let savedReceipt = null;
+  const printReceiptBtn = document.getElementById('printReceiptBtn');
+  let selectedProductCompleted = false;
+  let loadingModal, successModal, momoDetailsModal, momoWaitingModal, momoOtpModal;
+
+  // Fast payment responses can arrive during Bootstrap's opening transition.
+  // Wait for the loader to close before opening the next modal.
+  function showLoadingModal() {
+    const element = document.getElementById('loadingModal');
+    return new Promise(resolve => {
+      element.addEventListener('shown.bs.modal', resolve, { once: true });
+      loadingModal.show();
+    });
+  }
+
+  function hideLoadingModal() {
+    const element = document.getElementById('loadingModal');
+    if (element.style.display !== 'block') return Promise.resolve();
+    return new Promise(resolve => {
+      const hide = () => loadingModal.hide();
+      element.addEventListener('shown.bs.modal', hide, { once: true });
+      element.addEventListener('hidden.bs.modal', () => {
+        element.removeEventListener('shown.bs.modal', hide);
+        resolve();
+      }, { once: true });
+      hide();
+    });
+  }
+
+  function isMomoPayment() {
+    return paymentMethod && paymentMethod.value === 'MoMo';
+  }
+
+  function syncPaymentMethod() {
+    const momo = isMomoPayment();
+    if (!momo) {
+      if (momoPrepareInput) momoPrepareInput.value = 'no';
+      if (momoPhoneInput) momoPhoneInput.value = '';
+      if (momoProviderInput) momoProviderInput.value = '';
+    }
+  }
+
+  if (paymentMethod) paymentMethod.addEventListener('change', syncPaymentMethod);
+
+  function setProductCompletedState(isCompleted) {
+    selectedProductCompleted = !!isCompleted;
+    const shouldLockProductPayment = !isSusuMode && selectedProductCompleted;
+    if (amountInput) amountInput.disabled = shouldLockProductPayment;
+    if (submitBtn) submitBtn.disabled = shouldLockProductPayment;
+    if (submitLabel) submitLabel.textContent = shouldLockProductPayment ? 'Product Completed' : 'Submit Payment';
+    if (completedWarning) completedWarning.style.display = shouldLockProductPayment ? 'block' : 'none';
+  }
+
+  function formatCustomerOption(option) {
+    if (!option.id) return option.text;
+    const archived = option.element?.dataset?.archived === '1';
+    const wrap = document.createElement('span');
+    wrap.style.display = 'flex';
+    wrap.style.alignItems = 'center';
+    wrap.style.gap = '8px';
+    const label = document.createElement('span');
+    label.textContent = option.text || '';
+    wrap.appendChild(label);
+    if (archived) {
+      const badge = document.createElement('span');
+      badge.textContent = 'ARCHIVED';
+      badge.style.fontSize = '0.7rem';
+      badge.style.fontWeight = '700';
+      badge.style.padding = '2px 6px';
+      badge.style.borderRadius = '999px';
+      badge.style.background = '#fee2e2';
+      badge.style.color = '#991b1b';
+      badge.style.border = '1px solid #fecaca';
+      wrap.appendChild(badge);
+    }
+    return wrap;
+  }
+
+  // Init customer dropdown
+  customerSelect.select2({
+    placeholder: "Select a customer",
+    width: '100%',
+    templateResult: formatCustomerOption,
+    templateSelection: formatCustomerOption
+  });
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const prefillCustomerId = urlParams.get('customer_id') || '';
+  let pendingProductIndex = urlParams.get('product_index');
+  let lastValidProductIndex = '';
+
+  function getSelectedCustomer() {
+    const selectedId = String(customerSelect.val() || '');
+    return customers.find(c => String(c._id) === selectedId) || null;
+  }
+
+  function updatePageUrl(customerId, productIndex) {
+    const nextUrl = new URL(window.location.href);
+    if (customerId) {
+      nextUrl.searchParams.set('customer_id', customerId);
+    } else {
+      nextUrl.searchParams.delete('customer_id');
+    }
+    if (productIndex !== null && productIndex !== undefined && productIndex !== '') {
+      nextUrl.searchParams.set('product_index', productIndex);
+    } else {
+      nextUrl.searchParams.delete('product_index');
+    }
+    window.history.replaceState({}, '', nextUrl);
+  }
+
+  function getPurchaseStatus(purchase) {
+    const purchaseStatus = String(purchase?.status || '').trim().toLowerCase();
+    const productStatus = String(purchase?.product?.status || '').trim().toLowerCase();
+    return purchaseStatus || productStatus;
+  }
+
+  function isLockedProductStatus(status) {
+    return status === 'closed' || status === 'completed';
+  }
+
+  function findFirstSelectableProductIndex(customer) {
+    if (!customer || !Array.isArray(customer.purchases)) return '';
+    for (let i = 0; i < customer.purchases.length; i += 1) {
+      const purchase = customer.purchases[i] || {};
+      const product = purchase.product || {};
+      if ((product.transfer_status || '') === 'transferred_out') continue;
+      if (isLockedProductStatus(getPurchaseStatus(purchase))) continue;
+      return String(i);
+    }
+    return '';
+  }
+
+  function showLockedProductWarning(status) {
+    const label = status === 'completed' ? 'completed' : 'closed';
+    Swal.fire({
+      icon: 'warning',
+      title: 'Product Unavailable',
+      text: `This product is already ${label}.`
+    });
+  }
+
+  function formatProductOption(option) {
+    if (!option.id) return option.text;
+    const img = option.element?.dataset?.image;
+    const price = parseFloat(option.element?.dataset?.price || 0);
+    const locked = option.element?.dataset?.locked === '1';
+    const lockedLabel = option.element?.dataset?.lockedLabel || 'Closed';
+    const name = (option.text || '').split(' - ')[0];
+    if (!img) return option.text;
+    const span = document.createElement('span');
+    span.innerHTML = `<img src="${img}" alt="" style="width:22px;height:22px;border-radius:4px;object-fit:cover;margin-right:6px;"><span style="margin-right:6px;">${name}</span><span class="text-muted">GHS ${price.toFixed(2)}</span>${locked ? `<span style="margin-left:8px;color:#b91c1c;font-weight:700;">${lockedLabel}</span>` : ''}`;
+    return span;
+  }
+
+  productSelect.select2({
+    placeholder: "Select a product",
+    width: '100%',
+    templateResult: formatProductOption,
+    templateSelection: formatProductOption
+  });
+
+  // Populate products for a selected customer
+  function populateProducts(customer){
+    productSelect.empty().append('<option value="">Select a product</option>');
+      if (customer && Array.isArray(customer.purchases)) {
+        customer.purchases.forEach((p, i) => {
+          const product = p.product || {};
+          if ((product.transfer_status || '') === 'transferred_out') {
+            return;
+          }
+          const name = product.name || 'Unnamed';
+          const total = product.total || 0;
+          const opt = new Option(`${name} - GHS ${total}`, i);
+          const status = getPurchaseStatus(p);
+          const locked = isLockedProductStatus(status);
+          opt.dataset.image = product.image_url || '';
+          opt.dataset.price = total;
+          opt.dataset.locked = locked ? '1' : '0';
+          opt.dataset.lockedStatus = status;
+          opt.dataset.lockedLabel = locked ? `[${status.toUpperCase()}]` : '';
+          productSelect.append(opt);
+        });
+      const firstSelectableIndex = findFirstSelectableProductIndex(customer);
+      if (firstSelectableIndex !== '') {
+        lastValidProductIndex = firstSelectableIndex;
+        productSelect.val(firstSelectableIndex).trigger('change');
+      } else {
+        lastValidProductIndex = '';
+        productSelect.val('').trigger('change');
+      }
+    }
+    if (pendingProductIndex !== null && pendingProductIndex !== undefined && pendingProductIndex !== '') {
+      const exists = productSelect.find(`option[value="${pendingProductIndex}"]`).length > 0;
+      if (exists) {
+        const pendingOption = productSelect.find(`option[value="${pendingProductIndex}"]`)[0];
+        if (pendingOption?.dataset?.locked === '1') {
+          showLockedProductWarning(String(pendingOption.dataset.lockedStatus || 'closed'));
+          const fallbackIndex = findFirstSelectableProductIndex(customer);
+          productSelect.val(fallbackIndex).trigger('change');
+          lastValidProductIndex = fallbackIndex;
+        } else {
+          lastValidProductIndex = String(pendingProductIndex);
+          productSelect.val(String(pendingProductIndex)).trigger('change');
+        }
+      }
+      pendingProductIndex = null;
+    }
+    productSelect.trigger('change');
+  }
+
+  function resetPaidSummary() {
+    if (!paidSummary) return;
+    paidSummary.style.display = 'none';
+    if (paidAmount) paidAmount.textContent = '0.00';
+    if (leftAmount) leftAmount.textContent = '0.00';
+    selectedProductCompleted = false;
+    setProductCompletedState(false);
+  }
+
+  async function fetchPaidSummary(customerId, productIndex) {
+    if (!paidSummary || !customerId || productIndex === '') {
+      resetPaidSummary();
+      return;
+    }
+    try {
+      const url = `${PRODUCT_PAID_URL}?customer_id=${encodeURIComponent(customerId)}&product_index=${encodeURIComponent(productIndex)}`;
+      const res = await fetch(url, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        const text = await res.text();
+        console.warn('Non-JSON response from product_paid:', text.slice(0, 200));
+        resetPaidSummary();
+        return;
+      }
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        resetPaidSummary();
+        return;
+      }
+      paidSummary.style.display = 'block';
+      if (paidAmount) paidAmount.textContent = (data.paid || 0).toFixed(2);
+      if (leftAmount) leftAmount.textContent = (data.left || 0).toFixed(2);
+      selectedProductCompleted = Number(data.left || 0) <= 0;
+      setProductCompletedState(selectedProductCompleted);
+    } catch (err) {
+      resetPaidSummary();
+    }
+  }
+
+  // On customer change, reload products
+  customerSelect.on('change', function(){
+    const selectedId = $(this).val();
+    const customer = customers.find(c => String(c._id) === String(selectedId));
+    if (selectedId) {
+      localStorage.setItem(STORAGE_KEY, String(selectedId));
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+    if (!isSusuMode) populateProducts(customer);
+    resetPaidSummary();
+    updatePageUrl(selectedId, productSelect.val());
+  });
+
+  // Auto-select customer (prefill if provided)
+  const storedCustomerId = localStorage.getItem(STORAGE_KEY) || '';
+  const initialCustomerId = prefillCustomerId || storedCustomerId;
+  if (initialCustomerId) {
+    customerSelect.val(initialCustomerId).trigger('change');
+  } else if (customers.length > 0) {
+    const firstCustomerId = customers[0]._id;
+    customerSelect.val(firstCustomerId).trigger('change');
+  }
+
+  productSelect.on('change', function(){
+    if (isSusuMode) return;
+    const customerId = customerSelect.val();
+    const productIndex = $(this).val();
+    const selectedOption = this.options[this.selectedIndex];
+    if (selectedOption?.dataset?.locked === '1') {
+      showLockedProductWarning(String(selectedOption.dataset.lockedStatus || 'closed'));
+      const customer = getSelectedCustomer();
+      const fallbackIndex = lastValidProductIndex || findFirstSelectableProductIndex(customer);
+      $(this).val(fallbackIndex).trigger('change.select2');
+      resetPaidSummary();
+      updatePageUrl(customerId, fallbackIndex);
+      return;
+    }
+    lastValidProductIndex = String(productIndex || '');
+    fetchPaidSummary(customerId, productIndex);
+    updatePageUrl(customerId, productIndex);
+  });
+
+  // Optional dark mode toggle (if present in included navbar)
+  $('#mode-toggle').on('click', function () {
+    document.body.classList.toggle('dark-mode');
+  });
+
+  // SUSU toggle button
+  susuBtn.on('click', function(){
+    isSusuMode = !isSusuMode;
+    if (isSusuMode) {
+      productSection.hide();
+      susuBtn.text('🛒 Switch to Product Mode').removeClass('btn-warning').addClass('btn-success');
+      isSusuInput.val('yes');
+      setProductCompletedState(false);
+    } else {
+      productSection.show();
+      susuBtn.text('🔁 Switch to SUSU Mode').removeClass('btn-success').addClass('btn-warning');
+      isSusuInput.val('no');
+      const selectedId = customerSelect.val();
+      const customer = customers.find(c => String(c._id) === String(selectedId));
+      populateProducts(customer);
+      setProductCompletedState(selectedProductCompleted);
+    }
+  });
+
+  // ===== Simple SMS Toggle (default OFF) =====
+  function setSms(on) {
+    sendSmsInput.value = on ? 'yes' : 'no';
+    smsToggleBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    if (on) {
+      smsToggleBtn.classList.remove('btn-outline-secondary');
+      smsToggleBtn.classList.add('btn-success');
+      smsToggleBtn.textContent = 'SMS: On';
+      smsStatus.textContent = 'SMS: On';
+      smsStatus.classList.remove('off'); smsStatus.classList.add('on');
+    } else {
+      smsToggleBtn.classList.add('btn-outline-secondary');
+      smsToggleBtn.classList.remove('btn-success');
+      smsToggleBtn.textContent = 'Turn SMS On';
+      smsStatus.textContent = 'SMS: Off';
+      smsStatus.classList.add('off'); smsStatus.classList.remove('on');
+    }
+  }
+  // init OFF
+  setSms(false);
+  syncPaymentMethod();
+
+  momoNetworkChoices.forEach(choice => {
+    choice.addEventListener('change', () => {
+      if (choice.checked && momoProvider) momoProvider.value = choice.value;
+    });
+  });
+
+  smsToggleBtn.addEventListener('click', () => {
+    const next = sendSmsInput.value !== 'yes';
+    setSms(next);
+  });
+
+  // Bootstrap modal helpers
+  document.addEventListener('DOMContentLoaded', () => {
+    loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    successModal = new bootstrap.Modal(document.getElementById('successModal'));
+    momoDetailsModal = new bootstrap.Modal(document.getElementById('momoDetailsModal'));
+    momoWaitingModal = new bootstrap.Modal(document.getElementById('momoWaitingModal'));
+    momoOtpModal = new bootstrap.Modal(document.getElementById('momoOtpModal'));
+  });
+
+  // Helpers to toggle button spinner
+  function startBtnLoading(){
+    submitBtn.disabled = true;
+    submitSpinner.style.display = 'inline-block';
+    submitLabel.textContent = 'Submitting...';
+  }
+  function stopBtnLoading(){
+    submitBtn.disabled = false;
+    submitSpinner.style.display = 'none';
+    setProductCompletedState(selectedProductCompleted);
+  }
+
+  // Core request sender (handles force flow)
+  async function sendPayment({ force = false, momoPrepare = false } = {}){
+    const url = form.getAttribute('action') || window.location.href;
+    const method = (form.getAttribute('method') || 'POST').toUpperCase();
+    const fd = new FormData(form);
+    fd.set('force', force ? 'yes' : 'no'); // ensure force flag for second run
+    fd.set('momo_prepare', momoPrepare ? 'yes' : 'no');
+
+    const resp = await fetch(url, {
+      method,
+      body: fd,
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+
+    let data = null;
+    try { data = await resp.clone().json(); } catch (_) {}
+
+    return { ok: resp.ok, data };
+  }
+
+  function validGhanaPhone(value) {
+    const digits = String(value || '').replace(/\D/g, '');
+    return (digits.length === 10 && digits.startsWith('0')) ||
+      (digits.length === 12 && digits.startsWith('233'));
+  }
+
+  if (continueMomoBtn) {
+    continueMomoBtn.addEventListener('click', function () {
+      const phone = String(momoPhone?.value || '').trim();
+      const provider = String(momoProvider?.value || '').trim();
+      if (!validGhanaPhone(phone)) {
+        momoModalError.textContent = 'Enter a valid Ghana phone number, for example 0530393625.';
+        momoModalError.style.display = 'block';
+        momoPhone?.focus();
+        return;
+      }
+      momoModalError.style.display = 'none';
+      momoPhoneInput.value = phone;
+      momoProviderInput.value = provider;
+      momoDetailsModal.hide();
+      setTimeout(() => form.requestSubmit(), 200);
+    });
+  }
+
+  async function waitForMomo(reference, displayText) {
+    if (momoWaitingText) momoWaitingText.textContent = displayText || 'Approve the prompt on the payer phone.';
+    if (momoReferenceText) momoReferenceText.textContent = `Reference: ${reference}`;
+    momoWaitingModal.show();
+    const deadline = Date.now() + 180000;
+
+    while (Date.now() < deadline) {
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      const response = await fetch(`/payments/paystack/status/${encodeURIComponent(reference)}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data.status === 'success') {
+        momoWaitingModal.hide();
+        return data;
+      }
+      if (data.status === 'failed') {
+        momoWaitingModal.hide();
+        throw new Error(data.message || 'The MoMo payment failed.');
+      }
+    }
+
+    momoWaitingModal.hide();
+    throw new Error('Payment approval timed out. Confirm the payer approved the prompt before trying again.');
+  }
+
+  function collectAndSubmitOtp(reference, displayText) {
+    return new Promise((resolve, reject) => {
+      momoOtp.value = '';
+      momoOtpError.style.display = 'none';
+      momoOtpPrompt.textContent = displayText || 'Enter the one-time password sent to the payer phone.';
+      submitMomoOtpBtn.disabled = false;
+      submitMomoOtpBtn.textContent = 'Submit OTP';
+
+      submitMomoOtpBtn.onclick = async function () {
+        const otp = String(momoOtp.value || '').trim();
+        if (!/^\d{4,10}$/.test(otp)) {
+          momoOtpError.textContent = 'Enter the numeric OTP sent to the payer phone.';
+          momoOtpError.style.display = 'block';
+          momoOtp.focus();
+          return;
+        }
+
+        momoOtpError.style.display = 'none';
+        submitMomoOtpBtn.disabled = true;
+        submitMomoOtpBtn.textContent = 'Verifying...';
+        try {
+          const response = await fetch('/payments/paystack/submit-otp', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ reference, otp })
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || !data.ok) {
+            throw new Error(data.message || 'Paystack rejected the OTP.');
+          }
+          if (data.requires_otp) {
+            momoOtpError.textContent = data.display_text || 'Another OTP is required.';
+            momoOtpError.style.display = 'block';
+            momoOtp.value = '';
+            submitMomoOtpBtn.disabled = false;
+            submitMomoOtpBtn.textContent = 'Submit OTP';
+            momoOtp.focus();
+            return;
+          }
+          momoOtpModal.hide();
+          resolve(data);
+        } catch (error) {
+          momoOtpError.textContent = error?.message || 'Unable to submit OTP.';
+          momoOtpError.style.display = 'block';
+          submitMomoOtpBtn.disabled = false;
+          submitMomoOtpBtn.textContent = 'Submit OTP';
+        }
+      };
+
+      momoOtpModal.show();
+      setTimeout(() => momoOtp.focus(), 300);
+    });
+  }
+
+  // Confirm -> Loading -> (dup confirm) -> Success
+  $('#paymentForm').on('submit', function(e){
+    e.preventDefault();
+
+    if (!isSusuMode && selectedProductCompleted) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Product Completed',
+        text: 'This product is completed. No further payment can be recorded.'
+      });
+      return;
+    }
+
+    const amountVal = parseFloat(($('input[name="amount"]').val() || "0"));
+    if (isNaN(amountVal) || amountVal <= 0) {
+      Swal.fire({ icon: 'error', title: 'Invalid amount', text: 'Please enter a valid payment amount.' });
+      return;
+    }
+    const formatted = amountVal.toFixed(2);
+    const momoSelected = isMomoPayment();
+    if (momoSelected && (!momoPhoneInput.value || !momoProviderInput.value)) {
+      if (momoPhone && !momoPhone.value) {
+        const selectedCustomer = getSelectedCustomer();
+        momoPhone.value = selectedCustomer?.phone_number || '';
+      }
+      momoDetailsModal.show();
+      return;
+    }
+
+    const smsLine = (sendSmsInput.value === 'yes')
+      ? '<span class="badge text-bg-success">SMS: On</span>'
+      : '<span class="badge text-bg-secondary">SMS: Off</span>';
+    const selectedCustomer = getSelectedCustomer();
+    const customerName = selectedCustomer?.name || 'Customer';
+    const customerPhone = selectedCustomer?.phone_number || '';
+    const customerImage = selectedCustomer?.image_url || '';
+    const firstName = (customerName || 'Customer').trim().split(/\s+/)[0] || 'Customer';
+    const customerIdentity = customerImage
+      ? `
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:12px;">
+            <img src="${customerImage}" alt="${customerName}" style="width:64px;height:64px;border-radius:999px;object-fit:cover;border:2px solid #e5e7eb;">
+            <div style="font-weight:700;">${customerName}</div>
+            <div style="font-size:13px;color:#6b7280;">${firstName}${customerPhone ? ` · ${customerPhone}` : ''}</div>
+          </div>
+        `
+      : `
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:12px;">
+            <div style="width:64px;height:64px;border-radius:999px;background:#eff6ff;color:#1d4ed8;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;border:2px solid #dbeafe;">
+              ${firstName.slice(0, 1).toUpperCase()}
+            </div>
+            <div style="font-weight:700;">${customerName}</div>
+            <div style="font-size:13px;color:#6b7280;">${firstName}${customerPhone ? ` · ${customerPhone}` : ''}</div>
+          </div>
+        `;
+
+    Swal.fire({
+      title: 'Confirm Payment',
+      html: `
+        <div style="font-size: 18px;line-height:1.4">
+          ${customerIdentity}
+          <div class="mb-2"><strong>Amount:</strong> <span style="font-size: 24px; color: #007BFF;"><strong>GHS ${formatted}</strong></span></div>
+          <div class="mb-2"><strong>Method:</strong> ${momoSelected ? 'Mobile Money (Paystack)' : 'Cash'}</div>
+          <div class="mb-2"><strong>Notify Customer:</strong> ${smsLine}</div>
+        </div>
+      `,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#007BFF',
+      cancelButtonColor: '#d33',
+      confirmButtonText: '<b>Yes, Submit</b>',
+      cancelButtonText: 'Cancel',
+    }).then(async (result) => {
+      if (!result.isConfirmed) return;
+
+      // Show loading states
+      await showLoadingModal();
+      startBtnLoading();
+
+      try {
+        // First attempt (without force)
+        let forceApproved = false;
+        let { ok, data } = await sendPayment({ force: false, momoPrepare: momoSelected });
+
+        // If API returns needs_confirm (duplicate detected), ask user and resend with force
+        if (data && data.needs_confirm === true) {
+          await hideLoadingModal(); // pause spinner for the confirm prompt
+          stopBtnLoading();
+
+          const scope = data.scope || 'this selection';
+          const count = data.existing_count ?? 0;
+          const total = (data.existing_total ?? 0).toFixed(2);
+          const msg = data.message || `You already recorded ${count} payment(s) totaling GHS ${total} for ${scope}. Proceed anyway?`;
+
+          const dup = await Swal.fire({
+            title: 'Existing payment found',
+            html: `<div style="font-size:16px">${msg}</div>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Proceed anyway',
+            cancelButtonText: 'Cancel'
+          });
+
+          if (!dup.isConfirmed) return;
+          forceApproved = true;
+
+          // Resume loading and force insert
+          await showLoadingModal();
+          startBtnLoading();
+
+          ({ ok, data } = await sendPayment({ force: true, momoPrepare: momoSelected }));
+        }
+
+        // Paystack has sent the prompt to the payer's phone. The webhook records
+        // the payment; this page only waits for our backend to report completion.
+        if (momoSelected && data && data.requires_otp) {
+          await hideLoadingModal();
+          stopBtnLoading();
+          data = await collectAndSubmitOtp(data.reference, data.display_text);
+          ok = true;
+        }
+
+        if (momoSelected && data && data.requires_momo_authorization && data.status !== 'success') {
+          await hideLoadingModal();
+          stopBtnLoading();
+          data = await waitForMomo(data.reference, data.display_text);
+          ok = true;
+        }
+
+        await hideLoadingModal();
+        stopBtnLoading();
+
+        // Handle final result
+        if (data && data.ok) {
+          savedReceipt = data.receipt || null;
+          printReceiptBtn.disabled = !savedReceipt;
+          const currentCustomerId = String(customerSelect.val() || '');
+          const currentProductIndex = String(productSelect.val() || '');
+          const customerText = ($('select[name="customer_id"] option:selected').text() || '').trim();
+          const details = `GHS ${formatted} -  ${customerText}`;
+          document.getElementById('successDetails').textContent = details;
+          document.getElementById('viewPaymentsLink').setAttribute('href', VIEW_PAYMENTS_URL);
+          if (savedReceipt?.printer_enabled && window.PaymentPrinter) {
+            window.PaymentPrinter.open(savedReceipt);
+          } else {
+            successModal.show();
+          }
+
+          // Reset form for another entry
+          form.reset();
+          syncPaymentMethod();
+          if (currentCustomerId) {
+            customerSelect.val(currentCustomerId).trigger('change');
+          }
+          if (!isSusuMode) {
+            const customerObj = customers.find(c => String(c._id) === currentCustomerId);
+            populateProducts(customerObj);
+            if (currentProductIndex && productSelect.find(`option[value="${currentProductIndex}"]`).length > 0) {
+              productSelect.val(currentProductIndex).trigger('change');
+            }
+          }
+          resetPaidSummary();
+          updatePageUrl(currentCustomerId, currentProductIndex);
+
+          // Reset flags back to defaults
+          isSusuMode = false;
+          isSusuInput.val('no');
+          $('#forceInput').val('no');
+          setSms(false); // default OFF after success
+        } else {
+          const message = (data && data.message) ? data.message : 'Could not save payment.';
+          Swal.fire({ icon: 'error', title: 'Failed', text: message });
+        }
+      } catch (err) {
+        await hideLoadingModal();
+        stopBtnLoading();
+        Swal.fire({ icon: 'error', title: 'Payment Error', text: err?.message || 'Please check your connection and try again.' });
+      }
+    });
+  });
+
+  // Success modal buttons
+  printReceiptBtn.addEventListener('click', () => {
+    if (!savedReceipt) return;
+    const receiptFrame = document.createElement('iframe');
+    receiptFrame.title = 'Payment receipt';
+    receiptFrame.style.cssText = 'position:fixed;width:0;height:0;border:0;';
+    document.body.appendChild(receiptFrame);
+    const doc = receiptFrame.contentDocument;
+    doc.open();
+    doc.write(`<!doctype html><html><head><title>Payment Receipt</title><style>
+      @page { size: 58mm auto; margin: 0; }
+      * { box-sizing: border-box; }
+      body { width: 58mm; margin: 0; padding: 3mm; color: #000; background: #fff;
+             font: 11px/1.5 monospace; overflow-wrap: anywhere; }
+      h1 { font-size: 17px; margin: 0; }
+      header, footer { text-align: center; }
+      header { margin-bottom: 12px; }
+      p { margin: 3px 0; }
+      .amount { font-size: 18px; font-weight: bold; text-align: center; margin-top: 8px; }
+      hr { border: 0; border-top: 1px dashed #000; margin: 6px 0 10px; }
+    </style></head><body><header><h1>SMART LIVING</h1><div>PAYMENT RECEIPT</div>
+      <div>0556064611 / 05099639836 / 0598948132</div></header>
+      <p>Customer: <span id="customer"></span></p><p>Phone: <span id="phone"></span></p>
+      <p>For: <span id="description"></span></p><p>Method: <span id="method"></span></p>
+      <p>Agent: <span id="agent"></span></p><p>Date: <span id="date"></span></p>
+      <p>Payment ID: <span id="payment_id"></span></p>
+      <div class="amount">GHS <span id="amount"></span></div><hr>
+      <footer>Thank you for your payment!</footer></body></html>`);
+    doc.close();
+    Object.entries(savedReceipt).forEach(([key, value]) => {
+      const element = doc.getElementById(key);
+      if (element) element.textContent = value;
+    });
+    receiptFrame.contentWindow.addEventListener('afterprint', () => receiptFrame.remove(), { once: true });
+    receiptFrame.contentWindow.focus();
+    receiptFrame.contentWindow.print();
+  });
+
+  document.getElementById('addAnotherBtn')?.addEventListener('click', () => {
+    successModal.hide();
+  });
+
+})();
+</script>
+
+<!-- JS libs -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  {% include 'app_footer.html' %}
+
+
+</body>
+</html>

@@ -1,0 +1,67 @@
+    .print-anim-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    .print-anim-title { font-size: .95rem; font-weight: 800; }
+    .print-anim-state { font-size: .78rem; color: var(--sl-muted); }
+    .print-anim-figure-wrap { display: flex; justify-content: center; padding: 4px 0 10px; }
+    .print-anim-figure { width: min(100%, 220px); position: relative; padding-top: 6px; }
+    .mini-printer { position: relative; height: 88px; border-radius: 18px; background: linear-gradient(180deg, #2d3748, #111827); box-shadow: 0 18px 26px rgba(15, 23, 42, .16); overflow: hidden; }
+    .mini-printer::before { content: ""; position: absolute; inset: 12px 16px auto; height: 14px; border-radius: 999px; background: linear-gradient(90deg, rgba(255,255,255,.15), rgba(255,255,255,.04)); }
+    .mini-printer-slot { position: absolute; left: 18px; right: 18px; bottom: 18px; height: 10px; border-radius: 999px; background: #05070b; box-shadow: inset 0 2px 4px rgba(255,255,255,.08); z-index: 3; }
+    .mini-printer-light { position: absolute; right: 18px; top: 18px; width: 10px; height: 10px; border-radius: 999px; background: #93c5fd; box-shadow: 0 0 0 5px rgba(147, 197, 253, .12); }
+    .mini-receipt { --print-progress: 0; position: absolute; left: 50%; top: 55px; width: 120px; height: 96px; transform: translate(-50%, calc(var(--print-progress) * 54px)); transform-origin: top center; background: #fff; border: 1px solid #d1d5db; border-radius: 0 0 10px 10px; box-shadow: 0 14px 20px rgba(15, 23, 42, .12); z-index: 1; overflow: hidden; transition: transform .18s linear; }
+    .mini-receipt-body { padding: 8px 10px 10px; }
+    .mini-line { height: 4px; border-radius: 999px; background: #d1d5db; margin-bottom: 5px; }
+    .mini-line.short { width: 58%; }
+    .mini-line.mid { width: 74%; }
+    .mini-qr { width: 18px; height: 18px; margin: 8px auto 7px; background: linear-gradient(90deg, #111 50%, transparent 50%) 0 0 / 6px 6px, linear-gradient(#111 50%, transparent 50%) 0 0 / 6px 6px; outline: 1px solid #111; }
+    .mini-payment-progress { width: 64px; height: 7px; border: 1px solid #000; margin: 0 auto; }
+    .print-progress { margin-top: 8px; }
+    .print-progress-bar { height: 7px; border-radius: 999px; background: #dbe4f0; overflow: hidden; }
+    .print-progress-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #2563eb, #0ea5e9); transition: width .12s linear; }
+    .print-progress-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: .76rem; color: #475569; margin-top: 6px; }
+    .print-anim-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
+    .print-anim-panel.success .print-progress-fill { background: linear-gradient(90deg, #16a34a, #22c55e); }
+    .print-anim-panel.error .print-progress-fill { background: linear-gradient(90deg, #dc2626, #ef4444); }
+    .print-anim-panel.error .mini-printer-light { background: #fca5a5; box-shadow: 0 0 0 5px rgba(252, 165, 165, .18); }
+
+
+#receiptPrinterModal .modal-content{border:0;border-radius:18px} #receiptPrinterModal .receipt-preview{background:#fff;color:#111;padding:20px;border:1px dashed #b8c3d6;border-radius:12px;white-space:pre-wrap;font:13px/1.6 monospace} #receiptPrinterModal .print-anim-panel{padding:18px;background:#eef5ff;border-radius:14px;margin-top:16px} #receiptPrinterModal .print-anim-panel.error{background:#fff1f2} #qrWorkspace{position:fixed;left:-10000px;top:0} #receiptPrinterModal .mini-receipt{z-index:4} #receiptPrinterModal .print-anim-figure-wrap{padding-bottom:115px}
+
+#receiptPrinterModal .mini-printer{overflow:visible} #receiptPrinterModal .mini-printer-slot{z-index:5} @media(prefers-reduced-motion:reduce){#receiptPrinterModal .mini-receipt,#receiptPrinterModal .print-progress-fill{transition:none}}
+
+/* Exact 58 mm receipt preview styles from the printer prototype. */
+    .receipt-stage { background: #edf1f5; border-radius: 14px; padding: 18px 12px; display: flex; justify-content: center; }
+
+    /* Screen preview of a 58 mm thermal receipt. */
+    .thermal-receipt { width: 58mm; min-height: 0; background: #fff; color: #000; padding: 2.2mm 2.2mm 3mm; font-family: "Courier New", ui-monospace, monospace; font-size: 8.8px; line-height: 1.16; box-shadow: 0 7px 20px rgba(15, 23, 42, .16); overflow-wrap: anywhere; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .receipt-company { text-align: center; font-family: Arial, sans-serif; font-size: 15px; line-height: 1.05; font-weight: 900; letter-spacing: -.2px; }
+    .receipt-tagline, .receipt-branch { text-align: center; font-size: 8.5px; margin-top: 3px; }
+    .receipt-rule { border: 0; border-top: 1px dashed #000; margin: 3px 0; opacity: 1; }
+    .receipt-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; margin: 1px 0; }
+    .receipt-row .key { flex: 0 0 auto; }
+    .receipt-row .val { font-weight: 700; text-align: right; min-width: 0; }
+    .receipt-block { margin: 2px 0; }
+    .receipt-block .key { display: block; font-size: 8px; }
+    .receipt-block .val { display: block; font-weight: 700; margin-top: 1px; }
+    .receipt-amount { margin: 4px 0; padding: 4px 2px; border: 1.2px solid #000; text-align: center; }
+    .receipt-amount .caption { font-size: 8px; font-weight: 700; }
+    .receipt-amount .money { font-family: Arial, sans-serif; font-size: 21px; font-weight: 900; margin-top: 2px; }
+    .short-receipt-only { display: none; }
+    .short-receipt .short-receipt-only { display: block; }
+    .thermal-receipt.short-receipt .full-receipt-only { display: none !important; }
+    .thermal-receipt.short-receipt { font-size: 10px; line-height: 1.25; }
+    .short-receipt .receipt-amount { border: 2px solid #000; padding: 6px 2px; }
+    .short-receipt .receipt-amount .caption { font: 800 11px Arial, sans-serif; }
+    .short-receipt .receipt-amount .money { font-size: 30px; line-height: 1.1; overflow-wrap: normal; }
+    .short-receipt .receipt-amount .money .currency { display: block; font-size: 13px; margin-bottom: 2px; }
+    .receipt-progress { border: 1px solid #000; padding: 5px; margin: 4px 0; }
+    .receipt-progress-title { text-align: center; font-weight: 900; font-size: 10px; }
+    .receipt-progress-label { text-align: center; font: 900 16px Arial, sans-serif; margin: 4px 0; }
+    .payment-progress-track { height: 16px; border: 1.5px solid #000; background: #fff; padding: 1px; }
+    .payment-progress-fill { height: 100%; width: 0; background: #000; }
+    .receipt-progress-total { text-align: center; margin-top: 4px; font-size: 8px; }
+    .receipt-qr { display: flex; justify-content: center; margin: 3px auto 1px; }
+    .receipt-qr canvas, .receipt-qr img { width: 19mm !important; height: 19mm !important; image-rendering: pixelated; }
+    .receipt-center { text-align: center; }
+    .receipt-small { font-size: 7.8px; }
+    .receipt-copy-badge { text-align: center; border: 1px solid #000; padding: 2px 5px; margin: 0 auto 5px; width: fit-content; font-weight: 800; display: none; }
+    .receipt-copy-badge.show { display: block; }

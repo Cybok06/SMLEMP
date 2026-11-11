@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>External Access</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="icon"
+        href="https://imagedelivery.net/h9fmMoa1o2c2P55TcWJGOg/10283f28-b9a0-4100-b254-19a854386800/public"
+        type="image/png">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --ink:#0f172a;
+      --muted:#64748b;
+      --line:#dbe3f0;
+      --bg:#f3f7fb;
+      --panel:#ffffff;
+      --brand:#0d6efd;
+      --brand-dark:#0b57d0;
+      --good:#16a34a;
+      --warn:#d97706;
+      --danger:#dc2626;
+      --shadow:0 18px 40px rgba(15,23,42,.08);
+      --radius:18px;
+    }
+    body{
+      font-family:"Manrope",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--ink);
+      background:
+        radial-gradient(900px 500px at 10% -10%, rgba(13,110,253,.14), transparent 60%),
+        radial-gradient(800px 500px at 90% 0%, rgba(2,132,199,.10), transparent 55%),
+        linear-gradient(180deg, #f7fbff 0%, var(--bg) 72%, #eef4fb 100%);
+      min-height:100vh;
+    }
+    .page-wrap{margin-left:270px; padding:24px;}
+    @media (max-width: 991px){
+      .page-wrap{margin-left:0; padding:16px;}
+    }
+    .shell-card{
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      background:var(--panel);
+      box-shadow:var(--shadow);
+    }
+    .hero{
+      background:linear-gradient(135deg, rgba(13,110,253,.10), rgba(2,132,199,.04));
+      overflow:hidden;
+      position:relative;
+    }
+    .hero::after{
+      content:"";
+      position:absolute;
+      inset:auto -60px -80px auto;
+      width:220px;
+      height:220px;
+      border-radius:50%;
+      background:radial-gradient(circle, rgba(13,110,253,.16), transparent 68%);
+    }
+    .metric{
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:linear-gradient(180deg, #fff, #f8fbff);
+      padding:16px;
+      height:100%;
+    }
+    .metric .label{font-size:.82rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:800;}
+    .metric .value{font-size:1.4rem;font-weight:800;}
+    .key-cell{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;
+      font-size:.9rem;
+    }
+    .doc-block{
+      background:#0f172a;
+      color:#e2e8f0;
+      border-radius:16px;
+      padding:16px;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;
+      font-size:.88rem;
+      white-space:pre-wrap;
+      word-break:break-word;
+    }
+    .badge-soft{
+      border:1px solid rgba(13,110,253,.16);
+      background:#edf4ff;
+      color:#0d6efd;
+      font-weight:700;
+    }
+    .status-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:.35rem;
+      padding:.28rem .62rem;
+      border-radius:999px;
+      font-size:.75rem;
+      font-weight:800;
+    }
+    .status-active{background:#ecfdf3;color:#15803d;border:1px solid #bbf7d0;}
+    .status-revoked{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;}
+    .table thead th{
+      color:var(--muted);
+      font-size:.84rem;
+      font-weight:800;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      white-space:nowrap;
+    }
+    .table td{vertical-align:middle;}
+    .log-status-ok{color:#15803d;font-weight:800;}
+    .log-status-warn{color:var(--warn);font-weight:800;}
+    .log-status-bad{color:var(--danger);font-weight:800;}
+    .console-bar{
+      display:flex;align-items:center;justify-content:space-between;gap:18px;
+      padding:18px 20px;border:1px solid var(--line);border-radius:18px;
+      background:rgba(255,255,255,.94);box-shadow:var(--shadow);
+    }
+    .console-mark{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:#eaf2ff;color:var(--brand);font-size:1.25rem;}
+    .console-title{font-size:1.05rem;font-weight:800;letter-spacing:-.02em;}
+    .console-subtitle{font-size:.82rem;color:var(--muted);}
+    .primary-action{border-radius:12px;padding:.72rem 1.05rem;font-weight:800;box-shadow:0 8px 20px rgba(13,110,253,.22);}
+    .workspace-tabs{border-bottom:1px solid var(--line);gap:6px;padding:0 8px;}
+    .workspace-tabs .nav-link{border:0;border-bottom:3px solid transparent;color:var(--muted);font-weight:750;padding:16px 18px;background:transparent;}
+    .workspace-tabs .nav-link:hover{color:var(--ink);}
+    .workspace-tabs .nav-link.active{color:var(--brand);border-bottom-color:var(--brand);background:transparent;}
+    .tab-count{font-size:.7rem;border-radius:999px;background:#edf2f7;padding:.18rem .45rem;margin-left:.35rem;}
+    .nav-link.active .tab-count{background:#e5efff;color:var(--brand);}
+    .reference-intro{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,.5fr);gap:14px;}
+    .reference-meta{border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:#f8fafc;}
+    .reference-meta .meta-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800;}
+    .reference-meta code{display:block;margin-top:6px;color:var(--ink);word-break:break-all;}
+    .api-group{margin-top:28px;}
+    .api-group-heading{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+    .api-group-icon{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:#eaf2ff;color:var(--brand);}
+    .api-group-heading h5{font-size:1rem;font-weight:800;margin:0;}
+    .endpoint-card{border:1px solid var(--line);border-radius:16px;background:#fff;overflow:hidden;margin-bottom:14px;transition:box-shadow .2s ease,border-color .2s ease;}
+    .endpoint-card:hover{border-color:#b8cae5;box-shadow:0 12px 30px rgba(15,23,42,.07);}
+    .endpoint-summary{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;padding:18px 20px;border-bottom:1px solid #edf1f6;}
+    .method-pill{display:inline-flex;align-items:center;border-radius:7px;background:#e8f2ff;color:#0759bb;font:800 .72rem/1 ui-monospace,monospace;padding:.42rem .5rem;}
+    .endpoint-path{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:750;font-size:.92rem;word-break:break-all;}
+    .endpoint-scope{font-size:.72rem;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:.3rem .55rem;white-space:nowrap;}
+    .endpoint-body{padding:18px 20px;}
+    .code-label{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--muted);}
+    .request-block,.response-block{border-radius:12px;padding:15px 16px;font:500 .8rem/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;word-break:break-word;margin:0;min-height:145px;}
+    .request-block{background:#111827;color:#dbeafe;border:1px solid #263449;}
+    .response-block{background:#071f16;color:#b8f7d4;border:1px solid #17643f;box-shadow:inset 3px 0 0 #22c55e;}
+    .response-label{color:#168348;}
+    .field-note{margin-top:10px;color:#bbf7d0;font:500 .73rem/1.5 "Manrope",sans-serif;}
+    .modal-content{border:0;border-radius:20px;box-shadow:0 28px 80px rgba(15,23,42,.24);overflow:hidden;}
+    .modal-header{padding:20px 22px;border-bottom:1px solid var(--line);}
+    .modal-body{padding:22px;}
+    .scope-grid{display:flex;flex-wrap:wrap;gap:7px;max-height:130px;overflow:auto;}
+    .scope-chip{background:#f1f5f9;border:1px solid #dbe3f0;color:#334155;border-radius:8px;padding:.38rem .55rem;font-size:.72rem;font-weight:700;}
+    @media (max-width: 767px){
+      .console-bar{align-items:flex-start;flex-direction:column;}
+      .console-bar .primary-action{width:100%;}
+      .reference-intro{grid-template-columns:1fr;}
+      .endpoint-summary{flex-direction:column;}
+      .workspace-tabs{flex-wrap:nowrap;overflow-x:auto;}
+    }
+  </style>
+</head>
+<body>
+  {% if identity.role == 'executive' %}
+    {% include 'executive_sidebar.html' %}
+  {% else %}
+    {% include 'admin_sidebar.html' %}
+  {% endif %}
+
+  <div class="page-wrap">
+    <div class="container-fluid px-0">
+      <div class="console-bar mb-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="console-mark"><i class="bi bi-braces-asterisk"></i></div>
+          <div>
+            <div class="console-title">Integration Console</div>
+            <div class="console-subtitle">{{ scopes|length }} endpoints &middot; 120 requests per minute</div>
+          </div>
+        </div>
+        <button class="btn btn-primary primary-action" type="button" data-bs-toggle="modal" data-bs-target="#generateKeyModal">
+          <i class="bi bi-key-fill me-2"></i>Generate API Key
+        </button>
+      </div>
+
+      <div class="shell-card overflow-hidden">
+        <ul class="nav workspace-tabs" id="externalAccessTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="reference-tab" data-bs-toggle="tab" data-bs-target="#reference-pane" type="button" role="tab">
+              <i class="bi bi-code-square me-2"></i>API Reference <span class="tab-count">{{ scopes|length }}</span>
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="keys-tab" data-bs-toggle="tab" data-bs-target="#keys-pane" type="button" role="tab">
+              <i class="bi bi-key me-2"></i>Issued Keys
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs-pane" type="button" role="tab">
+              <i class="bi bi-activity me-2"></i>Request Logs
+            </button>
+          </li>
+        </ul>
+
+        <div class="tab-content">
+          <div class="tab-pane fade show active p-3 p-lg-4" id="reference-pane" role="tabpanel" aria-labelledby="reference-tab">
+            <div class="reference-intro">
+              <div class="reference-meta">
+                <div class="meta-label">Base URL</div>
+                <code id="baseUrlText">{{ published_base_url }}</code>
+              </div>
+              <div class="reference-meta">
+                <div class="meta-label">Authentication</div>
+                <code>X-API-Key: YOUR_API_KEY</code>
+              </div>
+            </div>
+
+            {% set api_groups = [
+              {'title': 'Customer Data', 'icon': 'bi-people', 'scopes': ['customers', 'closed_customers']},
+              {'title': 'Payments & Card Operations', 'icon': 'bi-credit-card-2-front', 'scopes': ['payments', 'closed_cards', 'completed_cards']},
+              {'title': 'Catalogue & Organisation', 'icon': 'bi-boxes', 'scopes': ['products', 'users']}
+            ] %}
+            {% for group in api_groups %}
+              <section class="api-group">
+                <div class="api-group-heading">
+                  <span class="api-group-icon"><i class="bi {{ group.icon }}"></i></span>
+                  <h5>{{ group.title }}</h5>
+                </div>
+                {% for endpoint in endpoint_docs if endpoint.scope in group.scopes %}
+                  <article class="endpoint-card">
+                    <div class="endpoint-summary">
+                      <div>
+                        <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+                          <span class="method-pill">GET</span>
+                          <span class="endpoint-path">{{ endpoint.path }}</span>
+                        </div>
+                        <div class="small text-secondary">{{ endpoint.description }}</div>
+                      </div>
+                      <span class="endpoint-scope">{{ endpoint.scope }}</span>
+                    </div>
+                    <div class="endpoint-body">
+                      <div class="row g-3">
+                        <div class="col-xl-6">
+                          <div class="code-label"><span>Request</span><span>Period: {{ endpoint.date_field }}</span></div>
+                          <pre class="request-block">GET {{ published_base_url }}{{ endpoint.path }}?page=1&amp;limit=25&amp;search=ama&amp;start_date=2026-08-01&amp;end_date=2026-08-08
+X-API-Key: YOUR_API_KEY
+Accept: application/json</pre>
+                        </div>
+                        <div class="col-xl-6">
+                          <div class="code-label response-label"><span>200 Response</span><span>application/json</span></div>
+                          <pre class="response-block">{
+  "ok": true,
+  "scope": "{{ endpoint.scope }}",
+  "rows": [ { "record": "..." } ],
+  "pagination": { "page": 1, "limit": 25, "total": 1, "total_pages": 1 },
+  "filters": { "start_date": "2026-08-01", "end_date": "2026-08-08", "date_field": "{{ endpoint.date_field }}" }
+}
+<span class="field-note">Rows: {{ endpoint.response_fields }}</span></pre>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                {% endfor %}
+              </section>
+            {% endfor %}
+          </div>
+
+          <div class="tab-pane fade p-3 p-lg-4" id="keys-pane" role="tabpanel" aria-labelledby="keys-tab">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+          <div>
+            <h5 class="mb-1">Issued Keys</h5>
+            <div class="text-secondary small">Prefixes, usage, and revocation controls.</div>
+          </div>
+          <button id="refreshKeysBtn" class="btn btn-outline-primary btn-sm" type="button">
+            <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Prefix</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Last Used</th>
+                <th>Rate</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="keysTableBody">
+              <tr><td colspan="7" class="text-center text-secondary py-4">Loading keys...</td></tr>
+            </tbody>
+          </table>
+        </div>
+          </div>
+
+          <div class="tab-pane fade p-3 p-lg-4" id="logs-pane" role="tabpanel" aria-labelledby="logs-tab">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+          <div>
+            <h5 class="mb-1">API Request Logs</h5>
+            <div class="text-secondary small">Recent calls made with issued keys.</div>
+          </div>
+          <div class="d-flex gap-2">
+            <input id="logUserFilter" class="form-control form-control-sm" placeholder="Filter by user name">
+            <button id="applyLogFilterBtn" class="btn btn-outline-secondary btn-sm" type="button">Apply</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>User</th>
+                <th>Route</th>
+                <th>Status</th>
+                <th>Rows</th>
+                <th>Duration</th>
+                <th>IP</th>
+              </tr>
+            </thead>
+            <tbody id="logsTableBody">
+              <tr><td colspan="7" class="text-center text-secondary py-4">Loading logs...</td></tr>
+            </tbody>
+          </table>
+        </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="generateKeyModal" tabindex="-1" aria-labelledby="generateKeyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h5 class="modal-title fw-bold" id="generateKeyModalLabel">Generate API Key</h5>
+            <div class="small text-secondary mt-1">Issue a read-only credential to an external app or integration owner.</div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="generateKeyForm" class="d-grid gap-4">
+            <div>
+              <label for="apiUserName" class="form-label fw-semibold">Integration name</label>
+              <input id="apiUserName" class="form-control form-control-lg" maxlength="80" placeholder="Example: Inventory Sync App" required>
+              <div class="form-text">Use a clear name so activity can be identified in request logs.</div>
+            </div>
+            <div>
+              <label class="form-label fw-semibold">Included scopes</label>
+              <div class="scope-grid">
+                {% for scope in scopes %}<span class="scope-chip"><i class="bi bi-check-circle-fill text-success me-1"></i>{{ scope }}</span>{% endfor %}
+              </div>
+            </div>
+            <button class="btn btn-primary btn-lg fw-bold" id="generateKeySubmit" type="submit">
+              <i class="bi bi-key-fill me-2"></i>Create secure key
+            </button>
+          </form>
+
+          <div id="generatedKeyPanel" class="mt-4 d-none">
+            <div class="alert alert-success border-success-subtle">
+              <div class="fw-bold mb-1"><i class="bi bi-check-circle-fill me-2"></i>Key generated successfully</div>
+              <div class="small">Copy it now. The complete secret cannot be displayed again.</div>
+            </div>
+            <label class="form-label fw-semibold">API key</label>
+            <div class="input-group input-group-lg">
+              <input id="generatedKeyValue" class="form-control key-cell" readonly>
+              <button id="copyKeyBtn" class="btn btn-outline-primary" type="button">
+                <i class="bi bi-clipboard me-1"></i>Copy
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    async function jsonFetch(url, options = {}) {
+      const response = await fetch(url, {
+        headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+        ...options
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok === false) {
+        throw new Error(data.error || data.message || "Request failed.");
+      }
+      return data;
+    }
+
+    function formatDate(value) {
+      if (!value) return "Never";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+      return date.toLocaleString();
+    }
+
+    function statusClass(statusCode) {
+      if (statusCode >= 500) return "log-status-bad";
+      if (statusCode >= 400) return "log-status-warn";
+      return "log-status-ok";
+    }
+
+    async function loadKeys() {
+      const body = document.getElementById("keysTableBody");
+      body.innerHTML = '<tr><td colspan="7" class="text-center text-secondary py-4">Loading keys...</td></tr>';
+      try {
+        const data = await jsonFetch("{{ url_for('external_access.list_api_keys') }}");
+        if (!data.keys.length) {
+          body.innerHTML = '<tr><td colspan="7" class="text-center text-secondary py-4">No API keys issued yet.</td></tr>';
+          return;
+        }
+        body.innerHTML = data.keys.map((row) => `
+          <tr>
+            <td>
+              <div class="fw-semibold">${row.user_name || ""}</div>
+              <div class="small text-secondary">${(row.scopes || []).join(", ")}</div>
+            </td>
+            <td class="key-cell">${row.key_prefix || ""}</td>
+            <td>
+              <span class="status-pill ${row.active ? "status-active" : "status-revoked"}">
+                <i class="bi ${row.active ? "bi-shield-check" : "bi-shield-x"}"></i>
+                ${row.active ? "Active" : "Revoked"}
+              </span>
+            </td>
+            <td>${formatDate(row.created_at)}</td>
+            <td>${formatDate(row.last_used_at)}</td>
+            <td>${row.rate_limit_per_minute || 0}/min</td>
+            <td class="text-end">
+              <div class="d-flex justify-content-end gap-2">
+                ${row.active ? `<button class="btn btn-outline-secondary btn-sm" onclick="exportDocs('${row.id}')">Export Docs</button>` : ""}
+                ${row.active ? `<button class="btn btn-outline-danger btn-sm" onclick="revokeKey('${row.id}')">Revoke</button>` : ""}
+              </div>
+            </td>
+          </tr>
+        `).join("");
+      } catch (error) {
+        body.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">${error.message}</td></tr>`;
+      }
+    }
+
+    async function loadLogs() {
+      const body = document.getElementById("logsTableBody");
+      body.innerHTML = '<tr><td colspan="7" class="text-center text-secondary py-4">Loading logs...</td></tr>';
+      const userName = document.getElementById("logUserFilter").value.trim();
+      const query = new URLSearchParams({ page: "1", limit: "25" });
+      if (userName) query.set("user_name", userName);
+      try {
+        const data = await jsonFetch(`{{ url_for('external_access.request_logs') }}?${query.toString()}`);
+        if (!data.rows.length) {
+          body.innerHTML = '<tr><td colspan="7" class="text-center text-secondary py-4">No logs found for the selected filter.</td></tr>';
+          return;
+        }
+        body.innerHTML = data.rows.map((row) => `
+          <tr>
+            <td>${formatDate(row.at)}</td>
+            <td>
+              <div class="fw-semibold">${row.api_user_name || "Unknown"}</div>
+              <div class="small text-secondary">${row.api_key_prefix || ""}</div>
+            </td>
+            <td class="key-cell">${row.route || ""}</td>
+            <td><span class="${statusClass(Number(row.status_code || 0))}">${row.status_code || ""}</span></td>
+            <td>${row.rows_returned || 0}</td>
+            <td>${row.duration_ms || 0} ms</td>
+            <td>${row.ip_address || ""}</td>
+          </tr>
+        `).join("");
+      } catch (error) {
+        body.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">${error.message}</td></tr>`;
+      }
+    }
+
+    async function revokeKey(keyId) {
+      if (!confirm("Revoke this API key? This cannot be undone.")) return;
+      try {
+        await jsonFetch(`{{ url_for('external_access.external_access_page') }}api-keys/${keyId}/revoke`, { method: "POST" });
+        await loadKeys();
+      } catch (error) {
+        alert(error.message);
+      }
+    }
+
+    async function exportDocs(keyId) {
+      window.location.href = `{{ url_for('external_access.external_access_page') }}api-keys/${keyId}/export-docs`;
+      setTimeout(loadKeys, 1200);
+    }
+
+    document.getElementById("generateKeyForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const userName = document.getElementById("apiUserName").value.trim();
+      const submitButton = document.getElementById("generateKeySubmit");
+      if (!userName) {
+        alert("Enter a user name first.");
+        return;
+      }
+      try {
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Generating...';
+        const data = await jsonFetch("{{ url_for('external_access.create_api_key') }}", {
+          method: "POST",
+          body: JSON.stringify({ user_name: userName })
+        });
+        document.getElementById("generatedKeyValue").value = data.api_key || "";
+        document.getElementById("generatedKeyPanel").classList.remove("d-none");
+        document.getElementById("apiUserName").value = "";
+        await loadKeys();
+      } catch (error) {
+        alert(error.message);
+      } finally {
+        submitButton.disabled = false;
+        submitButton.innerHTML = '<i class="bi bi-key-fill me-2"></i>Create secure key';
+      }
+    });
+
+    document.getElementById("copyKeyBtn").addEventListener("click", async () => {
+      const value = document.getElementById("generatedKeyValue").value;
+      if (!value) return;
+      await navigator.clipboard.writeText(value);
+      const button = document.getElementById("copyKeyBtn");
+      button.innerHTML = '<i class="bi bi-check2 me-1"></i>Copied';
+      setTimeout(() => { button.innerHTML = '<i class="bi bi-clipboard me-1"></i>Copy'; }, 1600);
+    });
+
+    document.getElementById("generateKeyModal").addEventListener("hidden.bs.modal", () => {
+      document.getElementById("generateKeyForm").reset();
+      document.getElementById("generatedKeyValue").value = "";
+      document.getElementById("generatedKeyPanel").classList.add("d-none");
+    });
+
+    document.getElementById("refreshKeysBtn").addEventListener("click", loadKeys);
+    document.getElementById("applyLogFilterBtn").addEventListener("click", loadLogs);
+
+    loadKeys();
+    loadLogs();
+  </script>
+</body>
+</html>

@@ -1,0 +1,816 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Budget Control</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="icon" href="https://imagedelivery.net/h9fmMoa1o2c2P55TcWJGOg/10283f28-b9a0-4100-b254-19a854386800/public" type="image/png">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { display: ["Inter", "sans-serif"] },
+          colors: {
+            brand: "#16a34a",
+            ink: "#0f172a",
+          },
+          boxShadow: {
+            soft: "0 8px 26px rgba(2, 6, 23, 0.08)",
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-slate-50 font-display text-slate-900">
+  {% include 'accounting/sidebar.html' %}
+
+  <main class="acc-with-sidebar min-h-screen p-4 sm:p-6 lg:p-8">
+    <div class="max-w-7xl mx-auto space-y-5">
+      <header class="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-ink flex items-center gap-2">
+              <span class="material-symbols-outlined text-brand">payments</span>
+              Budget Control
+            </h1>
+            <p class="mt-1 text-sm text-slate-600">
+              Manage expense and income budgets and track live performance against approved spend and sales.
+            </p>
+            <p class="mt-1 text-xs text-slate-500">Last server refresh: {{ last_refresh_utc }}</p>
+          </div>
+
+          <form method="get" class="flex flex-wrap items-center gap-2">
+            <label class="text-xs font-semibold text-slate-600">Year</label>
+            <select id="yearFilter" name="year" class="h-10 rounded-lg border-slate-300 text-sm">
+              {% for y in year_options %}
+                <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+              {% endfor %}
+            </select>
+
+            <label class="text-xs font-semibold text-slate-600">Start</label>
+            <input id="startFilter" type="date" name="start" value="{{ start_str }}" class="h-10 rounded-lg border-slate-300 text-sm">
+            <label class="text-xs font-semibold text-slate-600">End</label>
+            <input id="endFilter" type="date" name="end" value="{{ end_str }}" class="h-10 rounded-lg border-slate-300 text-sm">
+
+            <button class="h-10 px-4 rounded-lg bg-brand text-white text-sm font-semibold hover:bg-emerald-600" type="submit">
+              Apply
+            </button>
+            <button id="btnOpenYearlyCreate" class="h-10 px-4 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800" type="button">
+              {{ "Edit Year Budget" if year_has_budget else "Create Year Budget" }}
+            </button>
+            <button id="btnOpenIncomeBudget" class="h-10 px-4 rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 text-sm font-semibold hover:bg-emerald-100" type="button">
+              Set Income Budget
+            </button>
+            <a class="h-10 px-4 rounded-lg border border-slate-300 text-sm font-semibold inline-flex items-center hover:bg-slate-100"
+               href="{{ url_for('acc_budget.budget_export', year=year, start=start_str, end=end_str) }}">
+              Export CSV
+            </a>
+            <a class="h-10 px-4 rounded-lg border border-slate-300 text-sm font-semibold inline-flex items-center hover:bg-slate-100"
+               href="{{ url_for('acc_budget.budget_export_pdf', year=year, start=start_str, end=end_str) }}"
+               target="_blank" rel="noopener">
+              Export PDF
+            </a>
+          </form>
+        </div>
+      </header>
+
+      <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-soft">
+          <p class="text-xs uppercase tracking-wide text-slate-500">Total Budget</p>
+          <p id="kpiTotalBudget" class="mt-1 text-2xl font-black">0.00</p>
+        </article>
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-soft">
+          <p class="text-xs uppercase tracking-wide text-slate-500">Total Used (Approved)</p>
+          <p id="kpiTotalUsed" class="mt-1 text-2xl font-black text-rose-600">0.00</p>
+        </article>
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-soft">
+          <p class="text-xs uppercase tracking-wide text-slate-500">Remaining</p>
+          <p id="kpiRemaining" class="mt-1 text-2xl font-black text-emerald-600">0.00</p>
+        </article>
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-soft">
+          <p class="text-xs uppercase tracking-wide text-slate-500">Utilization</p>
+          <p id="kpiUsedPct" class="mt-1 text-2xl font-black">0.00%</p>
+          <p id="liveBadge" class="mt-1 text-xs text-slate-500">Live sync every 30s</p>
+        </article>
+      </section>
+
+      <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-soft">
+          <p class="text-xs uppercase tracking-wide text-slate-500">Income Budget (Sales)</p>
+          <p id="kpiIncomeBudget" class="mt-1 text-2xl font-black">0.00</p>
+        </article>
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-soft">
+          <p class="text-xs uppercase tracking-wide text-slate-500">Actual Sales</p>
+          <p id="kpiActualSales" class="mt-1 text-2xl font-black text-emerald-700">0.00</p>
+        </article>
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-soft">
+          <p class="text-xs uppercase tracking-wide text-slate-500">Income Gap</p>
+          <p id="kpiIncomeGap" class="mt-1 text-2xl font-black">0.00</p>
+        </article>
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-soft">
+          <p class="text-xs uppercase tracking-wide text-slate-500">Income Achievement</p>
+          <p id="kpiIncomeAchieved" class="mt-1 text-2xl font-black">0.00%</p>
+        </article>
+      </section>
+
+      <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-soft">
+          <p class="text-xs uppercase tracking-wide text-slate-500">Risk Score</p>
+          <p id="riskScore" class="mt-1 text-2xl font-black">Low</p>
+          <p id="overspendCount" class="mt-1 text-xs text-slate-500">0 overspending categories</p>
+        </article>
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-soft">
+          <p class="text-xs uppercase tracking-wide text-slate-500">7-Day Burn</p>
+          <p id="burn7" class="mt-1 text-2xl font-black">0.00</p>
+        </article>
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-soft">
+          <p class="text-xs uppercase tracking-wide text-slate-500">30-Day Burn</p>
+          <p id="burn30" class="mt-1 text-2xl font-black">0.00</p>
+        </article>
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-soft">
+          <p class="text-xs uppercase tracking-wide text-slate-500">Avg Daily (30D)</p>
+          <p id="avgDaily30" class="mt-1 text-2xl font-black">0.00</p>
+        </article>
+      </section>
+
+      <section class="grid grid-cols-1 xl:grid-cols-1 gap-4">
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-soft">
+          <div class="flex items-center justify-between gap-2 mb-3">
+            <h2 class="text-sm font-bold text-ink flex items-center gap-2">
+              <span class="material-symbols-outlined text-brand text-base">monitoring</span>
+              Budget vs Approved Usage
+            </h2>
+            <button id="btnRefreshNow" type="button" class="h-9 px-3 rounded-lg border border-slate-300 text-xs font-semibold hover:bg-slate-100">
+              Refresh Now
+            </button>
+          </div>
+          <div class="h-72">
+            <canvas id="budgetChart"></canvas>
+          </div>
+        </article>
+      </section>
+
+      <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-soft">
+          <h2 class="text-sm font-bold text-ink mb-3">Income Budget vs Expense Budget</h2>
+          <div class="h-64"><canvas id="incomeExpenseTrendChart"></canvas></div>
+        </article>
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-soft">
+          <h2 class="text-sm font-bold text-ink mb-3">Monthly Used vs Monthly Budget Target</h2>
+          <div class="h-64"><canvas id="monthlyTrendChart"></canvas></div>
+        </article>
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-soft">
+          <h2 class="text-sm font-bold text-ink mb-3">Daily Burn Trend (Last 30 Days)</h2>
+          <div class="h-64"><canvas id="dailyBurnChart"></canvas></div>
+        </article>
+      </section>
+
+      <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-soft lg:col-span-2">
+          <h2 class="text-sm font-bold text-ink mb-3">Manager Performance (Approved Spend)</h2>
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-xs">
+              <thead class="bg-slate-50">
+                <tr>
+                  <th class="px-3 py-2 text-left font-semibold uppercase tracking-wide text-slate-500">Manager</th>
+                  <th class="px-3 py-2 text-left font-semibold uppercase tracking-wide text-slate-500">Branch</th>
+                  <th class="px-3 py-2 text-right font-semibold uppercase tracking-wide text-slate-500">Used</th>
+                  <th class="px-3 py-2 text-right font-semibold uppercase tracking-wide text-slate-500">Tx Count</th>
+                </tr>
+              </thead>
+              <tbody id="managerPerfRows" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </article>
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-soft">
+          <h2 class="text-sm font-bold text-ink mb-3">Branch Spend Split</h2>
+          <div class="h-64"><canvas id="branchSplitChart"></canvas></div>
+        </article>
+      </section>
+
+      <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-soft">
+          <h2 class="text-sm font-bold text-ink mb-3">Top Overspending Categories</h2>
+          <ul id="topOverspendingList" class="space-y-2 text-xs"></ul>
+        </article>
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-soft">
+          <h2 class="text-sm font-bold text-ink mb-3">Top Savings Categories</h2>
+          <ul id="topSavingsList" class="space-y-2 text-xs"></ul>
+        </article>
+      </section>
+
+      <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-soft">
+        <div class="flex items-center justify-between gap-2 mb-3">
+          <h2 class="text-sm font-bold text-ink">Category Sparkline Trends</h2>
+          <p class="text-xs text-slate-500">Top category usage trends by month in selected range.</p>
+        </div>
+        <div id="sparklineCards" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"></div>
+      </section>
+
+      <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-soft">
+        <div class="flex items-center justify-between gap-2 mb-3">
+          <h2 class="text-sm font-bold text-ink flex items-center gap-2">
+            <span class="material-symbols-outlined text-brand text-base">table_view</span>
+            Category Budget Table
+          </h2>
+          <p class="text-xs text-slate-500">Approved manager expenses are aggregated live for all managers.</p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-xs">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="px-3 py-2 text-left font-semibold uppercase tracking-wide text-slate-500">Category</th>
+                <th class="px-3 py-2 text-right font-semibold uppercase tracking-wide text-slate-500">Budget</th>
+                <th class="px-3 py-2 text-right font-semibold uppercase tracking-wide text-slate-500">Used</th>
+                <th class="px-3 py-2 text-right font-semibold uppercase tracking-wide text-slate-500">Remaining</th>
+                <th class="px-3 py-2 text-right font-semibold uppercase tracking-wide text-slate-500">Used %</th>
+              </tr>
+            </thead>
+            <tbody id="budgetRows" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div id="yearlyModalBackdrop" class="fixed inset-0 z-40 hidden bg-slate-900/50"></div>
+  <section id="yearlyModal" class="fixed inset-0 z-50 hidden p-4">
+    <div class="h-full w-full flex items-center justify-center">
+      <div class="w-full max-w-5xl max-h-[90vh] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+        <header class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <h2 class="text-base font-bold text-ink">Create Year Budget</h2>
+            <p class="text-xs text-slate-500">Set budget amounts for all manager expense categories (Year: <span id="modalYearLabel"></span>).</p>
+          </div>
+          <button id="yearlyModalClose" type="button" class="h-8 w-8 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100">x</button>
+        </header>
+        <div class="p-5 overflow-auto max-h-[65vh]">
+          <div class="mb-4 rounded-lg bg-slate-50 border border-slate-200 p-3 flex items-center justify-between">
+            <p class="text-sm text-slate-700">Total Yearly Budget</p>
+            <p id="modalTotalBudget" class="text-xl font-black text-ink">0.00</p>
+          </div>
+          <div class="mb-4 flex items-center justify-end">
+            <button id="btnAddCustomCategory" type="button" class="h-9 px-3 rounded-lg border border-slate-300 text-xs font-semibold hover:bg-slate-100">
+              Add Custom Category
+            </button>
+          </div>
+          <form id="yearlyCreateForm" class="space-y-3">
+            <div id="yearlyInputsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+          </form>
+          <p id="yearlyModalMsg" class="mt-3 text-xs text-slate-500"></p>
+        </div>
+        <footer class="px-5 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+          <button id="yearlyModalCancel" type="button" class="h-9 px-4 rounded-lg border border-slate-300 text-sm font-semibold hover:bg-slate-100">Cancel</button>
+          <button id="yearlyCreateSubmit" form="yearlyCreateForm" type="submit" class="h-9 px-5 rounded-lg bg-brand text-white text-sm font-semibold hover:bg-emerald-600">Save Year Budget</button>
+        </footer>
+      </div>
+    </div>
+  </section>
+
+  <div id="incomeModalBackdrop" class="fixed inset-0 z-40 hidden bg-slate-900/50"></div>
+  <section id="incomeModal" class="fixed inset-0 z-50 hidden p-4">
+    <div class="h-full w-full flex items-center justify-center">
+      <div class="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl">
+        <header class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <h2 class="text-base font-bold text-ink">Set Income Budget</h2>
+            <p class="text-xs text-slate-500">Income budget is measured against sales.</p>
+          </div>
+          <button id="incomeModalClose" type="button" class="h-8 w-8 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100">x</button>
+        </header>
+        <form id="incomeForm" class="p-5 space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Year</label>
+            <input id="incomeYearInput" type="number" min="2000" max="2100" class="w-full h-10 rounded-lg border-slate-300 text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Income Budget Amount</label>
+            <input id="incomeAmountInput" type="number" min="0" step="0.01" class="w-full h-10 rounded-lg border-slate-300 text-sm text-right">
+          </div>
+          <p id="incomeModalMsg" class="text-xs text-slate-500"></p>
+        </form>
+        <footer class="px-5 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+          <button id="incomeModalCancel" type="button" class="h-9 px-4 rounded-lg border border-slate-300 text-sm font-semibold hover:bg-slate-100">Cancel</button>
+          <button id="incomeSaveBtn" form="incomeForm" type="submit" class="h-9 px-5 rounded-lg bg-brand text-white text-sm font-semibold hover:bg-emerald-600">Save Income Budget</button>
+        </footer>
+      </div>
+    </div>
+  </section>
+
+  <script id="initialBudgetPayload" type="application/json">
+    {{ {
+      "rows": rows,
+      "totals": totals,
+      "chart": chart_data,
+      "variance": variance,
+      "trends": trends,
+      "manager_performance": manager_performance,
+      "income_budget": income_budget,
+      "income_vs_expense": income_vs_expense,
+      "year": year,
+      "start": start_str,
+      "end": end_str
+    } | tojson | safe }}
+  </script>
+
+  <script>
+    const API_LIVE = "{{ url_for('acc_budget.budget_live') }}";
+    const API_CREATE_YEARLY = "{{ url_for('acc_budget.budget_create_yearly') }}";
+    const API_INCOME_SET = "{{ url_for('acc_budget.budget_income_set') }}";
+    const ALL_CATEGORIES = JSON.parse('{{ categories_all | tojson | safe }}');
+
+    const payloadRaw = document.getElementById("initialBudgetPayload")?.textContent || "{}";
+    let state = JSON.parse(payloadRaw);
+    let chartRef = null;
+    let monthlyTrendRef = null;
+    let dailyBurnRef = null;
+    let incomeExpenseTrendRef = null;
+    let branchSplitRef = null;
+    let sparklineRefs = [];
+    let budgetMap = {};
+
+    function fmtMoney(n){
+      return Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function normalizeCategory(raw){
+      return String(raw || "").trim();
+    }
+
+    function yAxisMoneyConfig(){
+      return {
+        beginAtZero: true,
+        ticks: {
+          callback: (value) => Number(value || 0).toLocaleString()
+        }
+      };
+    }
+
+    function renderKpis(){
+      const t = state.totals || {};
+      document.getElementById("kpiTotalBudget").textContent = fmtMoney(t.total_budget || 0);
+      document.getElementById("kpiTotalUsed").textContent = fmtMoney(t.total_used || 0);
+      document.getElementById("kpiRemaining").textContent = fmtMoney(t.total_remaining || 0);
+      document.getElementById("kpiUsedPct").textContent = `${Number(t.total_used_pct || 0).toFixed(2)}%`;
+      document.getElementById("kpiRemaining").className =
+        `mt-1 text-2xl font-black ${Number(t.total_remaining || 0) < 0 ? "text-rose-600" : "text-emerald-600"}`;
+
+      const income = state.income_budget || {};
+      document.getElementById("kpiIncomeBudget").textContent = fmtMoney(income.budget || 0);
+      document.getElementById("kpiActualSales").textContent = fmtMoney(income.actual_sales || 0);
+      document.getElementById("kpiIncomeGap").textContent = fmtMoney(income.remaining || 0);
+      document.getElementById("kpiIncomeAchieved").textContent = `${Number(income.achieved_pct || 0).toFixed(2)}%`;
+      document.getElementById("kpiIncomeGap").className =
+        `mt-1 text-2xl font-black ${Number(income.remaining || 0) < 0 ? "text-rose-600" : "text-emerald-600"}`;
+    }
+
+    function renderRows(){
+      const tbody = document.getElementById("budgetRows");
+      const rows = state.rows || [];
+      tbody.innerHTML = "";
+      budgetMap = {};
+
+      if(!rows.length){
+        tbody.innerHTML = `<tr><td colspan="5" class="px-3 py-8 text-center text-slate-500">No categories found.</td></tr>`;
+        return;
+      }
+
+      rows.forEach(r => {
+        budgetMap[r.category] = Number(r.budget_amount || 0);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="px-3 py-2 font-semibold">${r.category}</td>
+          <td class="px-3 py-2 text-right">${fmtMoney(r.budget_amount)}</td>
+          <td class="px-3 py-2 text-right ${Number(r.used_amount) > Number(r.budget_amount) && Number(r.budget_amount) > 0 ? "text-rose-600 font-semibold" : ""}">${fmtMoney(r.used_amount)}</td>
+          <td class="px-3 py-2 text-right ${Number(r.remaining) < 0 ? "text-rose-600 font-semibold" : "text-emerald-600"}">${fmtMoney(r.remaining)}</td>
+          <td class="px-3 py-2 text-right">${Number(r.used_pct || 0).toFixed(2)}%</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderVariance(){
+      const v = state.variance || {};
+      const risk = (v.risk_score || "Low");
+      document.getElementById("riskScore").textContent = risk;
+      document.getElementById("riskScore").className = `mt-1 text-2xl font-black ${
+        risk === "High" ? "text-rose-600" : (risk === "Medium" ? "text-amber-600" : "text-emerald-600")
+      }`;
+      document.getElementById("overspendCount").textContent = `${Number(v.overspend_count || 0)} overspending categories`;
+
+      const overs = v.top_overspending || [];
+      const sav = v.top_savings || [];
+      const oversList = document.getElementById("topOverspendingList");
+      const savList = document.getElementById("topSavingsList");
+      oversList.innerHTML = "";
+      savList.innerHTML = "";
+
+      if(!overs.length){
+        oversList.innerHTML = `<li class="text-slate-500">No overspending category.</li>`;
+      }else{
+        overs.forEach(r => {
+          const li = document.createElement("li");
+          li.className = "flex items-center justify-between border border-slate-200 rounded-lg px-3 py-2";
+          li.innerHTML = `<span class="font-semibold">${r.category}</span><span class="text-rose-600 font-semibold">${fmtMoney(r.remaining)}</span>`;
+          oversList.appendChild(li);
+        });
+      }
+
+      if(!sav.length){
+        savList.innerHTML = `<li class="text-slate-500">No savings category yet.</li>`;
+      }else{
+        sav.forEach(r => {
+          const li = document.createElement("li");
+          li.className = "flex items-center justify-between border border-slate-200 rounded-lg px-3 py-2";
+          li.innerHTML = `<span class="font-semibold">${r.category}</span><span class="text-emerald-600 font-semibold">${fmtMoney(r.remaining)}</span>`;
+          savList.appendChild(li);
+        });
+      }
+    }
+
+    function renderChart(){
+      const chart = state.chart || {};
+      const labels = chart.labels || [];
+      const budget = chart.budget || [];
+      const used = chart.used || [];
+      const ctx = document.getElementById("budgetChart");
+      if(!ctx) return;
+
+      if(chartRef){
+        chartRef.destroy();
+      }
+
+      chartRef = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [
+            { label: "Budget", data: budget },
+            { label: "Used (Approved)", data: used }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: "bottom" } },
+          scales: { y: yAxisMoneyConfig() }
+        }
+      });
+    }
+
+    function renderTrends(){
+      const t = state.trends || {};
+      document.getElementById("burn7").textContent = fmtMoney(t.burn_7 || 0);
+      document.getElementById("burn30").textContent = fmtMoney(t.burn_30 || 0);
+      document.getElementById("avgDaily30").textContent = fmtMoney(t.avg_daily_30 || 0);
+
+      const mctx = document.getElementById("monthlyTrendChart");
+      if(monthlyTrendRef) monthlyTrendRef.destroy();
+      monthlyTrendRef = new Chart(mctx, {
+        type: "bar",
+        data: {
+          labels: t.monthly_labels || [],
+          datasets: [
+            { label: "Used", data: t.monthly_used || [] },
+            { label: "Budget Target", data: t.monthly_budget || [], type: "line", tension: 0.25 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: "bottom" } },
+          scales: { y: yAxisMoneyConfig() }
+        }
+      });
+
+      const dctx = document.getElementById("dailyBurnChart");
+      if(dailyBurnRef) dailyBurnRef.destroy();
+      dailyBurnRef = new Chart(dctx, {
+        type: "line",
+        data: {
+          labels: t.daily_labels || [],
+          datasets: [{ label: "Daily Used", data: t.daily_used || [], tension: 0.25 }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: "bottom" } },
+          scales: { y: yAxisMoneyConfig() }
+        }
+      });
+
+      const ivs = state.income_vs_expense || {};
+      const iectx = document.getElementById("incomeExpenseTrendChart");
+      if(incomeExpenseTrendRef) incomeExpenseTrendRef.destroy();
+      incomeExpenseTrendRef = new Chart(iectx, {
+        type: "line",
+        data: {
+          labels: ivs.labels || [],
+          datasets: [
+            { label: "Income Budget", data: ivs.income_budget || [], tension: 0.25, borderWidth: 2 },
+            { label: "Actual Sales", data: ivs.income_actual_sales || [], tension: 0.25, borderWidth: 2 },
+            { label: "Expense Budget", data: ivs.expense_budget || [], tension: 0.25, borderWidth: 2 },
+            { label: "Actual Expense", data: ivs.expense_actual || [], tension: 0.25, borderWidth: 2 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: "bottom" } },
+          scales: { y: yAxisMoneyConfig() }
+        }
+      });
+    }
+
+    function renderManagerPerformance(){
+      const mp = state.manager_performance || {};
+      const rows = mp.top5 || [];
+      const tbody = document.getElementById("managerPerfRows");
+      tbody.innerHTML = "";
+      if(!rows.length){
+        tbody.innerHTML = `<tr><td colspan="4" class="px-3 py-6 text-center text-slate-500">No manager spend data.</td></tr>`;
+      } else {
+        rows.forEach(r => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td class="px-3 py-2 font-semibold">${r.name || "-"}</td>
+            <td class="px-3 py-2">${r.branch || "-"}</td>
+            <td class="px-3 py-2 text-right">${fmtMoney(r.total_used || 0)}</td>
+            <td class="px-3 py-2 text-right">${Number(r.tx_count || 0)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      const bctx = document.getElementById("branchSplitChart");
+      const branch = mp.branch_split || [];
+      if(branchSplitRef) branchSplitRef.destroy();
+      branchSplitRef = new Chart(bctx, {
+        type: "doughnut",
+        data: {
+          labels: branch.map(x => x.branch),
+          datasets: [{ data: branch.map(x => x.total_used || 0) }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } }
+      });
+    }
+
+    function renderSparklines(){
+      const wrap = document.getElementById("sparklineCards");
+      wrap.innerHTML = "";
+      sparklineRefs.forEach(ch => ch.destroy());
+      sparklineRefs = [];
+
+      const list = (state.trends && state.trends.category_sparklines) || [];
+      if(!list.length){
+        wrap.innerHTML = `<div class="text-slate-500 text-sm">No category trend data available.</div>`;
+        return;
+      }
+
+      list.forEach((row, idx) => {
+        const card = document.createElement("article");
+        card.className = "rounded-lg border border-slate-200 p-3";
+        card.innerHTML = `
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-xs font-semibold text-slate-700">${row.category}</p>
+          </div>
+          <div class="h-20"><canvas id="sparkline_${idx}"></canvas></div>
+        `;
+        wrap.appendChild(card);
+        const ctx = card.querySelector("canvas");
+        const ch = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: (state.trends && state.trends.monthly_labels) || [],
+            datasets: [{ data: row.values || [], tension: 0.3, borderWidth: 2, pointRadius: 0 }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: { display: false }, y: { display: false } }
+          }
+        });
+        sparklineRefs.push(ch);
+      });
+    }
+
+    function renderAll(){
+      renderKpis();
+      renderRows();
+      renderChart();
+      renderVariance();
+      renderTrends();
+      renderManagerPerformance();
+      renderSparklines();
+    }
+
+    async function refreshLive(showTag){
+      const year = document.getElementById("yearFilter")?.value || state.year;
+      const start = document.getElementById("startFilter")?.value || state.start;
+      const end = document.getElementById("endFilter")?.value || state.end;
+      const url = `${API_LIVE}?year=${encodeURIComponent(year)}&start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+      try{
+        const res = await fetch(url, { credentials: "same-origin" });
+        const data = await res.json();
+        if(!res.ok || !data.ok) return;
+        state = data;
+        renderAll();
+        if(showTag){
+          document.getElementById("liveBadge").textContent = `Updated: ${new Date().toLocaleTimeString()}`;
+        }
+      }catch(e){
+        console.error(e);
+      }
+    }
+
+    function buildCategoryInputCard(category, amount, isCustom){
+      const safeCategory = normalizeCategory(category);
+      const val = Number(amount || 0).toFixed(2);
+      const row = document.createElement("div");
+      row.className = "rounded-lg border border-slate-200 p-3";
+      row.innerHTML = `
+        <div class="flex items-center justify-between gap-2 mb-1">
+          <label class="block text-xs font-semibold text-slate-700">${safeCategory}</label>
+          ${isCustom ? '<button type="button" class="remove-custom-category text-[11px] font-semibold text-rose-600 hover:underline">Remove</button>' : ""}
+        </div>
+        <input type="number" step="0.01" min="0" data-category="${safeCategory}" value="${val}"
+               class="yearly-input w-full h-9 rounded-lg border-slate-300 text-sm text-right">
+      `;
+      return row;
+    }
+
+    function openYearlyModal(){
+      const modal = document.getElementById("yearlyModal");
+      const backdrop = document.getElementById("yearlyModalBackdrop");
+      const inputs = document.getElementById("yearlyInputsGrid");
+      const year = document.getElementById("yearFilter")?.value || state.year;
+      document.getElementById("modalYearLabel").textContent = year;
+      document.getElementById("yearlyModalMsg").textContent = "";
+      inputs.innerHTML = "";
+
+      const existingCats = Object.keys(budgetMap || {}).map(normalizeCategory).filter(Boolean);
+      const mergedCategories = Array.from(new Set([...(ALL_CATEGORIES || []), ...existingCats])).sort();
+      mergedCategories.forEach(cat => {
+        const row = buildCategoryInputCard(cat, budgetMap[cat] || 0, !ALL_CATEGORIES.includes(cat));
+        inputs.appendChild(row);
+      });
+
+      recomputeYearlyTotal();
+      modal.classList.remove("hidden");
+      backdrop.classList.remove("hidden");
+    }
+
+    function closeYearlyModal(){
+      document.getElementById("yearlyModal")?.classList.add("hidden");
+      document.getElementById("yearlyModalBackdrop")?.classList.add("hidden");
+    }
+
+    function recomputeYearlyTotal(){
+      let total = 0;
+      document.querySelectorAll(".yearly-input").forEach(el => {
+        total += Number(el.value || 0);
+      });
+      document.getElementById("modalTotalBudget").textContent = fmtMoney(total);
+    }
+
+    async function saveYearlyBudget(){
+      const year = Number(document.getElementById("yearFilter")?.value || state.year);
+      const entryMap = {};
+      document.querySelectorAll(".yearly-input").forEach(el => {
+        const category = normalizeCategory(el.getAttribute("data-category"));
+        if(!category) return;
+        entryMap[category] = Number(el.value || 0);
+      });
+      const entries = Object.keys(entryMap).map(category => ({ category, amount: entryMap[category] }));
+
+      const msg = document.getElementById("yearlyModalMsg");
+      try{
+        const res = await fetch(API_CREATE_YEARLY, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ year, entries }),
+        });
+        const data = await res.json();
+        if(!res.ok || !data.ok){
+          msg.textContent = data.message || "Failed to save yearly budget.";
+          msg.className = "mt-3 text-xs text-rose-600";
+          return;
+        }
+        msg.textContent = data.message || "Yearly budget saved.";
+        msg.className = "mt-3 text-xs text-emerald-600";
+        await refreshLive(true);
+        setTimeout(closeYearlyModal, 350);
+      }catch(e){
+        console.error(e);
+        msg.textContent = "Request failed.";
+        msg.className = "mt-3 text-xs text-rose-600";
+      }
+    }
+
+    function addCustomCategoryRow(){
+      const inputs = document.getElementById("yearlyInputsGrid");
+      const nameRaw = window.prompt("Enter custom expense category name");
+      const category = normalizeCategory(nameRaw);
+      if(!category) return;
+
+      const exists = Array.from(document.querySelectorAll(".yearly-input"))
+        .some(el => normalizeCategory(el.getAttribute("data-category")).toLowerCase() === category.toLowerCase());
+      if(exists){
+        const msg = document.getElementById("yearlyModalMsg");
+        msg.textContent = "Category already exists in this form.";
+        msg.className = "mt-3 text-xs text-amber-600";
+        return;
+      }
+
+      inputs.appendChild(buildCategoryInputCard(category, 0, true));
+      recomputeYearlyTotal();
+    }
+
+    function openIncomeModal(){
+      const modal = document.getElementById("incomeModal");
+      const backdrop = document.getElementById("incomeModalBackdrop");
+      const income = state.income_budget || {};
+      document.getElementById("incomeYearInput").value = Number(state.year || new Date().getFullYear());
+      document.getElementById("incomeAmountInput").value = Number(income.budget || 0).toFixed(2);
+      document.getElementById("incomeModalMsg").textContent = "";
+      modal.classList.remove("hidden");
+      backdrop.classList.remove("hidden");
+    }
+
+    function closeIncomeModal(){
+      document.getElementById("incomeModal")?.classList.add("hidden");
+      document.getElementById("incomeModalBackdrop")?.classList.add("hidden");
+    }
+
+    async function saveIncomeBudget(){
+      const year = Number(document.getElementById("incomeYearInput")?.value || state.year);
+      const amount = Number(document.getElementById("incomeAmountInput")?.value || 0);
+      const msg = document.getElementById("incomeModalMsg");
+      try{
+        const res = await fetch(API_INCOME_SET, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ year, amount }),
+        });
+        const data = await res.json();
+        if(!res.ok || !data.ok){
+          msg.textContent = data.message || "Failed to save income budget.";
+          msg.className = "text-xs text-rose-600";
+          return;
+        }
+        msg.textContent = data.message || "Income budget saved.";
+        msg.className = "text-xs text-emerald-600";
+        await refreshLive(true);
+        setTimeout(closeIncomeModal, 350);
+      }catch(e){
+        console.error(e);
+        msg.textContent = "Request failed.";
+        msg.className = "text-xs text-rose-600";
+      }
+    }
+
+    document.getElementById("btnRefreshNow")?.addEventListener("click", () => refreshLive(true));
+    document.getElementById("btnOpenYearlyCreate")?.addEventListener("click", openYearlyModal);
+    document.getElementById("btnOpenIncomeBudget")?.addEventListener("click", openIncomeModal);
+    document.getElementById("yearlyModalClose")?.addEventListener("click", closeYearlyModal);
+    document.getElementById("yearlyModalCancel")?.addEventListener("click", closeYearlyModal);
+    document.getElementById("yearlyModalBackdrop")?.addEventListener("click", closeYearlyModal);
+    document.getElementById("btnAddCustomCategory")?.addEventListener("click", addCustomCategoryRow);
+    document.getElementById("incomeModalClose")?.addEventListener("click", closeIncomeModal);
+    document.getElementById("incomeModalCancel")?.addEventListener("click", closeIncomeModal);
+    document.getElementById("incomeModalBackdrop")?.addEventListener("click", closeIncomeModal);
+    document.getElementById("yearlyInputsGrid")?.addEventListener("input", (e) => {
+      if(e.target.classList.contains("yearly-input")){
+        recomputeYearlyTotal();
+      }
+    });
+    document.getElementById("yearlyInputsGrid")?.addEventListener("click", (e) => {
+      if(e.target.classList.contains("remove-custom-category")){
+        e.target.closest(".rounded-lg")?.remove();
+        recomputeYearlyTotal();
+      }
+    });
+    document.getElementById("yearlyCreateForm")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      await saveYearlyBudget();
+    });
+    document.getElementById("incomeForm")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      await saveIncomeBudget();
+    });
+
+    renderAll();
+    setInterval(() => refreshLive(false), 30000);
+  </script>
+</body>
+</html>

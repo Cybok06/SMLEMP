@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Printer Access</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<style>body{background:#f4f7fb;padding-left:270px}main{max-width:1150px;margin:auto;padding:32px 20px}.card{border:0;border-radius:18px;box-shadow:0 8px 30px #10233f0c}@media(max-width:768px){body{padding-left:0}}</style></head>
+<body>{% include 'executive_sidebar.html' %}<main>
+<h1><i class="bi bi-printer"></i> Printer Access</h1>
+<p class="text-secondary">Grant receipt printing to an entire branch or an individual agent. Individual settings take priority.</p>
+<div id="printerAccessMessage" class="small mb-3" role="status" aria-live="polite"></div>
+<details id="branchSection" class="card p-4 mb-4"><summary class="h5 mb-0" style="cursor:pointer">Branches</summary>
+<p class="text-muted small mt-3">Branch settings apply to all its agents unless an individual setting overrides them.</p>
+<div id="branchLoading" class="text-muted">Loading branches...</div>
+<div class="table-responsive"><table class="table align-middle"><thead><tr><th>Branch</th><th>Access</th><th>Manage</th></tr></thead><tbody id="branchRows"></tbody></table></div></details>
+<section class="card p-4"><div class="d-flex justify-content-between align-items-center gap-3 flex-wrap"><h2 class="h5 mb-0">Agents</h2><div class="d-flex gap-2 flex-wrap"><input id="agentSearch" class="form-control" placeholder="Search name or agent ID" aria-label="Search agents" style="width:min(100%,250px)"><select id="branchFilter" class="form-select" aria-label="Filter by branch" style="width:auto"><option value="">All branches</option></select><button id="loadBranchFilters" type="button" class="btn btn-sm btn-outline-secondary">Load branches</button></div></div>
+<p class="small text-muted mt-2">Showing up to 25 agents at a time. Search matches the beginning of a name, username, or branch.</p>
+<div id="agentLoading" class="text-muted small mb-2">Loading agents...</div>
+<div class="table-responsive"><table class="table align-middle"><thead><tr><th>Agent</th><th>Branch</th><th>Effective access</th><th>Setting</th><th>Manage</th></tr></thead><tbody id="agentRows"></tbody></table></div>
+<button id="loadMoreAgents" type="button" class="btn btn-outline-primary" hidden>Load more agents</button>
+</section></main>
+<script id="printerAccessConfig" type="application/json">{{ {'csrf': csrf, 'pageUrl': url_for('printer_access.page'), 'agentsUrl': url_for('printer_access.agents'), 'branchesUrl': url_for('printer_access.branches')}|tojson }}</script>
+<script src="{{ url_for('static', filename='js/printer_access.js', v='20261028-1') }}" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script></body></html>

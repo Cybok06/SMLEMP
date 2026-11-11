@@ -1,0 +1,785 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Closed Cards History</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+  <link rel="icon"
+        href="https://imagedelivery.net/h9fmMoa1o2c2P55TcWJGOg/10283f28-b9a0-4100-b254-19a854386800/public"
+        type="image/png">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --ink:#0f172a;
+      --muted:#64748b;
+      --line:#e2e8f0;
+      --bg:#f5f7fb;
+      --panel:#ffffff;
+      --brand:#1d4ed8;
+      --brand2:#2563eb;
+      --good:#16a34a;
+      --warn:#f59e0b;
+      --shadow:0 12px 30px rgba(15,23,42,.08);
+      --radius:14px;
+    }
+    body{
+      font-family:"Manrope",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:
+        radial-gradient(1200px 700px at 10% -10%, rgba(37,99,235,.12), transparent 60%),
+        radial-gradient(900px 600px at 90% 0%, rgba(29,78,216,.12), transparent 55%),
+        linear-gradient(180deg, #f7f9ff 0%, var(--bg) 70%, #eef2ff 100%);
+      color:var(--ink);
+      min-height:100vh;
+    }
+    .page-wrap{margin-left:260px; padding:20px; max-width:none;}
+    @media (max-width: 991px){
+      .page-wrap{margin-left:0;}
+    }
+    .card{
+      border:1px solid var(--line);
+      box-shadow:var(--shadow);
+      border-radius:var(--radius);
+      background:var(--panel);
+    }
+    .filter-bar{
+      position:sticky;
+      top:0;
+      z-index:30;
+      background:rgba(255,255,255,.92);
+      backdrop-filter: blur(8px);
+    }
+    .metric-card{
+      border:1px solid var(--line);
+      background:linear-gradient(140deg, rgba(37,99,235,.08), rgba(29,78,216,.02));
+      border-radius:14px;
+      padding:16px;
+      height:100%;
+    }
+    .metric-label{color:var(--muted); font-size:.85rem;}
+    .metric-value{font-size:1.4rem; font-weight:700;}
+    .trend-wrap{min-height:280px;}
+    .agent-pill{
+      display:flex; align-items:center; gap:.5rem; padding:.35rem .6rem;
+      border:1px solid var(--line); border-radius:999px; background:#fff;
+    }
+    .avatar{
+      width:34px; height:34px; border-radius:50%; object-fit:cover; background:#eef2ff;
+    }
+    .table thead th{color:var(--muted); font-weight:600; font-size:.85rem;}
+    .badge-soft{
+      background:#e0e7ff; color:#1e40af; font-weight:600;
+    }
+    .skeleton{
+      height:10px; background:linear-gradient(90deg,#eef2f7,#f7f9fd,#eef2f7);
+      border-radius:6px; animation: pulse 1.2s infinite;
+    }
+    @keyframes pulse{
+      0%{opacity:.7} 50%{opacity:1} 100%{opacity:.7}
+    }
+    .modal-side .modal-dialog{
+      max-width:720px;
+    }
+    .modal-side .modal-content{
+      border-radius:16px;
+    }
+  </style>
+</head>
+<body data-role="{{ (identity.role if identity else '') }}">
+  {% if identity.role == 'manager' %}
+    {% include 'manager_sidebar.html' %}
+  {% elif identity.role == 'executive' %}
+    {% include 'executive_sidebar.html' %}
+  {% else %}
+    {% include 'admin_sidebar.html' %}
+  {% endif %}
+
+  <div class="page-wrap">
+    <div class="container-fluid py-4">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+        <div>
+          <h3 class="mb-1">Closed Cards History</h3>
+          <div class="text-muted">Full closure drilldown, metrics, and trends across teams.</div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge badge-soft"><i class="bi bi-shield-check me-1"></i> Scoped access</span>
+          <span id="missingImagesBadge" class="badge bg-warning-subtle text-warning border border-warning-subtle d-none">
+            <i class="bi bi-image-alt me-1"></i> Missing Images
+          </span>
+          <button class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#analyticsPanel">
+            <i class="bi bi-graph-up-arrow me-1"></i> Analytics
+          </button>
+        </div>
+      </div>
+
+      <div class="card filter-bar p-3 mb-3">
+        <div class="row g-2 align-items-end">
+          <div class="col-6 col-lg-2">
+            <label class="form-label small">Start date</label>
+            <input id="startDate" type="date" class="form-control">
+          </div>
+          <div class="col-6 col-lg-2">
+            <label class="form-label small">End date</label>
+            <input id="endDate" type="date" class="form-control">
+          </div>
+          <div class="col-6 col-lg-2 admin-only">
+            <label class="form-label small">Manager</label>
+            <select id="managerFilter" class="form-select">
+              <option value="">All managers</option>
+            </select>
+          </div>
+          <div class="col-6 col-lg-2">
+            <label class="form-label small">Agent</label>
+            <select id="agentFilter" class="form-select">
+              <option value="">All agents</option>
+            </select>
+          </div>
+          <div class="col-6 col-lg-2">
+            <label class="form-label small">Branch</label>
+            <select id="branchFilter" class="form-select">
+              <option value="">All branches</option>
+            </select>
+          </div>
+          <div class="col-12 col-lg-2">
+            <label class="form-label small">Search customer</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input id="searchInput" type="text" class="form-control" placeholder="Name or phone">
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <div class="text-muted small" id="scopeHint"></div>
+          <div class="d-flex gap-2">
+            <div class="btn-group">
+              <button type="button" class="btn btn-outline-success btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export Excel
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                  <button class="dropdown-item" id="exportCurrentBranchBtn" type="button">
+                    <i class="bi bi-diagram-3 me-1"></i>Current Branch / Filtered View
+                  </button>
+                </li>
+                <li>
+                  <button class="dropdown-item" id="exportAllBranchesBtn" type="button">
+                    <i class="bi bi-globe2 me-1"></i>All Branches
+                  </button>
+                </li>
+              </ul>
+            </div>
+            <button id="resetFilters" class="btn btn-outline-secondary btn-sm">Reset</button>
+            <button id="applyFilters" class="btn btn-primary btn-sm">
+              <i class="bi bi-filter me-1"></i>Apply
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3" id="metricsGrid">
+        <div class="col-6 col-lg-2">
+          <div class="metric-card">
+            <div class="metric-label">Total closed</div>
+            <div class="metric-value" id="metricTotalClosed">0</div>
+          </div>
+        </div>
+        <div class="col-6 col-lg-2">
+          <div class="metric-card">
+            <div class="metric-label">Total kept</div>
+            <div class="metric-value" id="metricTotalKept">GHS 0.00</div>
+          </div>
+        </div>
+        <div class="col-6 col-lg-2">
+          <div class="metric-card">
+            <div class="metric-label">Total forfeited</div>
+            <div class="metric-value" id="metricTotalForfeited">GHS 0.00</div>
+          </div>
+        </div>
+        <div class="col-6 col-lg-2">
+          <div class="metric-card">
+            <div class="metric-label">Avg kept</div>
+            <div class="metric-value" id="metricAvgKept">GHS 0.00</div>
+          </div>
+        </div>
+        <div class="col-6 col-lg-2">
+          <div class="metric-card">
+            <div class="metric-label">Avg forfeited</div>
+            <div class="metric-value" id="metricAvgForfeited">GHS 0.00</div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-2">
+          <div class="metric-card">
+            <div class="metric-label mb-2">Top agents</div>
+            <div id="topAgents" class="d-flex flex-column gap-2"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card p-3 mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div>
+            <h5 class="mb-0">Daily Trend</h5>
+            <div class="text-muted small">Closures per day in selected range</div>
+          </div>
+          <div id="trendTotal" class="text-muted small"></div>
+        </div>
+        <div class="trend-wrap">
+          <canvas id="trendChart" height="120"></canvas>
+        </div>
+      </div>
+
+      <div class="card p-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="mb-0">Closed Cards Table</h5>
+          <div class="text-muted small" id="tableCount">0 results</div>
+        </div>
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Agent</th>
+                <th>Customer</th>
+                <th>Product</th>
+                <th>Kept</th>
+                <th>Forfeited</th>
+                <th>Closed By</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="rowsBody"></tbody>
+          </table>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-2">
+          <div class="text-muted small" id="pageHint"></div>
+          <div class="btn-group" role="group">
+            <button class="btn btn-outline-secondary btn-sm" id="prevPage">Prev</button>
+            <button class="btn btn-outline-secondary btn-sm" id="nextPage">Next</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade modal-side" id="detailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Closure Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="detailsContent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="analyticsPanel" aria-labelledby="analyticsLabel">
+    <div class="offcanvas-header">
+      <h5 id="analyticsLabel">Analytics</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+      <div class="card p-3 mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fw-semibold">Closed Cards by Agent</div>
+            <div class="text-muted small">Distribution by resolved agent</div>
+          </div>
+        </div>
+        <canvas id="agentChart" height="160"></canvas>
+      </div>
+      <div class="card p-3 mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fw-semibold">Closed Cards by Branch</div>
+            <div class="text-muted small">Agent/customer branch mix</div>
+          </div>
+        </div>
+        <canvas id="branchChart" height="160"></canvas>
+      </div>
+      <div class="card p-3 mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div>
+            <div class="fw-semibold">Closures Trend</div>
+            <div class="text-muted small">Daily or weekly aggregation</div>
+          </div>
+          <div class="btn-group btn-group-sm" role="group">
+            <button class="btn btn-outline-secondary" id="trendDailyBtn">Daily</button>
+            <button class="btn btn-outline-secondary" id="trendWeeklyBtn">Weekly</button>
+          </div>
+        </div>
+        <canvas id="trendChart2" height="160"></canvas>
+      </div>
+      <div class="card p-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fw-semibold">Kept vs Forfeited</div>
+            <div class="text-muted small">Totals over time</div>
+          </div>
+        </div>
+        <canvas id="keptForfeitedChart" height="160"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    const state = {
+      page: 1,
+      limit: 20,
+      start: "",
+      end: "",
+      manager_id: "",
+      agent_id: "",
+      branch: "",
+      search: "",
+      missing_images: false
+    };
+
+    const role = document.body.dataset.role || "";
+    const rowsMap = new Map();
+    const detailsModal = new bootstrap.Modal(document.getElementById("detailsModal"));
+    let trendChart = null;
+    let agentChart = null;
+    let branchChart = null;
+    let trendChart2 = null;
+    let keptForfeitedChart = null;
+    let cachedCharts = null;
+
+    const startInput = document.getElementById("startDate");
+    const endInput = document.getElementById("endDate");
+    const managerFilter = document.getElementById("managerFilter");
+    const agentFilter = document.getElementById("agentFilter");
+    const branchFilter = document.getElementById("branchFilter");
+    const searchInput = document.getElementById("searchInput");
+    const exportCurrentBranchBtn = document.getElementById("exportCurrentBranchBtn");
+    const exportAllBranchesBtn = document.getElementById("exportAllBranchesBtn");
+
+    function formatMoney(v){
+      return "GHS " + (Number(v || 0)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
+    function toDateInputValue(date){
+      return date.toISOString().slice(0,10);
+    }
+
+    function initDates(){
+      const params = new URLSearchParams(window.location.search);
+      const now = new Date();
+      const start = new Date();
+      start.setDate(now.getDate() - 30);
+      const startParam = params.get("start");
+      const endParam = params.get("end");
+      startInput.value = startParam || toDateInputValue(start);
+      endInput.value = endParam || toDateInputValue(now);
+      state.start = startInput.value;
+      state.end = endInput.value;
+      state.manager_id = params.get("manager_id") || "";
+      state.agent_id = params.get("agent_id") || "";
+      state.branch = params.get("branch") || "";
+      state.search = params.get("search") || "";
+      state.missing_images = params.get("missing_images") === "1";
+      document.getElementById("missingImagesBadge").classList.toggle("d-none", !state.missing_images);
+      if (state.search) searchInput.value = state.search;
+    }
+
+    function setScopeHint(){
+      const hint = document.getElementById("scopeHint");
+      if (role === "manager"){
+        hint.textContent = "Showing closures for your team only.";
+      } else {
+        hint.textContent = "Showing closures across all teams.";
+      }
+    }
+
+    async function loadFilters(){
+      const params = new URLSearchParams();
+      if (role === "admin" || role === "executive"){
+        if (state.manager_id){
+          params.set("manager_id", state.manager_id);
+        }
+      }
+      const res = await fetch(`/closed_cards_history/filters?${params.toString()}`);
+      const data = await res.json();
+      if (!data.ok) return;
+
+      if (role === "admin" || role === "executive"){
+        managerFilter.innerHTML = '<option value="">All managers</option>';
+        data.managers.forEach(m => {
+          const opt = document.createElement("option");
+          opt.value = m.id;
+          opt.textContent = m.name + (m.branch ? ` • ${m.branch}` : "");
+          managerFilter.appendChild(opt);
+        });
+      }
+
+      agentFilter.innerHTML = '<option value="">All agents</option>';
+      data.agents.forEach(a => {
+        const opt = document.createElement("option");
+        opt.value = a.id;
+        opt.textContent = a.name;
+        agentFilter.appendChild(opt);
+      });
+
+      branchFilter.innerHTML = '<option value="">All branches</option>';
+      data.branches.forEach(b => {
+        const opt = document.createElement("option");
+        opt.value = b;
+        opt.textContent = b;
+        branchFilter.appendChild(opt);
+      });
+
+      if (role === "admin" || role === "executive"){
+        if (managerFilter) managerFilter.value = state.manager_id;
+      }
+      agentFilter.value = state.agent_id;
+      branchFilter.value = state.branch;
+    }
+
+    function buildQuery(){
+      const params = new URLSearchParams();
+      params.set("page", state.page);
+      params.set("limit", state.limit);
+      if (state.start) params.set("start", state.start);
+      if (state.end) params.set("end", state.end);
+      if (state.manager_id) params.set("manager_id", state.manager_id);
+      if (state.agent_id) params.set("agent_id", state.agent_id);
+      if (state.branch) params.set("branch", state.branch);
+      if (state.search) params.set("search", state.search);
+      if (state.missing_images) params.set("missing_images", "1");
+      return params.toString();
+    }
+
+    function exportTable(scope){
+      const params = new URLSearchParams(buildQuery());
+      params.delete("page");
+      params.delete("limit");
+      params.set("export_scope", scope === "all" ? "all" : "current");
+      if (scope === "all") {
+        params.delete("branch");
+      }
+      window.location.href = `/closed_cards_history/export?${params.toString()}`;
+    }
+
+    function renderTopAgents(list){
+      const wrap = document.getElementById("topAgents");
+      wrap.innerHTML = "";
+      if (!list.length){
+        wrap.innerHTML = '<div class="text-muted small">No data yet</div>';
+        return;
+      }
+      list.forEach(a => {
+        const div = document.createElement("div");
+        div.className = "agent-pill";
+        div.innerHTML = `
+          <img class="avatar" src="${a.image_url || ''}" onerror="this.src=''; this.classList.add('bg-light');" />
+          <div class="flex-grow-1">
+            <div class="small fw-semibold">${a.name}</div>
+            <div class="text-muted small">${a.count} closures</div>
+          </div>`;
+        wrap.appendChild(div);
+      });
+    }
+
+    function renderTrend(trend){
+      const labels = trend.map(t => t.date);
+      const values = trend.map(t => t.count);
+      const ctx = document.getElementById("trendChart").getContext("2d");
+      if (trendChart){
+        trendChart.destroy();
+      }
+      trendChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            fill: true,
+            borderColor: "#2563eb",
+            backgroundColor: "rgba(37,99,235,.12)",
+            tension: 0.35
+          }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: "#64748b" } },
+            y: { ticks: { color: "#64748b" } }
+          }
+        }
+      });
+      const total = values.reduce((a,b) => a + b, 0);
+      document.getElementById("trendTotal").textContent = `${total} closures`;
+    }
+
+    function renderAnalytics(charts){
+      cachedCharts = charts || {};
+      const agentData = cachedCharts.agent_dist || [];
+      const branchData = cachedCharts.branch_dist || [];
+      const trendDaily = cachedCharts.trend_daily || [];
+      const trendWeekly = cachedCharts.trend_weekly || [];
+      const keptForfeited = cachedCharts.kept_forfeited || [];
+
+      const agentLabels = agentData.map(a => a.name || "Unknown");
+      const agentCounts = agentData.map(a => a.count || 0);
+      const branchLabels = branchData.map(b => b.branch || "Unknown");
+      const branchCounts = branchData.map(b => b.count || 0);
+
+      const agentCtx = document.getElementById("agentChart").getContext("2d");
+      if (agentChart) agentChart.destroy();
+      agentChart = new Chart(agentCtx, {
+        type: "bar",
+        data: {
+          labels: agentLabels,
+          datasets: [{ data: agentCounts, backgroundColor: "#2563eb" }]
+        },
+        options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: "#64748b" } }, y: { ticks: { color: "#64748b" } } } }
+      });
+
+      const branchCtx = document.getElementById("branchChart").getContext("2d");
+      if (branchChart) branchChart.destroy();
+      branchChart = new Chart(branchCtx, {
+        type: "doughnut",
+        data: {
+          labels: branchLabels,
+          datasets: [{ data: branchCounts, backgroundColor: ["#2563eb","#22c55e","#f59e0b","#ef4444","#8b5cf6","#14b8a6"] }]
+        },
+        options: { plugins: { legend: { position: "bottom" } } }
+      });
+
+      const trendCtx = document.getElementById("trendChart2").getContext("2d");
+      if (trendChart2) trendChart2.destroy();
+      const trendLabels = trendDaily.map(t => t.date);
+      const trendValues = trendDaily.map(t => t.count);
+      trendChart2 = new Chart(trendCtx, {
+        type: "line",
+        data: { labels: trendLabels, datasets: [{ data: trendValues, borderColor: "#0ea5e9", backgroundColor: "rgba(14,165,233,.15)", tension: .35, fill: true }] },
+        options: { plugins: { legend: { display: false } } }
+      });
+
+      const kfCtx = document.getElementById("keptForfeitedChart").getContext("2d");
+      if (keptForfeitedChart) keptForfeitedChart.destroy();
+      keptForfeitedChart = new Chart(kfCtx, {
+        type: "bar",
+        data: {
+          labels: keptForfeited.map(k => k.date),
+          datasets: [
+            { label: "Kept", data: keptForfeited.map(k => k.kept), backgroundColor: "rgba(34,197,94,.8)" },
+            { label: "Forfeited", data: keptForfeited.map(k => k.forfeited), backgroundColor: "rgba(239,68,68,.8)" }
+          ]
+        },
+        options: { scales: { x: { stacked: true }, y: { stacked: true } } }
+      });
+
+      document.getElementById("trendDailyBtn").onclick = () => {
+        if (!cachedCharts) return;
+        const labels = (cachedCharts.trend_daily || []).map(t => t.date);
+        const values = (cachedCharts.trend_daily || []).map(t => t.count);
+        trendChart2.data.labels = labels;
+        trendChart2.data.datasets[0].data = values;
+        trendChart2.update();
+      };
+      document.getElementById("trendWeeklyBtn").onclick = () => {
+        if (!cachedCharts) return;
+        const labels = (cachedCharts.trend_weekly || []).map(t => t.week);
+        const values = (cachedCharts.trend_weekly || []).map(t => t.count);
+        trendChart2.data.labels = labels;
+        trendChart2.data.datasets[0].data = values;
+        trendChart2.update();
+      };
+    }
+
+    function renderRows(rows){
+      const body = document.getElementById("rowsBody");
+      body.innerHTML = "";
+      rowsMap.clear();
+      if (!rows.length){
+        body.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No closed cards found.</td></tr>`;
+        return;
+      }
+      rows.forEach(row => {
+        rowsMap.set(row.id, row);
+        const at = row.at ? new Date(row.at).toLocaleString() : "-";
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${at}</td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <img class="avatar" src="${row.agent.image_url || ''}" onerror="this.src=''; this.classList.add('bg-light');" />
+              <div>
+                <div class="fw-semibold">${row.agent.name}</div>
+                <div class="text-muted small">${row.agent.branch || ''}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <img class="avatar" src="${row.customer.image_url || ''}" onerror="this.src=''; this.classList.add('bg-light');" />
+              <div>
+                <div class="fw-semibold">${row.customer.name}</div>
+                <div class="text-muted small">${row.customer.phone_number || ''}</div>
+              </div>
+            </div>
+          </td>
+          <td>${row.product.name || "-"}</td>
+          <td>${formatMoney(row.kept_amount)}</td>
+          <td>${formatMoney(row.forfeited_amount)}</td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <img class="avatar" src="${row.closed_by.image_url || ''}" onerror="this.src=''; this.classList.add('bg-light');" />
+              <div>
+                <div class="fw-semibold">${row.closed_by.name}</div>
+                <div class="text-muted small">${row.closed_by.role || ''}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <button class="btn btn-sm btn-outline-primary" data-id="${row.id}">View Details</button>
+          </td>
+        `;
+        body.appendChild(tr);
+      });
+    }
+
+    function renderDetails(row){
+      const prod = row.product || {};
+      const replacements = row.replacements || [];
+      const targets = (row.payload && row.payload.target_products) ? row.payload.target_products : [];
+      const targetList = targets.length ? targets.map(t => `<li>${t.id} • Qty ${t.qty}</li>`).join("") : "<li>None</li>";
+      const replList = replacements.length ? replacements.map(r => `
+        <li>${r.name} • Qty ${r.qty} • ${formatMoney(r.total_price || (r.price * r.qty))}</li>
+      `).join("") : "<li>None</li>";
+      document.getElementById("detailsContent").innerHTML = `
+        <div class="mb-3">
+          <div class="fw-semibold mb-1">Closure metadata</div>
+          <div class="text-muted small">Closed by ${row.closed_by.name} (${row.closed_by.role || "role"}) on ${row.at ? new Date(row.at).toLocaleString() : "-"}</div>
+          <div class="mt-2"><span class="fw-semibold">Note:</span> ${row.payload.note || "-"}</div>
+        </div>
+        <div class="mb-3">
+          <div class="fw-semibold mb-1">Customer summary</div>
+          <div>${row.customer.name} • ${row.customer.phone_number || "-"}</div>
+          <div class="text-muted small">Branch: ${row.customer.branch || "-"}</div>
+          <div class="text-muted small">Manager: ${row.customer.manager_id || "-"}</div>
+          <div class="text-muted small">Agent: ${row.customer.agent_id || "-"}</div>
+        </div>
+        <div class="mb-3">
+          <div class="fw-semibold mb-1">Agent</div>
+          <div>${row.agent.name} • ${row.agent.branch || "-"}</div>
+        </div>
+        <div class="mb-3">
+          <div class="fw-semibold mb-1">Closed product details</div>
+          <div>${prod.name || "Unknown"}</div>
+          <div class="text-muted small">
+            Total: ${formatMoney(prod.total || 0)} •
+            Purchase date: ${prod.purchase_date || "-"} •
+            End date: ${prod.end_date || "-"} •
+            Transfer total: ${formatMoney(prod.transfer_total || 0)} •
+            Type: ${prod.purchase_type || "-"} •
+            Status: ${prod.status || "-"}
+          </div>
+        </div>
+        <div class="mb-3">
+          <div class="fw-semibold mb-1">Replacement products (payload)</div>
+          <ul class="mb-0">${targetList}</ul>
+        </div>
+        <div class="mb-0">
+          <div class="fw-semibold mb-1">Replacement products (inventory outflow)</div>
+          <ul class="mb-0">${replList}</ul>
+        </div>
+      `;
+    }
+
+    async function loadSummary(){
+      const res = await fetch(`{{ url_for('close_card.closed_cards_summary') }}?${buildQuery()}`);
+      const data = await res.json();
+      if (!data || !data.ok) {
+        document.getElementById("metricTotalClosed").textContent = "--";
+        document.getElementById("metricTotalKept").textContent = "--";
+        document.getElementById("metricTotalForfeited").textContent = "--";
+        document.getElementById("metricAvgKept").textContent = "--";
+        document.getElementById("metricAvgForfeited").textContent = "--";
+        renderTopAgents([]);
+        return;
+      }
+      const totals = data.totals || {};
+      const totalClosed = Number(totals.total_closed || 0);
+      document.getElementById("metricTotalClosed").textContent = totalClosed;
+      document.getElementById("metricTotalKept").textContent = formatMoney(totals.total_kept || 0);
+      document.getElementById("metricTotalForfeited").textContent = formatMoney(totals.total_forfeited || 0);
+      document.getElementById("metricAvgKept").textContent = formatMoney(totalClosed ? (totals.total_kept || 0) / totalClosed : 0);
+      document.getElementById("metricAvgForfeited").textContent = formatMoney(totalClosed ? (totals.total_forfeited || 0) / totalClosed : 0);
+      renderTopAgents(data.top_agents || []);
+    }
+
+    async function loadData(){
+      const res = await fetch(`/closed_cards_history/api?${buildQuery()}`);
+      const data = await res.json();
+      if (!data || !data.ok) return;
+
+      renderTrend((data.charts && data.charts.trend_daily) || []);
+      renderAnalytics(data.charts || {});
+      renderRows(data.rows || []);
+      document.getElementById("tableCount").textContent = `${data.total} results`;
+      document.getElementById("pageHint").textContent = `Page ${data.page} of ${data.total_pages}`;
+      document.getElementById("prevPage").disabled = data.page <= 1;
+      document.getElementById("nextPage").disabled = data.page >= data.total_pages;
+    }
+
+    function applyFilters(){
+      state.start = startInput.value;
+      state.end = endInput.value;
+      state.manager_id = managerFilter ? managerFilter.value : "";
+      state.agent_id = agentFilter.value;
+      state.branch = branchFilter ? branchFilter.value : "";
+      state.search = searchInput.value.trim();
+      state.page = 1;
+      document.getElementById("missingImagesBadge").classList.toggle("d-none", !state.missing_images);
+      loadFilters().then(() => { loadSummary(); loadData(); });
+    }
+
+    document.getElementById("applyFilters").addEventListener("click", applyFilters);
+    document.getElementById("resetFilters").addEventListener("click", () => {
+      initDates();
+      managerFilter && (managerFilter.value = "");
+      agentFilter.value = "";
+      branchFilter && (branchFilter.value = "");
+      searchInput.value = "";
+      state.missing_images = false;
+      document.getElementById("missingImagesBadge").classList.add("d-none");
+      applyFilters();
+    });
+    document.getElementById("prevPage").addEventListener("click", () => {
+      if (state.page > 1){ state.page -= 1; loadData(); }
+    });
+    document.getElementById("nextPage").addEventListener("click", () => {
+      state.page += 1; loadData();
+    });
+    document.getElementById("rowsBody").addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-id]");
+      if (!btn) return;
+      const row = rowsMap.get(btn.dataset.id);
+      if (!row) return;
+      renderDetails(row);
+      detailsModal.show();
+    });
+    exportCurrentBranchBtn?.addEventListener("click", () => exportTable("current"));
+    exportAllBranchesBtn?.addEventListener("click", () => exportTable("all"));
+
+    const adminOnly = document.querySelectorAll(".admin-only");
+    if (!(role === "admin" || role === "executive")){
+      adminOnly.forEach(el => el.classList.add("d-none"));
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      document.body.classList.add("page-ready");
+      initDates();
+      setScopeHint();
+      loadFilters().then(() => { loadSummary(); loadData(); });
+    });
+  </script>
+</body>
+</html>

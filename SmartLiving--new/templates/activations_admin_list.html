@@ -1,0 +1,368 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Activations</title>
+  <link rel="icon" href="https://imagedelivery.net/h9fmMoa1o2c2P55TcWJGOg/10283f28-b9a0-4100-b254-19a854386800/public" type="image/png" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <style>
+    body { background: #f5f7fb; }
+    .page-wrap { margin-left: 260px; padding: 20px; }
+    @media (max-width: 991px) { .page-wrap { margin-left: 0; } }
+    .card-soft { border: 1px solid #e6ebf2; border-radius: 14px; box-shadow: 0 8px 24px rgba(15,23,42,.05); }
+    .click-going { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+    .skeleton { background: linear-gradient(90deg, #eef2f7 25%, #e3e8ef 37%, #eef2f7 63%); background-size: 400% 100%; animation: shine 1.1s infinite; border-radius: 8px; }
+    .sk-h { height: 18px; }
+    @keyframes shine { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+  </style>
+</head>
+<body>
+  {% include 'admin_sidebar.html' %}
+
+  <div class="page-wrap">
+    <div class="container-fluid">
+      <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+        <div>
+          <h4 class="mb-1">Activations</h4>
+          <div class="text-muted small">Manage events and approval workflow.</div>
+        </div>
+        <a class="btn btn-primary" href="{{ url_for('activations.admin_activations_new_page') }}"><i class="bi bi-plus-circle"></i> New Activation</a>
+      </div>
+
+      <div class="card card-soft mb-3">
+        <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+          <div class="btn-group" role="group" aria-label="Status filter">
+            <button class="btn btn-outline-primary btn-sm status-btn active" data-status="upcoming">Upcoming</button>
+            <button class="btn btn-outline-primary btn-sm status-btn" data-status="closed">Past</button>
+            <button class="btn btn-outline-primary btn-sm status-btn" data-status="cancelled">Cancelled</button>
+          </div>
+          <div class="ms-auto w-100" style="max-width: 340px;">
+            <input id="searchInput" class="form-control" placeholder="Search activations" />
+          </div>
+        </div>
+      </div>
+
+      <div id="errorBox" class="alert alert-danger d-none"></div>
+      <div id="skeletonBox" class="card card-soft mb-3"><div class="card-body"><div class="skeleton sk-h mb-2"></div><div class="skeleton sk-h mb-2"></div><div class="skeleton sk-h"></div></div></div>
+      <div id="emptyBox" class="alert alert-info d-none">No upcoming activations yet.</div>
+
+      <div id="tableWrap" class="card card-soft d-none">
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Title</th>
+                <th>Location</th>
+                <th>Date/Time</th>
+                <th>Runtime</th>
+                <th>Approved</th>
+                <th>Pending</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="goingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-fullscreen-sm-down">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Attendees</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex gap-2 mb-3">
+            <input id="goingSearch" class="form-control form-control-sm" placeholder="Search name, role, branch" />
+            <select id="goingView" class="form-select form-select-sm" style="max-width: 170px;">
+              <option value="approved">Approved only</option>
+              <option value="pending">Approved + Pending</option>
+            </select>
+          </div>
+          <div id="goingModalLoading" class="text-muted small d-none">Loading...</div>
+          <div id="goingModalEmpty" class="alert alert-info d-none">No attendees to show.</div>
+          <div id="goingModalList" class="list-group list-group-flush"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer"></div>
+
+  <script>
+    const tableWrap = document.getElementById('tableWrap');
+    const tableBody = document.getElementById('tableBody');
+    const skeletonBox = document.getElementById('skeletonBox');
+    const emptyBox = document.getElementById('emptyBox');
+    const errorBox = document.getElementById('errorBox');
+    const searchInput = document.getElementById('searchInput');
+    const goingModalEl = document.getElementById('goingModal');
+    let modal = null;
+    let activeStatus = 'upcoming';
+    let modalApproved = [];
+    let modalPending = [];
+    let modalAid = '';
+    let itemsCache = [];
+    let runtimeInterval = null;
+
+    function fmtDate(iso){
+      if(!iso) return '--';
+      const d = new Date(iso);
+      if(Number.isNaN(d.getTime())) return '--';
+      return d.toLocaleString([], { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function fmtDuration(totalSeconds){
+      const safe = Math.max(0, Number(totalSeconds) || 0);
+      const hours = Math.floor(safe / 3600);
+      const minutes = Math.floor((safe % 3600) / 60);
+      const seconds = Math.floor(safe % 60);
+      return [hours, minutes, seconds].map(v => String(v).padStart(2, '0')).join(':');
+    }
+
+    function runtimeStateLabel(state){
+      if(state === 'running') return 'Running';
+      if(state === 'ended') return 'Ended';
+      if(state === 'started') return 'Started';
+      return 'Not started';
+    }
+
+    function refreshRuntimeClocks(){
+      tableBody.querySelectorAll('[data-runtime-counter]').forEach(el => {
+        const state = el.dataset.runtimeState || 'not_started';
+        let seconds = Number(el.dataset.runtimeSeconds || 0);
+        if(state === 'running' && el.dataset.startedAt){
+          const startedAt = new Date(el.dataset.startedAt);
+          if(!Number.isNaN(startedAt.getTime())){
+            seconds = Math.max(0, Math.floor((Date.now() - startedAt.getTime()) / 1000));
+          }
+        }
+        el.textContent = fmtDuration(seconds);
+      });
+    }
+
+    function syncRuntimeClocks(){
+      if(runtimeInterval){
+        clearInterval(runtimeInterval);
+        runtimeInterval = null;
+      }
+      refreshRuntimeClocks();
+      if(itemsCache.some(item => item.runtimeState === 'running')){
+        runtimeInterval = setInterval(refreshRuntimeClocks, 1000);
+      }
+    }
+
+    function showToast(type, message){
+      const host = document.getElementById('toastContainer');
+      if(!host || !window.bootstrap) return;
+      const el = document.createElement('div');
+      el.className = `toast align-items-center text-bg-${type} border-0`;
+      el.setAttribute('role', 'alert');
+      el.setAttribute('aria-live', 'assertive');
+      el.setAttribute('aria-atomic', 'true');
+      el.innerHTML = `<div class="d-flex"><div class="toast-body">${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>`;
+      host.appendChild(el);
+      const t = bootstrap.Toast.getOrCreateInstance(el, { delay: 2600 });
+      t.show();
+      el.addEventListener('hidden.bs.toast', () => el.remove());
+    }
+
+    function renderRows(items){
+      itemsCache = items.slice();
+      tableBody.innerHTML = '';
+      if(!items.length){
+        emptyBox.classList.remove('d-none');
+        emptyBox.textContent = activeStatus === 'upcoming' ? 'No upcoming activations yet.' : 'No activations found.';
+        tableWrap.classList.add('d-none');
+        syncRuntimeClocks();
+        return;
+      }
+      emptyBox.classList.add('d-none');
+      tableWrap.classList.remove('d-none');
+      items.forEach(item => {
+        const runtimeMeta = item.runtimeState === 'running'
+          ? (item.startedAt ? `Started ${fmtDate(item.startedAt)}` : 'Running')
+          : (item.runtimeState === 'ended'
+              ? `Ended ${fmtDate(item.endedAt)}`
+              : (item.isToday ? 'Can start today' : 'Waiting'));
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="fw-semibold">${item.title || ''}</td>
+          <td>${item.location || '--'}</td>
+          <td>${fmtDate(item.activationDateTime)}</td>
+          <td>
+            <div class="fw-semibold small">${runtimeStateLabel(item.runtimeState)}</div>
+            <div class="small text-muted" data-runtime-counter data-runtime-state="${item.runtimeState || 'not_started'}" data-runtime-seconds="${item.runtimeSeconds || 0}" data-started-at="${item.startedAt || ''}">${fmtDuration(item.runtimeSeconds || 0)}</div>
+            <div class="small text-muted">${runtimeMeta}</div>
+          </td>
+          <td><span class="click-going" data-go-aid="${item.id}">${item.approvedCount || 0} going</span></td>
+          <td><span class="badge text-bg-warning">${item.pendingCount || 0}</span></td>
+          <td class="text-end">
+            <div class="btn-group btn-group-sm">
+              <a class="btn btn-outline-primary" href="/admin/activations/${item.id}">View</a>
+              <a class="btn btn-outline-secondary" href="/admin/activations/metrics?activation_id=${item.id}">Metrics</a>
+              ${item.canStart ? `<button class="btn btn-outline-success action-start" data-id="${item.id}">Start</button>` : ''}
+              ${item.canEnd ? `<button class="btn btn-outline-danger action-end" data-id="${item.id}">End</button>` : ''}
+              <button class="btn btn-outline-dark action-close" data-id="${item.id}" ${item.status !== 'upcoming' ? 'disabled' : ''}>Close</button>
+              <button class="btn btn-outline-warning action-cancel" data-id="${item.id}" ${item.status !== 'upcoming' ? 'disabled' : ''}>Cancel</button>
+            </div>
+          </td>`;
+        tableBody.appendChild(tr);
+      });
+
+      tableBody.querySelectorAll('[data-go-aid]').forEach(el => {
+        el.addEventListener('click', () => openGoingModal(el.dataset.goAid));
+      });
+      tableBody.querySelectorAll('.action-close').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          try{
+            await quickAction(btn.dataset.id, 'close');
+            await loadItems();
+          }catch(err){
+            showToast('danger', err.message || 'Failed');
+          }
+        });
+      });
+      tableBody.querySelectorAll('.action-cancel').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          try{
+            await quickAction(btn.dataset.id, 'cancel');
+            await loadItems();
+          }catch(err){
+            showToast('danger', err.message || 'Failed');
+          }
+        });
+      });
+      tableBody.querySelectorAll('.action-start').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          try{
+            await quickAction(btn.dataset.id, 'start');
+            await loadItems();
+          }catch(err){
+            showToast('danger', err.message || 'Failed');
+          }
+        });
+      });
+      tableBody.querySelectorAll('.action-end').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          try{
+            await quickAction(btn.dataset.id, 'end');
+            await loadItems();
+          }catch(err){
+            showToast('danger', err.message || 'Failed');
+          }
+        });
+      });
+      syncRuntimeClocks();
+    }
+
+    async function loadItems(){
+      skeletonBox.classList.remove('d-none');
+      errorBox.classList.add('d-none');
+      tableWrap.classList.add('d-none');
+      emptyBox.classList.add('d-none');
+      itemsCache = [];
+      syncRuntimeClocks();
+      try{
+        const q = encodeURIComponent(searchInput.value.trim());
+        const res = await fetch(`/api/activations?status=${encodeURIComponent(activeStatus)}&q=${q}`, { credentials: 'same-origin' });
+        const data = await res.json();
+        if(!res.ok || !data.ok) throw new Error(data.message || 'Failed to load activations.');
+        renderRows(data.items || []);
+      }catch(err){
+        errorBox.textContent = err.message || 'Failed to load activations.';
+        errorBox.classList.remove('d-none');
+        showToast('danger', errorBox.textContent);
+      }finally{
+        skeletonBox.classList.add('d-none');
+      }
+    }
+
+    async function openGoingModal(aid){
+      modalAid = aid;
+      document.getElementById('goingSearch').value = '';
+      document.getElementById('goingView').value = 'approved';
+      document.getElementById('goingModalLoading').classList.remove('d-none');
+      document.getElementById('goingModalList').innerHTML = '';
+      document.getElementById('goingModalEmpty').classList.add('d-none');
+      if(!modal && window.bootstrap){
+        modal = new bootstrap.Modal(goingModalEl);
+      }
+      if(modal){
+        modal.show();
+      }
+      try{
+        const res = await fetch(`/api/activations/${aid}/going?include=pending`, { credentials: 'same-origin' });
+        const data = await res.json();
+        if(!res.ok || !data.ok) throw new Error(data.message || 'Failed to load attendees.');
+        modalApproved = data.approved || [];
+        modalPending = data.pending || [];
+        renderModalList();
+      }catch(err){
+        showToast('danger', err.message || 'Failed to load attendees.');
+        document.getElementById('goingModalEmpty').classList.remove('d-none');
+      }finally{
+        document.getElementById('goingModalLoading').classList.add('d-none');
+      }
+    }
+
+    async function quickAction(aid, action){
+      const res = await fetch(`/api/activations/${aid}/${action}`, { method: 'PATCH', credentials: 'same-origin' });
+      const data = await res.json();
+      if(!res.ok || !data.ok) throw new Error(data.message || 'Action failed');
+      showToast('success', data.message || 'Updated');
+    }
+
+    function renderModalList(){
+      const q = (document.getElementById('goingSearch').value || '').trim().toLowerCase();
+      const mode = document.getElementById('goingView').value;
+      const list = document.getElementById('goingModalList');
+      const empty = document.getElementById('goingModalEmpty');
+      list.innerHTML = '';
+
+      let rows = mode === 'pending' ? modalApproved.concat(modalPending) : modalApproved.slice();
+      rows = rows.filter(r => (`${r.name||''} ${r.role||''} ${r.branch||''} ${r.status||''}`).toLowerCase().includes(q));
+
+      if(!rows.length){
+        empty.classList.remove('d-none');
+        return;
+      }
+      empty.classList.add('d-none');
+
+      rows.forEach(r => {
+        const item = document.createElement('div');
+        const badge = r.status === 'pending' ? '<span class="badge text-bg-warning">Pending</span>' : '<span class="badge text-bg-success">Approved</span>';
+        item.className = 'list-group-item px-0';
+        item.innerHTML = `<div class="d-flex justify-content-between"><div><div class="fw-semibold">${r.name || 'Unknown User'}</div><div class="small text-muted text-capitalize">${r.role || '--'}${r.branch ? ` - ${r.branch}` : ''}</div></div>${badge}</div>`;
+        list.appendChild(item);
+      });
+    }
+
+    document.querySelectorAll('.status-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.status-btn').forEach(x => x.classList.remove('active'));
+        btn.classList.add('active');
+        activeStatus = btn.dataset.status;
+        loadItems();
+      });
+    });
+
+    let timer;
+    searchInput.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(loadItems, 250); });
+    document.getElementById('goingSearch').addEventListener('input', renderModalList);
+    document.getElementById('goingView').addEventListener('change', renderModalList);
+    document.addEventListener('DOMContentLoaded', () => {
+      if(window.bootstrap){
+        modal = new bootstrap.Modal(goingModalEl);
+      }
+      loadItems();
+    });
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

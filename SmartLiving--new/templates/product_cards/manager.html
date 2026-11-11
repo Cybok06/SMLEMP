@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Product Cards</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <style>
+    body{background:linear-gradient(180deg,#f3f6fb,#edf1f7);padding-left:0;font-family:Segoe UI,system-ui,sans-serif;}
+    .page-shell{padding:86px 18px 36px;}
+    .hero,.panel-card,.card-tile{background:#fff;border:1px solid #dce5f3;border-radius:24px;box-shadow:0 16px 36px rgba(8,31,59,.08);}
+    .hero{padding:24px;background:linear-gradient(135deg,#0a2550,#174885 65%,#5593d7);color:#fff;}
+    .hero h1{font-size:1.8rem;font-weight:800;margin:10px 0 8px;}
+    .hero p{margin:0;color:rgba(255,255,255,.84);}
+    .hero-tag{display:inline-flex;gap:8px;align-items:center;background:rgba(255,255,255,.16);padding:7px 12px;border-radius:999px;font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;}
+    .panel-card{padding:20px;}
+    .grid-wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;}
+    .card-tile{padding:18px;display:flex;flex-direction:column;gap:14px;}
+    .card-head{display:flex;gap:14px;align-items:center;}
+    .product-thumb{width:64px;height:64px;border-radius:18px;object-fit:cover;background:#eef2f7;border:1px solid #dce5f3;flex:0 0 auto;}
+    .product-thumb-fallback{width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#edf3ff,#dbe7fb);border:1px dashed #bcd0ef;display:flex;align-items:center;justify-content:center;color:#4c6da7;font-size:1.2rem;flex:0 0 auto;}
+    .mini-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+    .mini-stat{background:#f7faff;border:1px solid #e5edf9;border-radius:16px;padding:11px 12px;}
+    .mini-stat small{display:block;font-size:.74rem;color:#738196;text-transform:uppercase;letter-spacing:.06em;}
+    .mini-stat strong{display:block;font-size:1rem;margin-top:4px;}
+    .table thead th{font-size:.76rem;text-transform:uppercase;letter-spacing:.06em;color:#758297;background:#f5f8fd;}
+    .empty-state{padding:24px;border:1px dashed #c8d5ea;border-radius:18px;background:#f8fbff;text-align:center;color:#74839a;}
+    .grid-loading{display:flex;align-items:center;justify-content:center;gap:12px;min-height:180px;color:#5f718a;font-weight:700;}
+    .pager{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px;}
+    .transfer-preview{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid #dce5f3;border-radius:18px;background:#f8fbff;}
+    .transfer-preview img{width:46px;height:46px;border-radius:14px;object-fit:cover;background:#eef2f7;border:1px solid #dce5f3;}
+    .transfer-preview-fallback{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#edf3ff,#dbe7fb);border:1px dashed #bcd0ef;display:flex;align-items:center;justify-content:center;color:#4c6da7;}
+  </style>
+</head>
+<body>
+  {% include 'manager_sidebar.html' %}
+  <div class="page-shell">
+    <section class="hero mb-4">
+      <div class="hero-tag"><i class="bi bi-box2-heart"></i> Branch Distribution</div>
+      <h1>Manager Product Cards</h1>
+      <p>Distribute executive-issued product cards to agents, monitor branch-level balances, and track live usage from sales.</p>
+    </section>
+
+    <div class="row g-4">
+      <div class="col-12 col-xl-7">
+        <div class="panel-card">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+            <div>
+              <h2 class="h5 mb-1 fw-bold">Branch Card Pool</h2>
+              <div class="text-muted">Cards assigned to this branch and their downstream usage.</div>
+            </div>
+            <input class="form-control" id="searchInput" placeholder="Search product cards..." style="max-width:260px;">
+          </div>
+          <div id="cardsGrid" class="grid-wrap"></div>
+          <div class="pager">
+            <div class="small text-muted" id="cardsPageInfo">Page 1 of 1</div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-secondary btn-sm" id="cardsPrevBtn" type="button">Prev</button>
+              <button class="btn btn-outline-secondary btn-sm" id="cardsNextBtn" type="button">Next</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-xl-5">
+        <div class="panel-card h-100">
+          <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+            <div>
+              <h2 class="h5 mb-1 fw-bold">Agent Breakdown</h2>
+              <div class="text-muted" id="detailTitle">Select a card to inspect agents.</div>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Agent</th>
+                  <th>Received</th>
+                  <th>Available</th>
+                  <th>Sold</th>
+                </tr>
+              </thead>
+              <tbody id="detailsBody">
+                <tr><td colspan="4"><div class="empty-state">Choose a branch card from the grid to see its agent distribution.</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="transferModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <form class="modal-content" id="transferForm">
+        <div class="modal-header">
+          <h5 class="modal-title">Transfer Product Cards to Agent</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="transferProductId">
+          <div class="transfer-preview mb-3">
+            <img id="transferPreviewImage" src="" alt="" style="display:none;">
+            <div id="transferPreviewFallback" class="transfer-preview-fallback"><i class="bi bi-postcard"></i></div>
+            <div>
+              <div class="fw-bold" id="transferPreviewName">Selected product card</div>
+              <div class="text-muted small">Transfer a portion of this branch stock to one of your agents.</div>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Agent</label>
+            <select class="form-select" id="transferAgentId" required></select>
+          </div>
+          <div>
+            <label class="form-label fw-bold">Quantity</label>
+            <input class="form-control" type="number" min="1" id="transferQty" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-light" type="button" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary" type="submit">Transfer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let payload = { cards: [], agents: [] };
+    let activeProductId = '';
+    let cardsPage = 1;
+    const cardsPerPage = 5;
+    let cardsLoading = true;
+    const transferModal = new bootstrap.Modal(document.getElementById('transferModal'));
+    function num(v){ return Number(v || 0).toLocaleString(); }
+
+    async function loadOverview(){
+      cardsLoading = true;
+      renderCards();
+      const res = await fetch('/api/product-cards/manager/overview');
+      const data = await res.json();
+      if(!data.ok) return;
+      payload = data;
+      cardsLoading = false;
+      document.getElementById('transferAgentId').innerHTML = '<option value="">Select agent</option>' + (payload.agents || []).map(agent => `<option value="${agent._id}">${agent.name || 'Agent'}${agent.branch ? ' - ' + agent.branch : ''}</option>`).join('');
+      renderCards();
+      if(activeProductId) renderDetails(activeProductId);
+    }
+
+    function renderCards(){
+      const term = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+      const wrap = document.getElementById('cardsGrid');
+      if(cardsLoading){
+        wrap.innerHTML = '<div class="grid-loading"><div class="spinner-border text-primary" role="status"></div><span>Loading branch product cards...</span></div>';
+        document.getElementById('cardsPageInfo').textContent = 'Loading...';
+        return;
+      }
+      const cards = (payload.cards || []).filter(card => !term || String(card.product_name || '').toLowerCase().includes(term));
+      if(!cards.length){
+        wrap.innerHTML = '<div class="empty-state">No branch product cards match this search.</div>';
+        document.getElementById('cardsPageInfo').textContent = 'Page 0 of 0';
+        document.getElementById('cardsPrevBtn').disabled = true;
+        document.getElementById('cardsNextBtn').disabled = true;
+        return;
+      }
+      const totalPages = Math.max(1, Math.ceil(cards.length / cardsPerPage));
+      if(cardsPage > totalPages) cardsPage = totalPages;
+      const start = (cardsPage - 1) * cardsPerPage;
+      const pageRows = cards.slice(start, start + cardsPerPage);
+      wrap.innerHTML = pageRows.map(card => `
+        <div class="card-tile">
+          <div class="d-flex justify-content-between gap-3 align-items-start">
+            <div class="card-head">
+              ${card.image_url ? `<img class="product-thumb" src="${card.image_url}" alt="">` : `<div class="product-thumb-fallback"><i class="bi bi-postcard"></i></div>`}
+              <div>
+                <div class="text-muted small text-uppercase fw-bold">Product Card</div>
+                <h3 class="h6 mb-1 fw-bold">${card.product_name}</h3>
+                <div class="text-muted small">Visual stock card linked to this product.</div>
+              </div>
+            </div>
+            <span class="badge rounded-pill text-bg-light border text-dark">Branch stock</span>
+          </div>
+          <div class="mini-grid">
+            <div class="mini-stat"><small>Branch Available</small><strong>${num(card.manager_available_qty)}</strong></div>
+            <div class="mini-stat"><small>Branch Received</small><strong>${num(card.manager_received_qty)}</strong></div>
+            <div class="mini-stat"><small>To Agents</small><strong>${num(card.manager_distributed_qty)}</strong></div>
+            <div class="mini-stat"><small>Consumed</small><strong>${num(card.sold_total)}</strong></div>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary btn-sm flex-fill" onclick="renderDetails('${card.product_id}')"><i class="bi bi-people"></i> View Agents</button>
+            <button class="btn btn-primary btn-sm flex-fill" onclick="openTransfer('${card.product_id}')"><i class="bi bi-send"></i> Transfer</button>
+          </div>
+        </div>
+      `).join('');
+      document.getElementById('cardsPageInfo').textContent = `Page ${cardsPage} of ${totalPages}`;
+      document.getElementById('cardsPrevBtn').disabled = cardsPage <= 1;
+      document.getElementById('cardsNextBtn').disabled = cardsPage >= totalPages;
+    }
+
+    function renderDetails(productId){
+      activeProductId = productId;
+      const card = (payload.cards || []).find(item => item.product_id === productId);
+      document.getElementById('detailTitle').textContent = card ? card.product_name : 'Select a card to inspect agents.';
+      const body = document.getElementById('detailsBody');
+      const rows = card ? (card.agents || []) : [];
+      if(!rows.length){
+        body.innerHTML = '<tr><td colspan="4"><div class="empty-state">No agent allocations yet for this product card.</div></td></tr>';
+        return;
+      }
+      body.innerHTML = rows.map(row => `
+        <tr>
+          <td><strong>${row.agent_name}</strong><div class="small text-muted">${row.branch || 'Unassigned'}</div></td>
+          <td>${num(row.received_qty)}</td>
+          <td>${num(row.available_qty)}</td>
+          <td>${num(row.sold_qty)}</td>
+        </tr>
+      `).join('');
+    }
+
+    function updateTransferPreview(productId){
+      const card = (payload.cards || []).find(item => item.product_id === productId);
+      const image = document.getElementById('transferPreviewImage');
+      const fallback = document.getElementById('transferPreviewFallback');
+      const name = document.getElementById('transferPreviewName');
+      if(!card){
+        image.style.display = 'none';
+        image.src = '';
+        fallback.style.display = 'flex';
+        name.textContent = 'Selected product card';
+        return;
+      }
+      name.textContent = card.product_name || 'Selected product card';
+      if(card.image_url){
+        image.src = card.image_url;
+        image.style.display = 'block';
+        fallback.style.display = 'none';
+      } else {
+        image.style.display = 'none';
+        image.src = '';
+        fallback.style.display = 'flex';
+      }
+    }
+
+    function openTransfer(productId){
+      document.getElementById('transferProductId').value = productId;
+      document.getElementById('transferQty').value = '';
+       updateTransferPreview(productId);
+      transferModal.show();
+    }
+
+    document.getElementById('searchInput').addEventListener('input', () => { cardsPage = 1; renderCards(); });
+    document.getElementById('cardsPrevBtn').addEventListener('click', () => { if(cardsPage > 1){ cardsPage -= 1; renderCards(); } });
+    document.getElementById('cardsNextBtn').addEventListener('click', () => {
+      const term = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+      const totalPages = Math.max(1, Math.ceil((payload.cards || []).filter(card => !term || String(card.product_name || '').toLowerCase().includes(term)).length / cardsPerPage));
+      if(cardsPage < totalPages){ cardsPage += 1; renderCards(); }
+    });
+    document.getElementById('transferForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const payloadIn = {
+        product_id: document.getElementById('transferProductId').value,
+        agent_id: document.getElementById('transferAgentId').value,
+        qty: document.getElementById('transferQty').value
+      };
+      const res = await fetch('/api/product-cards/manager/transfer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payloadIn)
+      });
+      const data = await res.json();
+      if(!data.ok){ alert(data.message || 'Unable to transfer cards.'); return; }
+      transferModal.hide();
+      await loadOverview();
+      renderDetails(payloadIn.product_id);
+    });
+
+    loadOverview();
+  </script>
+</body>
+</html>

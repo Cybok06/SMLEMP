@@ -1,0 +1,277 @@
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <h2 class="h6 mb-0">Daily Activities</h2>
+      <p class="small text-muted mb-0">
+        Review each employee's activities in sequence for any selected day.
+      </p>
+    </div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <button class="btn btn-sm btn-outline-secondary" type="button" id="hr-activity-prev-day">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+      <input class="form-control form-control-sm" type="date" id="hr-activity-date" style="max-width: 160px;">
+      <button class="btn btn-sm btn-outline-secondary" type="button" id="hr-activity-next-day">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+      <button class="btn btn-sm btn-outline-primary" type="button" id="hr-activity-today">
+        Today
+      </button>
+      <button class="btn btn-sm btn-primary" type="button" id="hr-activity-refresh">
+        <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+      </button>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="row g-3 mb-3">
+      <div class="col-12 col-md-3">
+        <div class="border rounded-3 p-3 h-100">
+          <div class="small text-muted mb-1">Selected Day</div>
+          <div class="fw-semibold" id="hr-activity-day-label">--</div>
+        </div>
+      </div>
+      <div class="col-12 col-md-3">
+        <div class="border rounded-3 p-3 h-100">
+          <div class="small text-muted mb-1">Total Activities</div>
+          <div class="h4 mb-0" id="hr-activity-count">0</div>
+        </div>
+      </div>
+      <div class="col-12 col-md-3">
+        <div class="border rounded-3 p-3 h-100">
+          <div class="small text-muted mb-1">Important</div>
+          <div class="h4 mb-0 text-primary" id="hr-activity-important">0</div>
+        </div>
+      </div>
+      <div class="col-12 col-md-3">
+        <div class="border rounded-3 p-3 h-100">
+          <div class="small text-muted mb-1">Urgent</div>
+          <div class="h4 mb-0 text-danger" id="hr-activity-urgent">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="border rounded-4 p-3 p-md-4 bg-light-subtle">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <div>
+          <div class="fw-semibold">Activity Timeline</div>
+          <div class="small text-muted">Entries are shown in the order the employee logged them.</div>
+        </div>
+        <div class="small text-muted" id="hr-activity-latest-wrap">
+          Latest log: <span class="fw-semibold" id="hr-activity-latest">--</span>
+        </div>
+      </div>
+
+      <div id="hr-activity-timeline">
+        <div class="text-muted fst-italic small">Loading employee activities...</div>
+      </div>
+    </div>
+
+    <div class="border rounded-4 p-3 p-md-4 mt-4">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <div>
+          <div class="fw-semibold">App Activities</div>
+          <div class="small text-muted">System-captured page opens and submitted actions for this employee on the selected day.</div>
+        </div>
+        <div class="d-flex gap-3 small">
+          <span class="text-muted">All: <strong id="hr-app-activity-count">0</strong></span>
+          <span class="text-muted">Pages: <strong id="hr-app-page-views">0</strong></span>
+          <span class="text-muted">Actions: <strong id="hr-app-actions">0</strong></span>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light small">
+            <tr>
+              <th style="width: 18%;">Time</th>
+              <th style="width: 28%;">Activity</th>
+              <th style="width: 14%;">Type</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody id="hr-app-activity-body">
+            <tr>
+              <td colspan="4" class="text-muted fst-italic small">Loading app activities...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const employeeId = "{{ employee._id }}";
+  const today = new Date().toISOString().slice(0, 10);
+  const state = { date: today };
+
+  const apiUrl = `/activities/api/employee/${employeeId}`;
+  const appApiUrl = `/activities/api/employee/${employeeId}/app`;
+  const dateInput = document.getElementById('hr-activity-date');
+  const timelineEl = document.getElementById('hr-activity-timeline');
+  const dayLabelEl = document.getElementById('hr-activity-day-label');
+  const countEl = document.getElementById('hr-activity-count');
+  const importantEl = document.getElementById('hr-activity-important');
+  const urgentEl = document.getElementById('hr-activity-urgent');
+  const latestEl = document.getElementById('hr-activity-latest');
+  const appCountEl = document.getElementById('hr-app-activity-count');
+  const appPageViewsEl = document.getElementById('hr-app-page-views');
+  const appActionsEl = document.getElementById('hr-app-actions');
+  const appBodyEl = document.getElementById('hr-app-activity-body');
+
+  function fmtDay(value) {
+    try {
+      return new Date(`${value}T00:00:00`).toLocaleDateString([], {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (_) {
+      return value || '--';
+    }
+  }
+
+  function fmtTime(value) {
+    if (!value) return '--';
+    try {
+      return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (_) {
+      return value;
+    }
+  }
+
+  function priorityBadge(priority) {
+    const value = String(priority || 'Normal');
+    let cls = 'bg-secondary-subtle text-secondary-emphasis';
+    if (value === 'Important') cls = 'bg-primary-subtle text-primary-emphasis';
+    if (value === 'Urgent') cls = 'bg-danger-subtle text-danger-emphasis';
+    return `<span class="badge rounded-pill ${cls}">${value}</span>`;
+  }
+
+  function renderSummary(summary) {
+    dayLabelEl.textContent = fmtDay(state.date);
+    countEl.textContent = summary?.count ?? 0;
+    importantEl.textContent = summary?.important ?? 0;
+    urgentEl.textContent = summary?.urgent ?? 0;
+    latestEl.textContent = summary?.latest ? fmtTime(summary.latest) : '--';
+  }
+
+  function renderRows(records) {
+    if (!records || !records.length) {
+      timelineEl.innerHTML = '<div class="text-muted fst-italic small">No activities logged for this date.</div>';
+      return;
+    }
+
+    timelineEl.innerHTML = records.map((row, index) => `
+      <div class="border rounded-4 bg-white p-3 mb-3 shadow-sm">
+        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+          <div class="d-flex align-items-start gap-3">
+            <div class="badge rounded-pill text-bg-dark mt-1">${index + 1}</div>
+            <div>
+              <div class="fw-semibold">${row.title || 'Untitled activity'}</div>
+              <div class="small text-muted d-flex flex-wrap gap-2 mt-1">
+                <span><i class="bi bi-tag me-1"></i>${row.category || 'Other'}</span>
+                <span><i class="bi bi-clock me-1"></i>${fmtTime(row.created_at)}</span>
+                ${row.location ? `<span><i class="bi bi-geo-alt me-1"></i>${row.location}</span>` : ''}
+              </div>
+            </div>
+          </div>
+          <div>${priorityBadge(row.priority)}</div>
+        </div>
+        ${row.details ? `<div class="small mt-3">${row.details}</div>` : ''}
+        ${row.outcome ? `<div class="small mt-2 text-body-secondary"><strong>Outcome:</strong> ${row.outcome}</div>` : ''}
+      </div>
+    `).join('');
+  }
+
+  function renderAppSummary(summary) {
+    appCountEl.textContent = summary?.count ?? 0;
+    appPageViewsEl.textContent = summary?.page_views ?? 0;
+    appActionsEl.textContent = summary?.actions ?? 0;
+  }
+
+  function renderAppRows(records) {
+    if (!records || !records.length) {
+      appBodyEl.innerHTML = '<tr><td colspan="4" class="text-muted fst-italic small">No app activities captured for this date.</td></tr>';
+      return;
+    }
+
+    appBodyEl.innerHTML = records.map(row => {
+      const detailParts = [];
+      if (row.path) detailParts.push(`<span class="badge text-bg-light border">${row.path}</span>`);
+      if (row.customer_name) detailParts.push(`<span class="small">Customer: <strong>${row.customer_name}</strong></span>`);
+      if (row.amount) detailParts.push(`<span class="small">Amount: <strong>${row.amount}</strong></span>`);
+      if (row.payment_type) detailParts.push(`<span class="small">Type: <strong>${row.payment_type}</strong></span>`);
+      if (row.reference) detailParts.push(`<span class="small">Ref: <strong>${row.reference}</strong></span>`);
+
+      return `
+        <tr>
+          <td>${fmtTime(row.timestamp)}</td>
+          <td class="fw-semibold">${row.action_label || row.action || 'Activity'}</td>
+          <td><span class="badge rounded-pill ${row.action === 'page.opened' ? 'bg-info-subtle text-info-emphasis' : 'bg-dark-subtle text-dark-emphasis'}">${row.action === 'page.opened' ? 'Page Open' : 'Action'}</span></td>
+          <td>${detailParts.join(' ') || '<span class="text-muted">System event</span>'}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  async function loadActivities() {
+    const [manualResp, appResp] = await Promise.all([
+      fetch(`${apiUrl}?date=${encodeURIComponent(state.date)}`, { headers: { 'Accept': 'application/json' } }),
+      fetch(`${appApiUrl}?date=${encodeURIComponent(state.date)}`, { headers: { 'Accept': 'application/json' } }),
+    ]);
+    const manualData = await manualResp.json();
+    const appData = await appResp.json();
+
+    if (!manualResp.ok || !manualData.ok) {
+      throw new Error(manualData.message || 'Failed to load employee activities.');
+    }
+    if (!appResp.ok || !appData.ok) {
+      throw new Error(appData.message || 'Failed to load app activities.');
+    }
+
+    renderSummary(manualData.summary || {});
+    renderRows(manualData.records || []);
+    renderAppSummary(appData.summary || {});
+    renderAppRows(appData.records || []);
+  }
+
+  function shiftDate(days) {
+    const next = new Date(`${state.date}T00:00:00`);
+    next.setDate(next.getDate() + days);
+    state.date = next.toISOString().slice(0, 10);
+    if (dateInput) dateInput.value = state.date;
+    loadActivities().catch(handleError);
+  }
+
+  function handleError(err) {
+    const message = err?.message || 'Failed to load employee activities.';
+    timelineEl.innerHTML = `<div class="text-danger small">${message}</div>`;
+    window.showToast && window.showToast('danger', message);
+  }
+
+  if (dateInput) {
+    dateInput.value = state.date;
+    dateInput.addEventListener('change', function () {
+      state.date = this.value || today;
+      loadActivities().catch(handleError);
+    });
+  }
+
+  document.getElementById('hr-activity-prev-day')?.addEventListener('click', () => shiftDate(-1));
+  document.getElementById('hr-activity-next-day')?.addEventListener('click', () => shiftDate(1));
+  document.getElementById('hr-activity-today')?.addEventListener('click', () => {
+    state.date = today;
+    if (dateInput) dateInput.value = state.date;
+    loadActivities().catch(handleError);
+  });
+  document.getElementById('hr-activity-refresh')?.addEventListener('click', () => {
+    loadActivities().catch(handleError);
+  });
+
+  loadActivities().catch(handleError);
+})();
+</script>

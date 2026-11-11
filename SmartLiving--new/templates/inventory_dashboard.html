@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Inventory Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="https://res.cloudinary.com/dljpgzbto/image/upload/v1743993646/company-logo_dksb23.jpg" type="image/png">
+  <style>
+    :root{
+      --bg:#eef2f6;
+      --ink:#0b1220;
+      --muted:#64748b;
+      --card:#ffffff;
+      --line:rgba(15,23,42,0.08);
+      --brand:#0f766e;
+      --brand-2:#14b8a6;
+      --accent:#f59e0b;
+      --danger:#ef4444;
+      --good:#22c55e;
+      --shadow:0 18px 40px rgba(2,6,23,.08);
+    }
+    body{
+      background:#ffffff;
+      color:var(--ink);
+      font-family:"Space Grotesk", system-ui, -apple-system, Segoe UI, sans-serif;
+    }
+    .page-wrap{
+      min-height:100vh;
+      padding:28px 28px 60px 28px;
+    }
+    .page-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      flex-wrap:wrap;
+      margin-bottom:18px;
+    }
+    .page-title{
+      font-weight:700;
+      font-size:1.6rem;
+      margin:0;
+      letter-spacing:.2px;
+    }
+    .page-sub{
+      color:var(--muted);
+      margin-top:4px;
+      font-size:.95rem;
+    }
+    .live-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:.45rem;
+      font-weight:600;
+      color:#0f172a;
+      background:#ecfeff;
+      border:1px solid #99f6e4;
+      padding:.35rem .75rem;
+      border-radius:999px;
+      font-size:.8rem;
+    }
+    .loading-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:.45rem;
+      font-weight:600;
+      color:#0f172a;
+      background:#fff7ed;
+      border:1px solid #fed7aa;
+      padding:.35rem .75rem;
+      border-radius:999px;
+      font-size:.8rem;
+    }
+    .section-card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:16px;
+      box-shadow:var(--shadow);
+    }
+    .filters-card{
+      padding:16px;
+      margin-bottom:18px;
+    }
+    .filters-card .form-label{
+      font-size:.78rem;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      color:var(--muted);
+      font-weight:600;
+    }
+    .filters-card .form-control{
+      border-radius:12px;
+      border:1px solid rgba(15,23,42,.12);
+      padding:.6rem .75rem;
+      font-size:.95rem;
+    }
+    .btn-brand{
+      background:linear-gradient(135deg, var(--brand), var(--brand-2));
+      color:#fff;
+      border:none;
+      border-radius:12px;
+      font-weight:600;
+      padding:.6rem 1rem;
+    }
+    .btn-brand:hover{ color:#fff; opacity:.95; }
+    .kpi-grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap:14px;
+      margin-bottom:18px;
+    }
+    .kpi-card{
+      padding:14px 16px;
+      border-radius:14px;
+      background:#fff;
+      border:1px solid var(--line);
+      box-shadow:0 10px 22px rgba(2,6,23,.06);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      min-height:86px;
+    }
+    .kpi-label{
+      color:var(--muted);
+      font-size:.8rem;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      font-weight:600;
+    }
+    .kpi-value{
+      font-size:1.6rem;
+      font-weight:700;
+    }
+    .kpi-icon{
+      width:42px;
+      height:42px;
+      border-radius:12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#0f172a;
+      background:rgba(15,118,110,.12);
+      font-size:1.3rem;
+    }
+    .kpi-icon.warn{ background:rgba(245,158,11,.18); }
+    .kpi-icon.danger{ background:rgba(239,68,68,.18); }
+    .kpi-icon.good{ background:rgba(34,197,94,.18); }
+
+    .charts-grid{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap:14px;
+      margin-bottom:18px;
+    }
+    .chart-card{
+      padding:16px;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background:#fff;
+      box-shadow:var(--shadow);
+      min-height:300px;
+    }
+    .chart-title{
+      font-size:.95rem;
+      font-weight:600;
+      color:#0f172a;
+      margin-bottom:6px;
+    }
+    .chart-sub{
+      color:var(--muted);
+      font-size:.82rem;
+      margin-bottom:8px;
+    }
+    .table-card{
+      padding:16px;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background:#fff;
+      box-shadow:var(--shadow);
+    }
+    .table thead th{
+      background:#0f172a;
+      color:#fff;
+      border:none;
+      font-size:.82rem;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+    }
+    .table td{
+      color:#0f172a;
+      font-size:.92rem;
+    }
+    .mono{ font-family:"Space Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+
+    @media (max-width: 992px){
+      .charts-grid{ grid-template-columns: repeat(1, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  {% include 'inventory_sidebar.html' %}
+
+  <main class="page-wrap">
+{% include 'work_time_summary.html' %}
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Inventory Command Center</h1>
+        <div class="page-sub">Welcome, {{ username }}. Track orders, delivery flow, and bottlenecks in one view.</div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="live-pill"><i class="bi bi-broadcast"></i> Live</span>
+        <span id="loadingPill" class="loading-pill d-none">
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          Loading…
+        </span>
+      </div>
+    </div>
+
+    <div class="section-card filters-card">
+      <form id="filters" class="row g-2 align-items-end">
+        <div class="col-12 col-md-3">
+          <label class="form-label">Branch</label>
+          <input class="form-control" id="branch" placeholder="All branches">
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label">Manager ID</label>
+          <input class="form-control" id="manager_id" placeholder="Optional">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label">From</label>
+          <input type="date" class="form-control" id="date_from">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label">To</label>
+          <input type="date" class="form-control" id="date_to">
+        </div>
+        <div class="col-12 col-md-2 d-grid">
+          <button class="btn btn-brand" id="applyFiltersBtn">Apply Filters</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-label">Open Orders</div>
+          <div class="kpi-value" id="k_open">0</div>
+        </div>
+        <div class="kpi-icon"><i class="bi bi-box"></i></div>
+      </div>
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-label">Partially Delivered</div>
+          <div class="kpi-value" id="k_partial">0</div>
+        </div>
+        <div class="kpi-icon warn"><i class="bi bi-hourglass-split"></i></div>
+      </div>
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-label">Closed Orders</div>
+          <div class="kpi-value" id="k_closed">0</div>
+        </div>
+        <div class="kpi-icon good"><i class="bi bi-check2-circle"></i></div>
+      </div>
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-label">Outstanding Lines</div>
+          <div class="kpi-value" id="k_outstanding">0</div>
+        </div>
+        <div class="kpi-icon danger"><i class="bi bi-exclamation-triangle"></i></div>
+      </div>
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-label">Postponed Lines</div>
+          <div class="kpi-value" id="k_postponed">0</div>
+        </div>
+        <div class="kpi-icon warn"><i class="bi bi-clock-history"></i></div>
+      </div>
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-label">Packages Pending</div>
+          <div class="kpi-value" id="k_pkg_pending">0</div>
+        </div>
+        <div class="kpi-icon"><i class="bi bi-truck"></i></div>
+      </div>
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-label">Delivered (7d)</div>
+          <div class="kpi-value" id="k_pkg_delivered">0</div>
+        </div>
+        <div class="kpi-icon good"><i class="bi bi-box2-heart"></i></div>
+      </div>
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-label">Transfers / Closures (14d)</div>
+          <div class="kpi-value"><span id="k_transfers">0</span> / <span id="k_closures">0</span></div>
+        </div>
+        <div class="kpi-icon"><i class="bi bi-arrow-left-right"></i></div>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card" style="grid-column: span 4;">
+        <div class="chart-title">Order Status</div>
+        <div class="chart-sub">Open vs partial vs closed</div>
+        <canvas id="c_status"></canvas>
+      </div>
+      <div class="chart-card" style="grid-column: span 8;">
+        <div class="chart-title">Deliveries - Last 30 Days</div>
+        <div class="chart-sub">Daily movement trend</div>
+        <canvas id="c_deliveries"></canvas>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card" style="grid-column: span 7;">
+        <div class="chart-title">Outstanding Lines by Branch</div>
+        <div class="chart-sub">Where bottlenecks accumulate</div>
+        <canvas id="c_branch"></canvas>
+      </div>
+      <div class="chart-card" style="grid-column: span 5;">
+        <div class="chart-title">Top Managers by Outstanding</div>
+        <div class="chart-sub">Highest open lines per manager</div>
+        <canvas id="c_managers"></canvas>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div>
+          <div class="chart-title">Recent Deliveries</div>
+          <div class="chart-sub">Latest 50 delivery events</div>
+        </div>
+        <span class="badge rounded-pill text-bg-light border">Live Feed</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle">
+          <thead>
+            <tr>
+              <th>When</th>
+              <th>Branch</th>
+              <th>Manager</th>
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Order</th>
+            </tr>
+          </thead>
+          <tbody id="recent_tbody">
+            <tr><td colspan="6" class="text-center text-muted">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    function setText(id, v){ document.getElementById(id).textContent = v; }
+    function makeChart(ctx, type, data, options){
+      if(ctx.__chart) ctx.__chart.destroy();
+      ctx.__chart = new Chart(ctx, {type, data, options});
+    }
+
+    function setLoading(isLoading){
+      const pill = document.getElementById('loadingPill');
+      if(pill) pill.classList.toggle('d-none', !isLoading);
+      const btn = document.getElementById('applyFiltersBtn');
+      if(btn){
+        btn.disabled = isLoading;
+        btn.textContent = isLoading ? 'Loading…' : 'Apply Filters';
+      }
+      const tb = document.getElementById('recent_tbody');
+      if(isLoading && tb){
+        tb.innerHTML = `<tr><td colspan="6" class="text-center text-muted">Loading...</td></tr>`;
+      }
+    }
+
+    async function loadDash(){
+      setLoading(true);
+      const params = new URLSearchParams();
+      const b = document.getElementById('branch').value.trim();
+      const m = document.getElementById('manager_id').value.trim();
+      const df = document.getElementById('date_from').value;
+      const dt = document.getElementById('date_to').value;
+      if(b) params.set('branch', b);
+      if(m) params.set('manager_id', m);
+      if(df) params.set('date_from', df);
+      if(dt) params.set('date_to', dt);
+
+      try{
+        const r = await fetch(`/inventory/dashboard/data?${params.toString()}`, {headers:{'X-Requested-With':'XMLHttpRequest'}});
+        const j = await r.json();
+        if(!j.ok){ alert(j.message||'Failed'); return; }
+
+        const k = j.kpis;
+        setText('k_open', k.orders_open);
+        setText('k_partial', k.orders_partial);
+        setText('k_closed', k.orders_closed);
+        setText('k_outstanding', k.outstanding_lines);
+        setText('k_postponed', k.postponed_lines);
+        setText('k_pkg_pending', k.packages_pending);
+        setText('k_pkg_delivered', k.packages_delivered_7d);
+        setText('k_transfers', k.transfers_14d);
+        setText('k_closures', k.closures_14d);
+
+        makeChart(document.getElementById('c_status').getContext('2d'), 'doughnut', {
+          labels: j.charts.status_donut.labels,
+          datasets: [{ data: j.charts.status_donut.values, backgroundColor: ['#0f766e','#f59e0b','#22c55e'] }]
+        }, { plugins:{ legend:{ position:'bottom' }}});
+
+        makeChart(document.getElementById('c_deliveries').getContext('2d'), 'line', {
+          labels: j.charts.deliveries_last30.labels,
+          datasets: [{ label:'Deliveries', data: j.charts.deliveries_last30.values, borderColor:'#0f766e', backgroundColor:'rgba(15,118,110,.15)', fill:true, tension:0.3 }]
+        }, { plugins:{ legend:{ display:false }}});
+
+        makeChart(document.getElementById('c_branch').getContext('2d'), 'bar', {
+          labels: j.charts.outstanding_by_branch.labels,
+          datasets: [{ label:'Outstanding', data: j.charts.outstanding_by_branch.values, backgroundColor:'#0ea5e9' }]
+        }, { plugins:{ legend:{ display:false }}});
+
+        makeChart(document.getElementById('c_managers').getContext('2d'), 'bar', {
+          labels: j.charts.top_managers_outstanding.labels,
+          datasets: [{ label:'Outstanding', data: j.charts.top_managers_outstanding.values, backgroundColor:'#f59e0b' }]
+        }, { indexAxis:'y', plugins:{ legend:{ display:false }}});
+
+        const tb = document.getElementById('recent_tbody');
+        tb.innerHTML = (j.recent_deliveries||[]).length
+          ? j.recent_deliveries.map(r=>`
+              <tr>
+                <td>${r.when}</td>
+                <td>${r.branch}</td>
+                <td>${r.manager}</td>
+                <td>${r.item}</td>
+                <td>${r.qty}</td>
+                <td class="text-muted mono">${r.order_id.slice(-8)}</td>
+              </tr>`).join('')
+          : `<tr><td colspan="6" class="text-center text-muted">No recent deliveries.</td></tr>`;
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    document.getElementById('filters').addEventListener('submit', e => { e.preventDefault(); loadDash(); });
+    loadDash();
+  </script>
+  {% include 'app_footer.html' %}
+
+</body>
+</html>

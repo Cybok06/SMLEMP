@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0d6efd">
+  <title>Smart Living - MP583 Receipt Printer Prototype</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="icon" href="https://res.cloudinary.com/dljpgzbto/image/upload/v1743993646/company-logo_dksb23.jpg" type="image/png">
+
+  <style>
+    :root {
+      --sl-blue: #0d6efd;
+      --sl-blue-dark: #084eb5;
+      --sl-green: #08a66c;
+      --sl-ink: #111827;
+      --sl-muted: #6b7280;
+      --sl-border: #e5e7eb;
+      --sl-bg: #f5f7fa;
+    }
+
+    * { box-sizing: border-box; }
+    body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; background: var(--sl-bg); color: var(--sl-ink); margin: 0; }
+    button, input, select { font: inherit; }
+
+    .navbar-prototype { background: #fff; border-bottom: 1px solid #dee2e6; padding: .75rem 0; position: sticky; top: 0; z-index: 100; }
+    .brand-wrap { display: flex; align-items: center; gap: .7rem; }
+    .brand-mark { width: 38px; height: 38px; border-radius: 10px; object-fit: cover; border: 1px solid #dbe3ef; }
+    .brand-title { font-weight: 800; line-height: 1.05; }
+    .brand-subtitle { color: var(--sl-muted); font-size: .75rem; margin-top: 2px; }
+    .prototype-badge { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; padding: .3rem .7rem; border-radius: 999px; background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; }
+
+    .page-shell { max-width: 760px; margin: 30px auto; padding: 0 14px; }
+    .payment-card { background: #fff; padding: 26px; border-radius: 18px; box-shadow: 0 10px 28px rgba(15, 23, 42, .08); }
+    .header-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    h1 { font-size: 1.75rem; margin: 0; font-weight: 800; }
+    .subtle-text { color: var(--sl-muted); font-size: .9rem; }
+
+    .printer-panel { margin: 18px 0; border: 1px solid #cfe0ff; background: linear-gradient(135deg, #f8fbff, #eef5ff); border-radius: 14px; padding: 14px; }
+    .printer-panel-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .printer-state { display: flex; align-items: center; gap: 9px; min-width: 0; }
+    .status-dot { width: 10px; height: 10px; border-radius: 999px; background: #9ca3af; box-shadow: 0 0 0 4px rgba(156, 163, 175, .14); flex: 0 0 auto; }
+    .status-dot.ready { background: #16a34a; box-shadow: 0 0 0 4px rgba(22, 163, 74, .14); }
+    .status-dot.busy { background: #f59e0b; box-shadow: 0 0 0 4px rgba(245, 158, 11, .15); }
+    .status-dot.error { background: #dc2626; box-shadow: 0 0 0 4px rgba(220, 38, 38, .14); }
+    .printer-status-title { font-size: .9rem; font-weight: 750; }
+    .printer-status-detail { font-size: .76rem; color: var(--sl-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 390px; }
+    .printer-actions { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
+    .technical-note { margin-top: 10px; color: #475569; font-size: .76rem; line-height: 1.45; }
+
+    .section-card { border: 1px solid var(--sl-border); border-radius: 13px; padding: 15px; background: #fafbfc; box-shadow: 0 4px 14px rgba(15, 23, 42, .04); margin-top: 14px; }
+    .section-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
+    .section-title h2 { font-size: .95rem; margin: 0; font-weight: 800; }
+    label { margin-top: 10px; margin-bottom: 5px; font-weight: 650; color: #1f2937; font-size: .87rem; }
+    .form-control, .form-select { border-radius: 10px; border: 1px solid #d6dbe3; min-height: 43px; box-shadow: 0 2px 8px rgba(15, 23, 42, .04); }
+    .form-control:focus, .form-select:focus { border-color: #86b7fe; box-shadow: 0 0 0 .2rem rgba(13, 110, 253, .12); }
+
+    .summary-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin-top: 14px; }
+    .summary-card { background: #f3f4f6; border: 1px solid var(--sl-border); border-radius: 12px; padding: 11px 12px; min-width: 0; }
+    .summary-card .label { font-size: .68rem; color: var(--sl-muted); text-transform: uppercase; letter-spacing: .045em; }
+    .summary-card .value { font-size: 1.04rem; font-weight: 800; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .summary-card.accent { background: #eff6ff; border-color: #bfdbfe; }
+
+    .sms-toggle-wrap { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; }
+    .sms-badge { font-size: .8rem; padding: .24rem .62rem; border-radius: 999px; }
+    .sms-badge.off { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
+    .sms-badge.on { background: #dcfce7; color: #14532d; border: 1px solid #bbf7d0; }
+
+    #submitBtn { width: 100%; margin-top: 20px; padding: 13px; background: var(--sl-blue); border: 0; color: #fff; font-size: 1rem; font-weight: 750; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: .55rem; transition: .2s ease; }
+    #submitBtn:hover { background: var(--sl-blue-dark); transform: translateY(-1px); }
+    #submitBtn:disabled { opacity: .65; transform: none; }
+    .btn-spinner { width: 1rem; height: 1rem; border: .2rem solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .modal-content { border-radius: 18px; overflow: hidden; }
+    .receipt-modal-grid { display: grid; grid-template-columns: minmax(245px, 310px) 1fr; gap: 22px; align-items: start; }
+    .receipt-stage { background: #edf1f5; border-radius: 14px; padding: 18px 12px; display: flex; justify-content: center; }
+
+    /* Screen preview of a 58 mm thermal receipt. */
+    .thermal-receipt { width: 58mm; min-height: 0; background: #fff; color: #000; padding: 2.2mm 2.2mm 3mm; font-family: "Courier New", ui-monospace, monospace; font-size: 8.8px; line-height: 1.16; box-shadow: 0 7px 20px rgba(15, 23, 42, .16); overflow-wrap: anywhere; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .receipt-company { text-align: center; font-family: Arial, sans-serif; font-size: 15px; line-height: 1.05; font-weight: 900; letter-spacing: -.2px; }
+    .receipt-tagline, .receipt-branch { text-align: center; font-size: 8.5px; margin-top: 3px; }
+    .receipt-rule { border: 0; border-top: 1px dashed #000; margin: 3px 0; opacity: 1; }
+    .receipt-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; margin: 1px 0; }
+    .receipt-row .key { flex: 0 0 auto; }
+    .receipt-row .val { font-weight: 700; text-align: right; min-width: 0; }
+    .receipt-block { margin: 2px 0; }
+    .receipt-block .key { display: block; font-size: 8px; }
+    .receipt-block .val { display: block; font-weight: 700; margin-top: 1px; }
+    .receipt-amount { margin: 4px 0; padding: 4px 2px; border: 1.2px solid #000; text-align: center; }
+    .receipt-amount .caption { font-size: 8px; font-weight: 700; }
+    .receipt-amount .money { font-family: Arial, sans-serif; font-size: 21px; font-weight: 900; margin-top: 2px; }
+    .short-receipt-only { display: none; }
+    .short-receipt .short-receipt-only { display: block; }
+    .thermal-receipt.short-receipt .full-receipt-only { display: none !important; }
+    .thermal-receipt.short-receipt { font-size: 10px; line-height: 1.25; }
+    .short-receipt .receipt-amount { border: 2px solid #000; padding: 6px 2px; }
+    .short-receipt .receipt-amount .caption { font: 800 11px Arial, sans-serif; }
+    .short-receipt .receipt-amount .money { font-size: 30px; line-height: 1.1; overflow-wrap: normal; }
+    .short-receipt .receipt-amount .money .currency { display: block; font-size: 13px; margin-bottom: 2px; }
+    .receipt-progress { border: 1px solid #000; padding: 5px; margin: 4px 0; }
+    .receipt-progress-title { text-align: center; font-weight: 900; font-size: 10px; }
+    .receipt-progress-label { text-align: center; font: 900 16px Arial, sans-serif; margin: 4px 0; }
+    .payment-progress-track { height: 16px; border: 1.5px solid #000; background: #fff; padding: 1px; }
+    .payment-progress-fill { height: 100%; width: 0; background: #000; }
+    .receipt-progress-total { text-align: center; margin-top: 4px; font-size: 8px; }
+    .receipt-qr { display: flex; justify-content: center; margin: 3px auto 1px; }
+    .receipt-qr canvas, .receipt-qr img { width: 19mm !important; height: 19mm !important; image-rendering: pixelated; }
+    .receipt-center { text-align: center; }
+    .receipt-small { font-size: 7.8px; }
+    .receipt-copy-badge { text-align: center; border: 1px solid #000; padding: 2px 5px; margin: 0 auto 5px; width: fit-content; font-weight: 800; display: none; }
+    .receipt-copy-badge.show { display: block; }
+    .print-anim-panel { margin-top: 12px; border: 1px solid #dbe5f4; border-radius: 14px; background: linear-gradient(180deg, #ffffff, #f5f8fc); padding: 14px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7); display: none; }
+    .print-anim-panel.show { display: block; }
+    .print-anim-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    .print-anim-title { font-size: .95rem; font-weight: 800; }
+    .print-anim-state { font-size: .78rem; color: var(--sl-muted); }
+    .print-anim-figure-wrap { display: flex; justify-content: center; padding: 4px 0 10px; }
+    .print-anim-figure { width: min(100%, 220px); position: relative; padding-top: 6px; }
+    .mini-printer { position: relative; height: 88px; border-radius: 18px; background: linear-gradient(180deg, #2d3748, #111827); box-shadow: 0 18px 26px rgba(15, 23, 42, .16); overflow: hidden; }
+    .mini-printer::before { content: ""; position: absolute; inset: 12px 16px auto; height: 14px; border-radius: 999px; background: linear-gradient(90deg, rgba(255,255,255,.15), rgba(255,255,255,.04)); }
+    .mini-printer-slot { position: absolute; left: 18px; right: 18px; bottom: 18px; height: 10px; border-radius: 999px; background: #05070b; box-shadow: inset 0 2px 4px rgba(255,255,255,.08); z-index: 3; }
+    .mini-printer-light { position: absolute; right: 18px; top: 18px; width: 10px; height: 10px; border-radius: 999px; background: #93c5fd; box-shadow: 0 0 0 5px rgba(147, 197, 253, .12); }
+    .mini-receipt { --print-progress: 0; position: absolute; left: 50%; top: 55px; width: 120px; height: 96px; transform: translate(-50%, calc(var(--print-progress) * 54px)); transform-origin: top center; background: #fff; border: 1px solid #d1d5db; border-radius: 0 0 10px 10px; box-shadow: 0 14px 20px rgba(15, 23, 42, .12); z-index: 1; overflow: hidden; transition: transform .18s linear; }
+    .mini-receipt-body { padding: 8px 10px 10px; }
+    .mini-line { height: 4px; border-radius: 999px; background: #d1d5db; margin-bottom: 5px; }
+    .mini-line.short { width: 58%; }
+    .mini-line.mid { width: 74%; }
+    .mini-qr { width: 18px; height: 18px; margin: 8px auto 7px; background: linear-gradient(90deg, #111 50%, transparent 50%) 0 0 / 6px 6px, linear-gradient(#111 50%, transparent 50%) 0 0 / 6px 6px; outline: 1px solid #111; }
+    .mini-payment-progress { width: 64px; height: 7px; border: 1px solid #000; margin: 0 auto; }
+    .print-progress { margin-top: 8px; }
+    .print-progress-bar { height: 7px; border-radius: 999px; background: #dbe4f0; overflow: hidden; }
+    .print-progress-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #2563eb, #0ea5e9); transition: width .12s linear; }
+    .print-progress-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: .76rem; color: #475569; margin-top: 6px; }
+    .print-anim-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
+    .print-anim-panel.success .print-progress-fill { background: linear-gradient(90deg, #16a34a, #22c55e); }
+    .print-anim-panel.error .print-progress-fill { background: linear-gradient(90deg, #dc2626, #ef4444); }
+    .print-anim-panel.error .mini-printer-light { background: #fca5a5; box-shadow: 0 0 0 5px rgba(252, 165, 165, .18); }
+
+    .success-icon { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: #dcfce7; color: #15803d; font-weight: 900; font-size: 1.65rem; }
+    .receipt-controls h3 { margin: 0; font-size: 1.25rem; font-weight: 850; }
+    .control-card { border: 1px solid var(--sl-border); border-radius: 12px; padding: 12px; margin-top: 12px; background: #fafafa; }
+    .control-title { font-size: .82rem; text-transform: uppercase; letter-spacing: .055em; color: var(--sl-muted); font-weight: 800; }
+    .print-status { min-height: 43px; display: flex; align-items: center; border-radius: 10px; padding: 9px 11px; background: #f3f4f6; color: #374151; font-size: .83rem; margin-top: 10px; }
+    .print-status.success { background: #dcfce7; color: #14532d; }
+    .print-status.error { background: #fee2e2; color: #991b1b; }
+    .print-status.info { background: #eff6ff; color: #1e40af; }
+    .receipt-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+    .receipt-actions .primary-action { grid-column: 1 / -1; min-height: 48px; font-weight: 800; }
+    .qr-note { font-size: .76rem; color: var(--sl-muted); line-height: 1.45; margin-top: 9px; }
+    .security-note { border-left: 3px solid #f59e0b; padding-left: 9px; margin-top: 10px; color: #78350f; font-size: .76rem; }
+    .hidden-qr-workspace { position: fixed; left: -10000px; top: -10000px; width: 200px; height: 200px; overflow: hidden; }
+
+    footer { background: #8a2be2; color: #fff; padding: 12px 0; text-align: center; margin-top: 45px; }
+    footer p { margin: 0; font-size: .85rem; }
+
+    @media (max-width: 720px) {
+      .page-shell { margin-top: 18px; }
+      .payment-card { padding: 18px 14px; border-radius: 14px; }
+      .printer-panel-top { align-items: flex-start; flex-direction: column; }
+      .printer-actions { width: 100%; justify-content: stretch; }
+      .printer-actions .btn { flex: 1 1 auto; }
+      .printer-status-detail { max-width: 270px; }
+      .summary-cards { grid-template-columns: 1fr; }
+      .receipt-modal-grid { grid-template-columns: 1fr; }
+      .receipt-stage { order: 2; }
+      .receipt-controls { order: 1; }
+      .print-anim-panel { padding: 12px; }
+      .mini-receipt { width: 108px; }
+      .print-anim-head { align-items: flex-start; flex-direction: column; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .btn-spinner,
+      .mini-receipt,
+      .print-progress-fill { animation: none !important; transition: none !important; }
+    }
+
+    @media print {
+      @page { size: 58mm auto; margin: 0; }
+      body { background: #fff !important; margin: 0 !important; }
+      body * { visibility: hidden !important; }
+      #thermalReceipt, #thermalReceipt * { visibility: visible !important; }
+      #thermalReceipt {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 58mm !important;
+        min-height: 0 !important;
+        padding: 2mm 2mm 3mm !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="navbar-prototype">
+    <div class="container-fluid px-3 px-md-4 d-flex align-items-center justify-content-between">
+      <div class="brand-wrap">
+        <img class="brand-mark" src="https://res.cloudinary.com/dljpgzbto/image/upload/v1743993646/company-logo_dksb23.jpg" alt="Smart Living logo">
+        <div>
+          <div class="brand-title">SMART LIVING</div>
+          <div class="brand-subtitle">Payment & Receipt Lab</div>
+        </div>
+      </div>
+      <span class="prototype-badge">Standalone Prototype</span>
+    </div>
+  </nav>
+
+  <main class="page-shell">
+    <section class="payment-card">
+      <div class="header-row">
+        <div>
+          <h1>Add Payment</h1>
+          <div class="subtle-text mt-1">Record a sample payment and print a 58mm receipt.</div>
+        </div>
+        <span id="modeBadge" class="prototype-badge">Product</span>
+      </div>
+
+      <div class="printer-panel" aria-live="polite">
+        <div class="printer-panel-top">
+          <div class="printer-state">
+            <span id="printerStatusDot" class="status-dot"></span>
+            <div class="min-w-0">
+              <div id="printerStatusTitle" class="printer-status-title">Checking printer support…</div>
+              <div id="printerStatusDetail" class="printer-status-detail">MP583 · Bluetooth Classic · ESC/POS</div>
+            </div>
+          </div>
+          <div class="printer-actions">
+            <button type="button" id="connectPrinterBtn" class="btn btn-primary btn-sm">Connect MP583</button>
+            <button type="button" id="testPrintBtn" class="btn btn-outline-primary btn-sm">Test Print</button>
+            <button type="button" id="lastReceiptBtn" class="btn btn-outline-secondary btn-sm" disabled>Last Receipt</button>
+          </div>
+        </div>
+        <div class="technical-note">
+          Direct Bluetooth uses Chrome Web Serial and sends ESC/POS bytes without Android's printer service. Use Chrome 138+ on Android and open this page through HTTPS or localhost.
+        </div>
+      </div>
+
+      <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 mb-1">
+        <div class="subtle-text">Prototype data is editable before generating the receipt.</div>
+        <button type="button" id="toggleSusuBtn" class="btn btn-warning btn-sm">🔁 Switch to SUSU Mode</button>
+      </div>
+
+      <form id="paymentForm" novalidate>
+        <div class="section-card">
+          <div class="section-title">
+            <h2>Customer details</h2>
+            <span class="subtle-text">Printed on receipt</span>
+          </div>
+
+          <label for="customerPreset">Select Demo Customer</label>
+          <select id="customerPreset" class="form-select">
+            <option value="ama">Ama Serwaa (024 123 4567)</option>
+            <option value="kwame">Kwame Mensah (055 987 6543)</option>
+            <option value="adwoa">Adwoa Owusu (020 445 7812)</option>
+            <option value="custom">Custom customer</option>
+          </select>
+
+          <div class="row g-2">
+            <div class="col-md-7">
+              <label for="customerName">Customer Name</label>
+              <input id="customerName" class="form-control" required value="Ama Serwaa">
+            </div>
+            <div class="col-md-5">
+              <label for="customerId">Customer ID</label>
+              <input id="customerId" class="form-control" required value="CUS-10428">
+            </div>
+            <div class="col-md-7">
+              <label for="customerPhone">Phone Number</label>
+              <input id="customerPhone" class="form-control" inputmode="tel" required value="024 123 4567">
+            </div>
+            <div class="col-md-5">
+              <label for="customerAccount">Account/Card No.</label>
+              <input id="customerAccount" class="form-control" value="CARD-00821">
+            </div>
+          </div>
+        </div>
+
+        <div id="productSection" class="section-card">
+          <div class="section-title">
+            <h2>Product account</h2>
+            <span class="subtle-text">Balances update automatically</span>
+          </div>
+
+          <label for="productPreset">Select Product</label>
+          <select id="productPreset" class="form-select">
+            <option value="fridge">158L Nasco Refrigerator</option>
+            <option value="tv">43-inch Smart Television</option>
+            <option value="washer">7kg Washing Machine</option>
+            <option value="custom">Custom product</option>
+          </select>
+
+          <label for="productName">Product/Card Name</label>
+          <input id="productName" class="form-control" required value="158L Nasco Refrigerator">
+
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label for="productTotal">Product Total (GHS)</label>
+              <input id="productTotal" class="form-control money-input" type="number" min="0" step="0.01" value="4200.00" required>
+            </div>
+            <div class="col-md-6">
+              <label for="previouslyPaid">Previously Paid (GHS)</label>
+              <input id="previouslyPaid" class="form-control money-input" type="number" min="0" step="0.01" value="1260.00" required>
+            </div>
+            <div class="col-md-6">
+              <label for="cardValue">Daily Card Row Value (GHS)</label>
+              <input id="cardValue" class="form-control money-input" type="number" min="0.01" step="0.01" value="10.00" required>
+            </div>
+            <div class="col-md-6">
+              <label for="boxValue">Value Per Box (GHS)</label>
+              <input id="boxValue" class="form-control money-input" type="number" min="0.01" step="0.01" value="2.00" required>
+            </div>
+          </div>
+
+          <div id="cardRuleSummary" class="subtle-text mt-2">Digital card: GHS 10.00 per row · 5 boxes · GHS 2.00 per box</div>
+
+          <div class="summary-cards">
+            <div class="summary-card">
+              <div class="label">Previously Paid</div>
+              <div class="value">GHS <span id="paidBeforeSummary">1,260.00</span></div>
+            </div>
+            <div class="summary-card accent">
+              <div class="label">This Payment</div>
+              <div class="value">GHS <span id="thisPaymentSummary">0.00</span></div>
+            </div>
+            <div class="summary-card">
+              <div class="label">Amount Left</div>
+              <div class="value">GHS <span id="amountLeftSummary">2,940.00</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-title">
+            <h2>Payment details</h2>
+            <span class="subtle-text">Included in the QR</span>
+          </div>
+
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label for="amount">Amount Paid (GHS)</label>
+              <input id="amount" class="form-control money-input" type="number" min="0.01" step="0.01" placeholder="0.00" required>
+            </div>
+            <div class="col-md-6">
+              <label for="paymentMethod">Payment Method</label>
+              <select id="paymentMethod" class="form-select">
+                <option>Cash</option>
+                <option>Mobile Money</option>
+                <option>Bank Transfer</option>
+                <option>Card</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="paymentDate">Payment Date</label>
+              <input id="paymentDate" class="form-control" type="date" required>
+            </div>
+            <div class="col-md-6">
+              <label for="branchName">Branch</label>
+              <select id="branchName" class="form-select">
+                <option>Kaneshie (Head Office)</option>
+                <option>Dome</option>
+                <option>Nsawam</option>
+                <option>Tema New Town</option>
+                <option>Ashaiman</option>
+                <option>Kasoa</option>
+                <option>Madina</option>
+                <option>Agormenya</option>
+                <option>Asamankese</option>
+              </select>
+            </div>
+            <div class="col-md-7">
+              <label for="agentName">Agent Name</label>
+              <input id="agentName" class="form-control" value="Jonathan Nelson" required>
+            </div>
+            <div class="col-md-5">
+              <label for="agentId">Agent ID</label>
+              <input id="agentId" class="form-control" value="AGT-021">
+            </div>
+          </div>
+
+          <div class="sms-toggle-wrap">
+            <div>
+              <span id="smsStatus" class="sms-badge off">SMS: Off</span>
+              <span class="subtle-text ms-1">Prototype only—no SMS is sent.</span>
+            </div>
+            <button type="button" id="smsToggleBtn" class="btn btn-outline-secondary btn-sm" aria-pressed="false">Turn SMS On</button>
+          </div>
+        </div>
+
+        <button type="submit" id="submitBtn">
+          <span id="submitLabel">Generate Payment Receipt</span>
+          <span id="submitSpinner" class="btn-spinner d-none" aria-hidden="true"></span>
+        </button>
+      </form>
+    </section>
+  </main>
+
+  <footer><p>&copy; 2026 SMART LIVING. Receipt Printer Prototype.</p></footer>
+
+  <div class="modal fade" id="receiptModal" tabindex="-1" aria-labelledby="receiptModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content border-0">
+        <div class="modal-header border-0 pb-0">
+          <h2 class="modal-title fs-5 fw-bold" id="receiptModalTitle">Payment Receipt</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-3 p-md-4">
+          <div class="receipt-modal-grid">
+            <div class="receipt-stage">
+              <article id="thermalReceipt" class="thermal-receipt" aria-label="58 millimetre receipt preview">
+                <div id="receiptCopyBadge" class="full-receipt-only receipt-copy-badge">REPRINT COPY</div>
+                <div class="receipt-company">SMART LIVING</div>
+                <div class="receipt-company">EMPORIUM PLUS</div>
+                <div class="full-receipt-only receipt-tagline">Powering Homes, Simplifying Lives.</div>
+                <div class="receipt-branch">Head Office: Kaneshie</div>
+                <div class="receipt-branch short-receipt-only fw-bold">0556064611/05099639836/<br>0598948132</div>
+                <div id="rBranchTop" class="receipt-branch">Kaneshie (Head Office)</div>
+
+                <hr class="receipt-rule">
+                <div class="full-receipt-only receipt-center fw-bold">PAYMENT RECEIPT</div>
+                <div class="full-receipt-only receipt-row"><span class="key">Receipt:</span><span id="rReceiptNo" class="val">—</span></div>
+
+                <hr class="receipt-rule full-receipt-only">
+                <div class="receipt-block"><span class="key">CUSTOMER</span><span id="rCustomerName" class="val">—</span></div>
+                <div class="full-receipt-only receipt-row"><span class="key">Customer ID:</span><span id="rCustomerId" class="val">—</span></div>
+                <div class="receipt-row"><span class="key">Phone:</span><span id="rCustomerPhone" class="val">—</span></div>
+                <div class="full-receipt-only receipt-row"><span class="key">Card No:</span><span id="rAccount" class="val">—</span></div>
+
+                <hr class="receipt-rule">
+                <div class="receipt-block"><span class="key">PRODUCT</span><span id="rProduct" class="val">—</span></div>
+                <div class="full-receipt-only receipt-row"><span class="key">Date:</span><span id="rDate" class="val">—</span></div>
+                <div class="full-receipt-only receipt-row"><span class="key">Time:</span><span id="rTime" class="val">—</span></div>
+                <div class="full-receipt-only receipt-row"><span class="key">Method:</span><span id="rMethod" class="val">—</span></div>
+
+                <div class="short-receipt-only">
+                  <div class="receipt-row"><span class="key">Agent:</span><span id="rShortAgent" class="val">—</span></div>
+                  <div class="receipt-row"><span class="key">Date:</span><span id="rShortDate" class="val">—</span></div>
+                  <div class="receipt-block"><span class="key">Payment ID:</span><span id="rShortPaymentId" class="val">—</span></div>
+                </div>
+                <div class="receipt-amount">
+                  <div class="caption">AMOUNT PAID</div>
+                  <div id="rAmount" class="money">GHS 0.00</div>
+                </div>
+
+                <section id="receiptProgressSection" class="full-receipt-only receipt-progress">
+                  <div class="receipt-progress-title">PAYMENT PROGRESS</div>
+                  <div id="rProgressLabel" class="receipt-progress-label">0% PAID</div>
+                  <div id="rProgressBar" class="payment-progress-track" role="progressbar" aria-label="Product payment progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                    <div id="rProgressFill" class="payment-progress-fill"></div>
+                  </div>
+                  <div id="rProgressTotal" class="receipt-progress-total">Product total: GHS 0.00</div>
+                </section>
+
+                <div class="full-receipt-only receipt-row"><span class="key">Previously paid:</span><span id="rPreviouslyPaid" class="val">GHS 0.00</span></div>
+                <div class="full-receipt-only receipt-row"><span class="key">Total paid:</span><span id="rTotalPaid" class="val">GHS 0.00</span></div>
+                <div class="full-receipt-only receipt-row"><span class="key">Amount remaining:</span><span id="rAmountLeft" class="val">GHS 0.00</span></div>
+
+                <hr class="receipt-rule full-receipt-only">
+                <div class="full-receipt-only receipt-row"><span class="key">Agent:</span><span id="rAgentLine" class="val">—</span></div>
+
+                <div id="receiptQr" class="full-receipt-only receipt-qr" aria-label="Receipt QR code"></div>
+                <div class="full-receipt-only receipt-center receipt-small fw-bold">SCAN FOR PAYMENT DETAILS</div>
+                <hr class="receipt-rule full-receipt-only">
+                <div class="full-receipt-only receipt-center receipt-small">Thank you for choosing Smart Living.</div>
+                <div class="receipt-center receipt-small fw-bold mt-1 full-receipt-only">0556064611/05099639836/<br>0598948132</div>
+                <div class="receipt-center receipt-small full-receipt-only">Head Office: Kaneshie</div>
+                <div class="full-receipt-only receipt-center receipt-small mt-1">Computer-generated receipt</div>
+                <hr class="receipt-rule">
+              </article>
+            </div>
+
+            <div class="receipt-controls">
+              <div class="d-flex align-items-center gap-3">
+                <div class="success-icon">✓</div>
+                <div>
+                  <h3>Payment recorded in prototype</h3>
+                  <div id="receiptSummary" class="subtle-text mt-1">Receipt is ready to print.</div>
+                </div>
+              </div>
+
+              <div class="control-card">
+                <label for="receiptFormat" class="control-title mt-0">Receipt format</label>
+                <select id="receiptFormat" class="form-select" aria-describedby="receiptFormatHelp">
+                  <option value="full">Full receipt (progress and payment details)</option>
+                  <option value="short">Short receipt (large amount paid)</option>
+                </select>
+                <div id="receiptFormatHelp" class="subtle-text mt-2">Applies to the preview, Bluetooth printing and browser printing.</div>
+              </div>
+
+              <div class="control-card">
+                <div class="control-title">Direct MP583 printing</div>
+                <div class="d-flex align-items-center gap-2 mt-2">
+                  <span id="modalPrinterDot" class="status-dot"></span>
+                  <div>
+                    <div id="modalPrinterTitle" class="fw-bold small">Printer not connected</div>
+                    <div id="modalPrinterDetail" class="subtle-text">Connect before printing.</div>
+                  </div>
+                </div>
+                <div id="printStatus" class="print-status info" role="status" aria-live="polite">Ready. Printing failure will not remove the payment.</div>
+                <div id="printAnimPanel" class="print-anim-panel" aria-live="polite">
+                  <div class="print-anim-head">
+                    <div>
+                      <div class="print-anim-title">MP583 Printing</div>
+                      <div id="printAnimState" class="print-anim-state">Connecting to MP583...</div>
+                    </div>
+                    <span id="printAnimPercent">0%</span>
+                  </div>
+                  <div class="print-anim-figure-wrap">
+                    <div class="print-anim-figure">
+                      <div class="mini-printer">
+                        <div class="mini-printer-light"></div>
+                        <div class="mini-receipt" id="miniReceipt">
+                          <div class="mini-receipt-body">
+                            <div class="mini-line short"></div>
+                            <div class="mini-line"></div>
+                            <div class="mini-line mid"></div>
+                            <div class="mini-qr"></div>
+                            <div id="miniPaymentProgress" class="mini-payment-progress" aria-hidden="true"><div id="miniPaymentFill" class="payment-progress-fill"></div></div>
+                          </div>
+                        </div>
+                        <div class="mini-printer-slot"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="print-progress">
+                    <div class="print-progress-bar"><div id="printProgressFill" class="print-progress-fill"></div></div>
+                    <div class="print-progress-meta">
+                      <span id="printAnimDetail">Waiting to begin...</span>
+                      <span id="printAnimBytes">0 / 0 bytes</span>
+                    </div>
+                  </div>
+                  <div class="print-anim-actions">
+                    <button type="button" id="printAnimDoneBtn" class="btn btn-sm btn-outline-secondary d-none">Done</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="control-card">
+                <div class="control-title">QR verification data</div>
+                <div class="qr-note">The QR contains the receipt number, customer ID, payment amount, product, branch, date and agent. It excludes the customer's phone number to reduce unnecessary exposure.</div>
+                <div class="security-note">In the live application, replace the embedded prototype data with a secure receipt-verification URL returned by the backend.</div>
+              </div>
+
+              <div class="receipt-actions">
+                <button type="button" id="bluetoothPrintBtn" class="btn btn-primary primary-action">Print via MP583 Bluetooth</button>
+                <button type="button" id="browserPrintBtn" class="btn btn-outline-secondary">Browser Print</button>
+                <button type="button" id="copyQrBtn" class="btn btn-outline-secondary">Copy QR Details</button>
+                <button type="button" id="addAnotherBtn" class="btn btn-success" data-bs-dismiss="modal">Add Another</button>
+                <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="qrWorkspace" class="hidden-qr-workspace" aria-hidden="true"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const PRINTER_BAUD_RATE = 9600;
+      const PAPER_COLUMNS = 32;
+      const WRITE_CHUNK_SIZE = 256;
+      const WRITE_CHUNK_DELAY_MS = 12;
+
+      const customerPresets = {
+        ama: { name: "Ama Serwaa", id: "CUS-10428", phone: "024 123 4567", account: "CARD-00821" },
+        kwame: { name: "Kwame Mensah", id: "CUS-20815", phone: "055 987 6543", account: "CARD-01409" },
+        adwoa: { name: "Adwoa Owusu", id: "CUS-30177", phone: "020 445 7812", account: "CARD-02164" }
+      };
+
+      const productPresets = {
+        fridge: { name: "158L Nasco Refrigerator", total: 4200, paid: 1260 },
+        tv: { name: "43-inch Smart Television", total: 3600, paid: 880 },
+        washer: { name: "7kg Washing Machine", total: 5100, paid: 2050 }
+      };
+
+      const state = {
+        port: null,
+        printerBusy: false,
+        currentReceipt: null,
+        lastReceipt: null,
+        susuMode: false,
+        smsEnabled: false,
+        receiptFormat: "full",
+        printAnimTimer: null
+      };
+
+      const el = (id) => document.getElementById(id);
+      const form = el("paymentForm");
+      const receiptModal = new bootstrap.Modal(el("receiptModal"));
+
+      function delay(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+
+      function nextFrame() {
+        return new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
+      }
+
+      function numberValue(id) {
+        const value = Number.parseFloat(el(id).value);
+        return Number.isFinite(value) ? value : 0;
+      }
+
+      function money(value) {
+        return Number(value || 0).toLocaleString("en-GH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+
+      function pad2(value) {
+        return String(value).padStart(2, "0");
+      }
+
+      function localDateString(date) {
+        return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+      }
+
+      function humanDate(isoDate) {
+        const parts = String(isoDate || "").split("-").map(Number);
+        if (parts.length !== 3 || parts.some((part) => !Number.isFinite(part))) return isoDate || "—";
+        return new Intl.DateTimeFormat("en-GH", { day: "2-digit", month: "short", year: "numeric" })
+          .format(new Date(parts[0], parts[1] - 1, parts[2]));
+      }
+
+      function makeId(prefix) {
+        const now = new Date();
+        const stamp = `${now.getFullYear()}${pad2(now.getMonth() + 1)}${pad2(now.getDate())}`;
+        const random = crypto.getRandomValues(new Uint32Array(1))[0].toString(36).toUpperCase().slice(-5).padStart(5, "0");
+        return `${prefix}-${stamp}-${random}`;
+      }
+
+      function updateBalanceSummary() {
+        const total = numberValue("productTotal");
+        const paidBefore = numberValue("previouslyPaid");
+        const amount = numberValue("amount");
+        const cardValue = numberValue("cardValue");
+        const boxValue = numberValue("boxValue");
+        const remaining = state.susuMode ? 0 : Math.max(total - paidBefore - amount, 0);
+        el("paidBeforeSummary").textContent = money(paidBefore);
+        el("thisPaymentSummary").textContent = money(amount);
+        el("amountLeftSummary").textContent = state.susuMode ? "N/A" : money(remaining);
+        if (cardValue > 0 && boxValue > 0) {
+          const boxesPerRow = Math.max(1, Math.round(cardValue / boxValue));
+          el("cardRuleSummary").textContent = `Digital card: GHS ${money(cardValue)} per row · ${boxesPerRow} boxes · GHS ${money(boxValue)} per box`;
+        }
+      }
+
+      function setPrinterStatus(type, title, detail) {
+        const dots = [el("printerStatusDot"), el("modalPrinterDot")];
+        dots.forEach((dot) => {
+          dot.className = `status-dot${type ? ` ${type}` : ""}`;
+        });
+        el("printerStatusTitle").textContent = title;
+        el("printerStatusDetail").textContent = detail;
+        el("modalPrinterTitle").textContent = title;
+        el("modalPrinterDetail").textContent = detail;
+      }
+
+      function setPrintStatus(message, type = "info") {
+        const box = el("printStatus");
+        box.textContent = message;
+        box.className = `print-status ${type}`;
+      }
+
+      function clearPrintAnimTimer() {
+        if (state.printAnimTimer) {
+          window.clearTimeout(state.printAnimTimer);
+          state.printAnimTimer = null;
+        }
+      }
+
+      function showPrintAnimation({ stateText, detail, progress = 0, written = 0, total = 0, tone = "info", done = false, autoClose = false } = {}) {
+        const panel = el("printAnimPanel");
+        const normalizedProgress = Math.max(0, Math.min(1, Number(progress) || 0));
+        clearPrintAnimTimer();
+        panel.className = `print-anim-panel show${tone === "success" ? " success" : tone === "error" ? " error" : ""}`;
+        el("printAnimState").textContent = stateText || "Preparing receipt...";
+        el("printAnimDetail").textContent = detail || "Waiting to begin...";
+        el("printAnimPercent").textContent = `${Math.round(normalizedProgress * 100)}%`;
+        el("printAnimBytes").textContent = `${written} / ${total} bytes`;
+        el("printProgressFill").style.width = `${normalizedProgress * 100}%`;
+        el("miniReceipt").style.setProperty("--print-progress", String(normalizedProgress));
+        el("printAnimDoneBtn").classList.toggle("d-none", !done);
+        if (autoClose) {
+          state.printAnimTimer = window.setTimeout(() => hidePrintAnimation(), 2400);
+        }
+      }
+
+      function hidePrintAnimation() {
+        clearPrintAnimTimer();
+        const panel = el("printAnimPanel");
+        panel.className = "print-anim-panel";
+        el("printAnimDoneBtn").classList.add("d-none");
+      }
+
+      function serialSupported() {
+        return "serial" in navigator;
+      }
+
+      function portIsOpen(port = state.port) {
+        return Boolean(port && port.writable);
+      }
+
+      function printerDescription(port) {
+        if (!port) return "MP583 · Bluetooth Classic · ESC/POS";
+        try {
+          const info = port.getInfo ? port.getInfo() : {};
+          if (info.bluetoothServiceClassId) return `Bluetooth serial · ${info.bluetoothServiceClassId}`;
+          if (info.usbVendorId) return `USB device · VID ${info.usbVendorId}`;
+        } catch (_) {}
+        return "Bluetooth serial printer permission granted";
+      }
+
+      async function openPort(port) {
+        if (!port) throw new Error("No printer was selected.");
+        if (!port.writable) await port.open({ baudRate: PRINTER_BAUD_RATE });
+        state.port = port;
+        setPrinterStatus("ready", "MP583 connected", printerDescription(port));
+        el("connectPrinterBtn").textContent = "Printer Connected";
+        return port;
+      }
+
+      async function connectPrinter({ allowChooser = true } = {}) {
+        if (!window.isSecureContext) {
+          throw new Error("Direct Bluetooth requires HTTPS or localhost. Open this file from a secure test URL.");
+        }
+        if (!serialSupported()) {
+          throw new Error("Web Serial is unavailable. Use updated Chrome on Android or desktop.");
+        }
+        if (portIsOpen()) return state.port;
+
+        setPrinterStatus("busy", "Connecting…", "Select the paired MP583 in Chrome's device window.");
+        let port = state.port;
+
+        if (!port) {
+          const grantedPorts = await navigator.serial.getPorts();
+          port = grantedPorts[0] || null;
+        }
+        if (!port && allowChooser) port = await navigator.serial.requestPort();
+        if (!port) throw new Error("No previously permitted printer was found. Press Connect MP583.");
+
+        return openPort(port);
+      }
+
+      async function restorePrinterPermission() {
+        if (!window.isSecureContext) {
+          setPrinterStatus("error", "Secure page required", "Serve through HTTPS or localhost for direct Bluetooth.");
+          return;
+        }
+        if (!serialSupported()) {
+          setPrinterStatus("error", "Direct Bluetooth unavailable", "Use Chrome 138+ on Android. Browser Print remains available.");
+          return;
+        }
+        try {
+          const ports = await navigator.serial.getPorts();
+          if (ports.length) {
+            state.port = ports[0];
+            setPrinterStatus("", "Printer permission remembered", "Press Connect or Print to reconnect the MP583.");
+          } else {
+            setPrinterStatus("", "Printer not connected", "Pair the MP583 in Android, then press Connect MP583.");
+          }
+        } catch (error) {
+          setPrinterStatus("error", "Printer check failed", error.message || "Could not inspect printer permission.");
+        }
+      }
+
+      function sanitizePrinterText(value) {
+        return String(value ?? "")
+          .normalize("NFKD")
+          .replace(/[₵¢]/g, "GHS ")
+          .replace(/[–—]/g, "-")
+          .replace(/[‘’]/g, "'")
+          .replace(/[“”]/g, '"')
+          .replace(/…/g, "...")
+          .replace(/[^\x20-\x7E\n]/g, "");
+      }
+
+      function wrapText(value, width = PAPER_COLUMNS) {
+        const clean = sanitizePrinterText(value).trim();
+        if (!clean) return [""];
+        const words = clean.split(/\s+/);
+        const lines = [];
+        let line = "";
+        words.forEach((word) => {
+          if (word.length > width) {
+            if (line) { lines.push(line); line = ""; }
+            for (let i = 0; i < word.length; i += width) lines.push(word.slice(i, i + width));
+          } else if (!line) {
+            line = word;
+          } else if (`${line} ${word}`.length <= width) {
+            line += ` ${word}`;
+          } else {
+            lines.push(line);
+            line = word;
+          }
+        });
+        if (line) lines.push(line);
+        return lines;
+      }
+
+      function centered(value, width = PAPER_COLUMNS) {
+        const text = sanitizePrinterText(value).slice(0, width);
+        const left = Math.max(0, Math.floor((width - text.length) / 2));
+        return `${" ".repeat(left)}${text}`;
+      }
+
+      function pairLine(label, value, width = PAPER_COLUMNS) {
+        const left = sanitizePrinterText(label);
+        const right = sanitizePrinterText(value);
+        if (left.length + right.length + 1 <= width) {
+          return `${left}${" ".repeat(width - left.length - right.length)}${right}`;
+        }
+        return `${left}\n${wrapText(right, width).map((line) => line.padStart(Math.min(width, line.length + 2))).join("\n")}`;
+      }
+
+      function getPaymentProgress(receipt) {
+        const total = Math.max(0, Number(receipt.productTotal) || 0);
+        const paid = Math.max(0, Number(receipt.totalPaid) || 0);
+        const ratio = total > 0 ? Math.min(1, paid / total) : 0;
+        // Do not label an almost-complete payment as 100%.
+        const percent = Math.floor(ratio * 1000 + 1e-8) / 10;
+        return { total, ratio, percent };
+      }
+
+      function renderPaymentProgress(receipt) {
+        const hidden = receipt.susuMode;
+        el("receiptProgressSection").classList.toggle("d-none", hidden);
+        el("miniPaymentProgress").classList.toggle("d-none", hidden);
+        if (hidden) return;
+        const progress = getPaymentProgress(receipt);
+        setText("rProgressLabel", `${progress.percent}% PAID`);
+        setText("rProgressTotal", `Product total: GHS ${money(progress.total)}`);
+        el("rProgressFill").style.width = `${progress.ratio * 100}%`;
+        el("miniPaymentFill").style.width = `${progress.ratio * 100}%`;
+        el("rProgressBar").setAttribute("aria-valuenow", String(progress.percent));
+      }
+
+      function createProgressCanvas(receipt) {
+        const progress = getPaymentProgress(receipt);
+        const canvas = document.createElement("canvas");
+        canvas.width = 360;
+        canvas.height = 66;
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+        context.fillStyle = "#fff";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = "#000";
+        context.font = "900 24px Arial, sans-serif";
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.fillText(`${progress.percent}% PAID`, 180, 15);
+        context.strokeStyle = "#000";
+        context.lineWidth = 2;
+        context.strokeRect(1, 35, 358, 26);
+        const fillWidth = Math.round(352 * progress.ratio);
+        if (fillWidth > 0) context.fillRect(4, 38, fillWidth, 20);
+        return canvas;
+      }
+
+      function safeQrText(value, maxLength = 180) {
+        return sanitizePrinterText(value).replace(/\s+/g, " ").trim().slice(0, maxLength);
+      }
+
+      function tryRenderQr(holder, payload, size) {
+        if (!window.QRCode || !holder) return false;
+        holder.replaceChildren();
+        try {
+          new QRCode(holder, {
+            text: safeQrText(payload),
+            width: size,
+            height: size,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.L
+          });
+          return Boolean(holder.querySelector("canvas") || holder.querySelector("img"));
+        } catch (error) {
+          console.warn("QR generation skipped:", error?.message || error);
+          holder.replaceChildren();
+          return false;
+        }
+      }
+
+      function safeRenderQr(holder, primaryPayload, fallbackPayload, size = 96) {
+        if (tryRenderQr(holder, primaryPayload, size)) return true;
+        if (tryRenderQr(holder, fallbackPayload, size)) return true;
+        holder.replaceChildren();
+        const fallback = document.createElement("div");
+        fallback.className = "receipt-center receipt-small";
+        fallback.textContent = `QR unavailable · ${safeQrText(fallbackPayload, 70)}`;
+        holder.appendChild(fallback);
+        return false;
+      }
+
+      async function createQrCanvas(primaryPayload, fallbackPayload, innerSize = 104, quietZone = 8) {
+        if (!window.QRCode) return null;
+        const holder = el("qrWorkspace");
+        let source = null;
+        for (const candidate of [primaryPayload, fallbackPayload]) {
+          if (!candidate || !tryRenderQr(holder, candidate, innerSize)) continue;
+          await delay(25);
+          source = holder.querySelector("canvas");
+          if (source) break;
+        }
+        if (!source) return null;
+
+        const output = document.createElement("canvas");
+        output.width = innerSize + quietZone * 2;
+        output.height = innerSize + quietZone * 2;
+        const context = output.getContext("2d", { willReadFrequently: true });
+        context.imageSmoothingEnabled = false;
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, output.width, output.height);
+        context.drawImage(source, quietZone, quietZone, innerSize, innerSize);
+        return output;
+      }
+
+      function canvasToEscPosRaster(canvas) {
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+        const { width, height } = canvas;
+        const pixels = context.getImageData(0, 0, width, height).data;
+        const bytesPerRow = Math.ceil(width / 8);
+        const raster = new Uint8Array(bytesPerRow * height);
+
+        for (let y = 0; y < height; y += 1) {
+          for (let x = 0; x < width; x += 1) {
+            const pixelIndex = (y * width + x) * 4;
+            const luminance = pixels[pixelIndex] * .299 + pixels[pixelIndex + 1] * .587 + pixels[pixelIndex + 2] * .114;
+            if (pixels[pixelIndex + 3] > 20 && luminance < 128) {
+              raster[y * bytesPerRow + Math.floor(x / 8)] |= 0x80 >> (x % 8);
+            }
+          }
+        }
+
+        const header = new Uint8Array([
+          0x1d, 0x76, 0x30, 0x00,
+          bytesPerRow & 0xff, (bytesPerRow >> 8) & 0xff,
+          height & 0xff, (height >> 8) & 0xff
+        ]);
+        const command = new Uint8Array(header.length + raster.length);
+        command.set(header, 0);
+        command.set(raster, header.length);
+        return command;
+      }
+
+      function bytesFromAscii(value) {
+        const clean = sanitizePrinterText(value);
+        const bytes = new Uint8Array(clean.length);
+        for (let i = 0; i < clean.length; i += 1) bytes[i] = clean.charCodeAt(i) & 0x7f;
+        return bytes;
+      }
+
+      function concatBytes(parts) {
+        const total = parts.reduce((sum, part) => sum + part.length, 0);
+        const result = new Uint8Array(total);
+        let offset = 0;
+        parts.forEach((part) => { result.set(part, offset); offset += part.length; });
+        return result;
+      }
+
+      function createAmountCanvas(amount) {
+        // Draw at the printer's native 384-dot width for 58 mm paper.
+        // Raster text keeps its size and weight even if font commands are ignored.
+        const canvas = document.createElement("canvas");
+        canvas.width = 384;
+        canvas.height = 110;
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+        context.fillStyle = "#fff";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = "#000";
+        context.strokeStyle = "#000";
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.font = "900 22px Arial, sans-serif";
+        context.fillText("GHS", canvas.width / 2, 16);
+
+        const value = money(amount);
+        let fontSize = 72;
+        context.font = `900 ${fontSize}px Arial, sans-serif`;
+        while (context.measureText(value).width > canvas.width - 16 && fontSize > 12) {
+          fontSize -= 1;
+          context.font = `900 ${fontSize}px Arial, sans-serif`;
+        }
+        context.lineWidth = 1.5;
+        context.lineJoin = "round";
+        context.fillText(value, canvas.width / 2, 68);
+        context.strokeText(value, canvas.width / 2, 68);
+        return canvas;
+      }
+
+      async function buildEscPosReceipt(receipt, format = state.receiptFormat) {
+        const ESC = 0x1b;
+        const GS = 0x1d;
+        const parts = [];
+        const command = (...values) => parts.push(new Uint8Array(values));
+        const text = (value) => parts.push(bytesFromAscii(value));
+        const line = "-".repeat(PAPER_COLUMNS);
+
+        if (format === "short") {
+          command(ESC, 0x40);
+          command(ESC, 0x61, 0x01);
+          command(ESC, 0x45, 0x01);
+          command(GS, 0x21, 0x11);
+          text("SMART LIVING\n");
+          command(GS, 0x21, 0x00);
+          text("EMPORIUM PLUS\n");
+          command(ESC, 0x45, 0x00);
+          text("Head Office: Kaneshie\n0556064611/05099639836/\n0598948132\n");
+          wrapText(receipt.branch).forEach((value) => text(`${value}\n`));
+          text(`${line}\n`);
+          command(ESC, 0x61, 0x00);
+          text("CUSTOMER\n");
+          command(ESC, 0x45, 0x01);
+          wrapText(receipt.customerName).forEach((value) => text(`${value}\n`));
+          command(ESC, 0x45, 0x00);
+          wrapText(`Phone: ${receipt.customerPhone}`).forEach((value) => text(`${value}\n`));
+          text("PRODUCT\n");
+          command(ESC, 0x45, 0x01);
+          wrapText(receipt.productName).forEach((value) => text(`${value}\n`));
+          command(ESC, 0x45, 0x00);
+          wrapText(`Agent: ${receipt.agentName}`).forEach((value) => text(`${value}\n`));
+          text(`${pairLine("Date:", receipt.dateLabel)}\n`);
+          wrapText(`Payment ID: ${receipt.paymentId}`).forEach((value) => text(`${value}\n`));
+          command(ESC, 0x61, 0x01);
+          command(ESC, 0x45, 0x01);
+          text(`${line}\nAMOUNT PAID\n`);
+          parts.push(canvasToEscPosRaster(createAmountCanvas(receipt.amount)));
+          text(`\n${line}\n`);
+          command(ESC, 0x45, 0x00);
+          command(ESC, 0x64, 0x02);
+          return concatBytes(parts);
+        }
+
+        command(ESC, 0x40);                 // Initialize
+        command(ESC, 0x61, 0x01);           // Center
+        command(GS, 0x21, 0x11);            // Double width/height
+        text("SMART LIVING\n");
+        command(GS, 0x21, 0x00);
+        command(ESC, 0x45, 0x01);           // Bold on
+        text("EMPORIUM PLUS\n");
+        command(ESC, 0x45, 0x00);           // Bold off
+        text("Powering Homes,\nSimplifying Lives.\n");
+        text("Head Office: Kaneshie\n");
+        wrapText(receipt.branch).forEach((value) => text(`${centered(value)}\n`));
+        text(`${line}\n`);
+        command(ESC, 0x45, 0x01);
+        text("PAYMENT RECEIPT\n");
+        command(ESC, 0x45, 0x00);
+        command(ESC, 0x61, 0x00);           // Left
+        text(`${pairLine("Receipt:", receipt.receiptNumber)}\n`);
+        text(`${line}\n`);
+        text("CUSTOMER\n");
+        command(ESC, 0x45, 0x01);
+        wrapText(receipt.customerName).forEach((value) => text(`${value}\n`));
+        command(ESC, 0x45, 0x00);
+        text(`${pairLine("Customer ID:", receipt.customerId)}\n`);
+        text(`${pairLine("Phone:", receipt.customerPhone)}\n`);
+        text(`${pairLine("Card No:", receipt.accountNumber || "N/A")}\n`);
+        text(`${line}\n`);
+        text("PRODUCT\n");
+        command(ESC, 0x45, 0x01);
+        wrapText(receipt.productName).forEach((value) => text(`${value}\n`));
+        command(ESC, 0x45, 0x00);
+        text(`${pairLine("Date:", receipt.dateLabel)}\n`);
+        text(`${pairLine("Time:", receipt.time)}\n`);
+        text(`${pairLine("Method:", receipt.method)}\n`);
+        text(`${line}\n`);
+        command(ESC, 0x61, 0x01);
+        command(ESC, 0x45, 0x01);
+        text("AMOUNT PAID\n");
+        parts.push(canvasToEscPosRaster(createAmountCanvas(receipt.amount)));
+        text("\n");
+        command(ESC, 0x45, 0x00);
+        command(ESC, 0x61, 0x00);
+
+        if (!receipt.susuMode) {
+          text(`${line}\n`);
+          command(ESC, 0x61, 0x01);
+          command(ESC, 0x45, 0x01);
+          text("PAYMENT PROGRESS\n");
+          command(ESC, 0x45, 0x00);
+          parts.push(canvasToEscPosRaster(createProgressCanvas(receipt)));
+          text(`\nProduct total: GHS ${money(receipt.productTotal)}\n`);
+          command(ESC, 0x61, 0x00);
+        }
+
+        text(`${line}\n`);
+        text(`${pairLine("Previously:", `GHS ${money(receipt.previouslyPaid)}`)}\n`);
+        text(`${pairLine("Total paid:", `GHS ${money(receipt.totalPaid)}`)}\n`);
+        text(`${pairLine("Remaining:", receipt.susuMode ? "N/A" : `GHS ${money(receipt.amountLeft)}`)}\n`);
+        text(`${line}\n`);
+        text(`${pairLine("Agent:", `${receipt.agentName} (${receipt.agentId || "N/A"})`)}\n`);
+        text(`${line}\n`);
+
+        const qrCanvas = await createQrCanvas(receipt.qrPayload, receipt.qrFallback, 104, 8);
+        command(ESC, 0x61, 0x01);
+        if (qrCanvas) {
+          parts.push(canvasToEscPosRaster(qrCanvas));
+          text("\nSCAN FOR PAYMENT DETAILS\n");
+        } else {
+          text(`QR unavailable\n${receipt.receiptNumber}\n${receipt.paymentId}\n`);
+        }
+        text(`${line}\n`);
+        text("Thank you for choosing\nSmart Living.\n");
+        command(ESC, 0x45, 0x01);
+        text("0556064611/05099639836/\n0598948132\n");
+        command(ESC, 0x45, 0x00);
+        text("Head Office: Kaneshie\n");
+        text("Computer-generated receipt\n");
+        text(`${line}\n`);
+        command(ESC, 0x64, 0x02);           // Feed 2 lines; printer is manual-tear
+
+        return concatBytes(parts);
+      }
+
+      async function writePrinterBytes(bytes, onProgress) {
+        if (!portIsOpen()) throw new Error("The printer is not connected.");
+        const writer = state.port.writable.getWriter();
+        let written = 0;
+        try {
+          for (let offset = 0; offset < bytes.length; offset += WRITE_CHUNK_SIZE) {
+            const chunk = bytes.slice(offset, offset + WRITE_CHUNK_SIZE);
+            await writer.write(chunk);
+            written += chunk.length;
+            if (onProgress) onProgress({ written, total: bytes.length, progress: written / bytes.length });
+            if (written < bytes.length) await delay(WRITE_CHUNK_DELAY_MS);
+          }
+        } finally {
+          writer.releaseLock();
+        }
+      }
+
+      async function sendReceiptToPrinter(receipt, { isTest = false } = {}) {
+        if (state.printerBusy) return;
+        state.printerBusy = true;
+        const format = state.receiptFormat;
+        el("receiptFormat").disabled = true;
+        const button = isTest ? el("testPrintBtn") : el("bluetoothPrintBtn");
+        const originalLabel = button.textContent;
+        button.disabled = true;
+        button.textContent = isTest ? "Printing test…" : "Printing…";
+        showPrintAnimation({
+          stateText: "Connecting to MP583...",
+          detail: "Waiting for Bluetooth permission and printer connection.",
+          progress: 0,
+          written: 0,
+          total: 0,
+          tone: "info"
+        });
+        setPrintStatus("Connecting and preparing ESC/POS receipt...", "info");
+
+        try {
+          // Request the port before QR work so Chrome receives the user gesture.
+          await connectPrinter({ allowChooser: true });
+          showPrintAnimation({
+            stateText: "Preparing receipt...",
+            detail: "Generating QR code and ESC/POS payload.",
+            progress: .08,
+            written: 0,
+            total: 0,
+            tone: "info"
+          });
+          setPrinterStatus("busy", "Preparing receipt...", "Generating ESC/POS data for the MP583.");
+          const bytes = await buildEscPosReceipt(receipt, format);
+          showPrintAnimation({
+            stateText: "Printing receipt...",
+            detail: "Sending ESC/POS data in printer-safe chunks.",
+            progress: bytes.length ? .1 : 1,
+            written: 0,
+            total: bytes.length,
+            tone: "info"
+          });
+          setPrinterStatus("busy", "Printing...", "Sending receipt data in printer-safe chunks.");
+          await writePrinterBytes(bytes, ({ written, total, progress }) => {
+            showPrintAnimation({
+              stateText: "Printing receipt...",
+              detail: "Writing bytes to MP583 over Bluetooth.",
+              progress,
+              written,
+              total,
+              tone: "info"
+            });
+          });
+          setPrinterStatus("ready", "MP583 connected", printerDescription(state.port));
+
+          if (!isTest) {
+            receipt.printCount = (receipt.printCount || 0) + 1;
+            el("receiptCopyBadge").classList.toggle("show", receipt.printCount > 1);
+            el("bluetoothPrintBtn").textContent = "Reprint via MP583 Bluetooth";
+            setPrintStatus(`Receipt sent successfully. Print count: ${receipt.printCount}.`, "success");
+            showPrintAnimation({
+              stateText: "Receipt printed successfully",
+              detail: "All receipt bytes were written successfully.",
+              progress: 1,
+              written: bytes.length,
+              total: bytes.length,
+              tone: "success",
+              done: true,
+              autoClose: true
+            });
+            window.dispatchEvent(new CustomEvent("smartliving:receipt-printed", {
+              detail: { receiptNumber: receipt.receiptNumber, paymentId: receipt.paymentId, printCount: receipt.printCount, transport: "web-serial-bluetooth" }
+            }));
+          } else {
+            setPrintStatus("MP583 test receipt sent successfully.", "success");
+            showPrintAnimation({
+              stateText: "Receipt printed successfully",
+              detail: "The MP583 test payload finished printing.",
+              progress: 1,
+              written: bytes.length,
+              total: bytes.length,
+              tone: "success",
+              done: true,
+              autoClose: true
+            });
+          }
+        } catch (error) {
+          const cancelled = error && error.name === "NotFoundError";
+          const message = cancelled ? "Printer selection was cancelled." : (error.message || "Printing failed.");
+          setPrinterStatus("error", "Printer unavailable", message);
+          setPrintStatus(`${message} The payment receipt is still available.`, "error");
+          showPrintAnimation({
+            stateText: "Printing failed",
+            detail: message,
+            progress: 0,
+            written: 0,
+            total: 0,
+            tone: "error",
+            done: true
+          });
+          if (!cancelled) {
+            await Swal.fire({ icon: "error", title: "Could not print", text: message, confirmButtonColor: "#0d6efd" });
+          }
+        } finally {
+          state.printerBusy = false;
+          el("receiptFormat").disabled = false;
+          button.disabled = false;
+          if (isTest) button.textContent = originalLabel;
+          else if (state.currentReceipt?.printCount > 0) button.textContent = "Reprint via MP583 Bluetooth";
+          else button.textContent = originalLabel;
+        }
+      }
+
+      function createQrPayload(receipt) {
+        const compactDate = String(receipt.paymentDate || "").replace(/-/g, "");
+        return safeQrText(`SL|R=${receipt.receiptNumber}|P=${receipt.paymentId}|C=${receipt.customerId}|A=${Number(receipt.amount).toFixed(2)}|D=${compactDate}`, 180);
+      }
+
+      function createQrFallback(receipt) {
+        return safeQrText(`SL|R=${receipt.receiptNumber}|P=${receipt.paymentId}`, 90);
+      }
+
+      function makePaymentId(paymentDate, amount) {
+        const [year, month, day] = paymentDate.split("-");
+        return `SM${day}${month}${year}${Number(Number(amount).toFixed(2))}`;
+      }
+
+      function collectReceiptData() {
+        const amount = numberValue("amount");
+        const previouslyPaid = numberValue("previouslyPaid");
+        const total = numberValue("productTotal");
+        const now = new Date();
+        const runningTotalPaid = state.susuMode ? amount : previouslyPaid + amount;
+        const receipt = {
+          receiptNumber: makeId("SLR"),
+          paymentId: makePaymentId(el("paymentDate").value, amount),
+          customerName: el("customerName").value.trim(),
+          customerId: el("customerId").value.trim(),
+          customerPhone: el("customerPhone").value.trim(),
+          accountNumber: el("customerAccount").value.trim(),
+          productName: state.susuMode ? "SUSU Savings Account" : el("productName").value.trim(),
+          paymentType: state.susuMode ? "SUSU Deposit" : "Product Payment",
+          productTotal: state.susuMode ? 0 : total,
+          amount,
+          previouslyPaid: state.susuMode ? 0 : previouslyPaid,
+          totalPaid: runningTotalPaid,
+          amountLeft: state.susuMode ? 0 : Math.max(total - previouslyPaid - amount, 0),
+          method: el("paymentMethod").value,
+          paymentDate: el("paymentDate").value,
+          dateLabel: humanDate(el("paymentDate").value),
+          time: new Intl.DateTimeFormat("en-GH", { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(now),
+          timestamp: now.toISOString(),
+          branch: el("branchName").value,
+          agentName: el("agentName").value.trim(),
+          agentId: el("agentId").value.trim(),
+          susuMode: state.susuMode,
+          smsEnabled: state.smsEnabled,
+          printCount: 0
+        };
+        receipt.qrPayload = createQrPayload(receipt);
+        receipt.qrFallback = createQrFallback(receipt);
+        return receipt;
+      }
+
+      function setText(id, value) {
+        el(id).textContent = value || "—";
+      }
+
+      function updateReceiptFormat() {
+        const short = state.receiptFormat === "short";
+        el("thermalReceipt").classList.toggle("short-receipt", short);
+        el("receiptFormat").value = state.receiptFormat;
+        const receipt = state.currentReceipt;
+        if (!receipt) return;
+        const amount = el("rAmount");
+        amount.replaceChildren();
+        if (short) {
+          const currency = document.createElement("span");
+          currency.className = "currency";
+          currency.textContent = "GHS";
+          amount.append(currency, document.createTextNode(money(receipt.amount)));
+          // Keep unusually large amounts on one line on 58 mm paper.
+          amount.style.fontSize = `${Math.min(30, 280 / money(receipt.amount).length)}px`;
+        } else {
+          amount.textContent = `GHS ${money(receipt.amount)}`;
+          amount.style.fontSize = "";
+        }
+      }
+
+      async function renderReceipt(receipt) {
+        state.currentReceipt = receipt;
+        state.lastReceipt = receipt;
+        hidePrintAnimation();
+        el("lastReceiptBtn").disabled = false;
+        el("receiptCopyBadge").classList.toggle("show", receipt.printCount > 0);
+        setText("rBranchTop", receipt.branch);
+        setText("rReceiptNo", receipt.receiptNumber);
+        setText("rDate", receipt.dateLabel);
+        setText("rTime", receipt.time);
+        setText("rCustomerName", receipt.customerName);
+        setText("rCustomerId", receipt.customerId);
+        setText("rCustomerPhone", receipt.customerPhone);
+        setText("rAccount", receipt.accountNumber || "N/A");
+        setText("rProduct", receipt.productName);
+        setText("rShortAgent", receipt.agentName);
+        setText("rShortDate", receipt.dateLabel);
+        setText("rShortPaymentId", receipt.paymentId);
+        setText("rMethod", receipt.method);
+        setText("rAmount", `GHS ${money(receipt.amount)}`);
+        updateReceiptFormat();
+        setText("rPreviouslyPaid", `GHS ${money(receipt.previouslyPaid)}`);
+        setText("rTotalPaid", `GHS ${money(receipt.totalPaid)}`);
+        setText("rAmountLeft", receipt.susuMode ? "N/A" : `GHS ${money(receipt.amountLeft)}`);
+        setText("rAgentLine", `${receipt.agentName} (${receipt.agentId || "N/A"})`);
+        await nextFrame();
+        renderPaymentProgress(receipt);
+        el("receiptSummary").textContent = `${receipt.customerName} paid GHS ${money(receipt.amount)} · ${receipt.receiptNumber}`;
+        el("bluetoothPrintBtn").textContent = receipt.printCount > 0 ? "Reprint via MP583 Bluetooth" : "Print via MP583 Bluetooth";
+        setPrintStatus("Ready. Printing failure will not remove the payment.", "info");
+
+        const qrHolder = el("receiptQr");
+        await nextFrame();
+        const qrCreated = safeRenderQr(qrHolder, receipt.qrPayload, receipt.qrFallback, 96);
+        if (!qrCreated) setPrintStatus("The QR could not be created, but the receipt is still available.", "info");
+      }
+
+      function validatePayment() {
+        if (!form.reportValidity()) return false;
+        const amount = numberValue("amount");
+        if (amount <= 0) {
+          Swal.fire({ icon: "error", title: "Invalid amount", text: "Enter an amount greater than zero." });
+          return false;
+        }
+        if (!state.susuMode) {
+          const total = numberValue("productTotal");
+          const paid = numberValue("previouslyPaid");
+          const cardValue = numberValue("cardValue");
+          const boxValue = numberValue("boxValue");
+          const leftBefore = Math.max(total - paid, 0);
+          const boxesPerRow = cardValue / boxValue;
+          if (cardValue <= 0 || boxValue <= 0 || cardValue < boxValue || Math.abs(boxesPerRow - Math.round(boxesPerRow)) > .0001) {
+            Swal.fire({
+              icon: "warning",
+              title: "Invalid card marking values",
+              text: "The card row value must divide evenly by the box value. Example: GHS 10 ÷ GHS 2 = 5 boxes."
+            });
+            return false;
+          }
+          const totalBoxes = total / boxValue;
+          if (Math.abs(totalBoxes - Math.round(totalBoxes)) > .0001) {
+            Swal.fire({
+              icon: "warning",
+              title: "Invalid product box values",
+              text: "The product total must divide evenly by the box value so every box can be numbered. Example: GHS 1000 ÷ GHS 2 = 500 boxes."
+            });
+            return false;
+          }
+          if (leftBefore <= 0) {
+            Swal.fire({ icon: "warning", title: "Product completed", text: "This product has no amount remaining." });
+            return false;
+          }
+          if (amount > leftBefore) {
+            Swal.fire({ icon: "warning", title: "Amount exceeds balance", text: `The maximum payment for this product is GHS ${money(leftBefore)}.` });
+            return false;
+          }
+        }
+        return true;
+      }
+
+      function createTestReceipt() {
+        const now = new Date();
+        const receipt = {
+          receiptNumber: "MP583-TEST",
+          paymentId: "TEST-CONNECTION",
+          customerName: "Printer Test",
+          customerId: "N/A",
+          customerPhone: "N/A",
+          accountNumber: "N/A",
+          productName: "MP583 Bluetooth Test",
+          paymentType: "Test Only",
+          amount: 0,
+          previouslyPaid: 0,
+          totalPaid: 0,
+          amountLeft: 0,
+          method: "N/A",
+          paymentDate: localDateString(now),
+          dateLabel: humanDate(localDateString(now)),
+          time: new Intl.DateTimeFormat("en-GH", { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(now),
+          branch: el("branchName").value,
+          agentName: el("agentName").value.trim() || "Test Agent",
+          agentId: el("agentId").value.trim() || "N/A",
+          susuMode: true,
+          printCount: 0
+        };
+        receipt.qrPayload = "SL|R=MP583-TEST|P=TEST-CONNECTION";
+        receipt.qrFallback = "SL|R=MP583-TEST";
+        return receipt;
+      }
+
+      el("customerPreset").addEventListener("change", (event) => {
+        const preset = customerPresets[event.target.value];
+        if (!preset) return;
+        el("customerName").value = preset.name;
+        el("customerId").value = preset.id;
+        el("customerPhone").value = preset.phone;
+        el("customerAccount").value = preset.account;
+      });
+
+      el("productPreset").addEventListener("change", (event) => {
+        const preset = productPresets[event.target.value];
+        if (!preset) return;
+        el("productName").value = preset.name;
+        el("productTotal").value = preset.total.toFixed(2);
+        el("previouslyPaid").value = preset.paid.toFixed(2);
+        updateBalanceSummary();
+      });
+
+      document.querySelectorAll(".money-input").forEach((input) => input.addEventListener("input", updateBalanceSummary));
+
+      el("toggleSusuBtn").addEventListener("click", () => {
+        state.susuMode = !state.susuMode;
+        el("productSection").classList.toggle("d-none", state.susuMode);
+        el("modeBadge").textContent = state.susuMode ? "SUSU" : "Product";
+        el("toggleSusuBtn").textContent = state.susuMode ? "🛒 Switch to Product Mode" : "🔁 Switch to SUSU Mode";
+        el("toggleSusuBtn").classList.toggle("btn-warning", !state.susuMode);
+        el("toggleSusuBtn").classList.toggle("btn-success", state.susuMode);
+        updateBalanceSummary();
+      });
+
+      el("smsToggleBtn").addEventListener("click", () => {
+        state.smsEnabled = !state.smsEnabled;
+        el("smsToggleBtn").setAttribute("aria-pressed", String(state.smsEnabled));
+        el("smsToggleBtn").textContent = state.smsEnabled ? "SMS: On" : "Turn SMS On";
+        el("smsToggleBtn").classList.toggle("btn-outline-secondary", !state.smsEnabled);
+        el("smsToggleBtn").classList.toggle("btn-success", state.smsEnabled);
+        el("smsStatus").textContent = state.smsEnabled ? "SMS: On" : "SMS: Off";
+        el("smsStatus").className = `sms-badge ${state.smsEnabled ? "on" : "off"}`;
+      });
+
+      el("connectPrinterBtn").addEventListener("click", async () => {
+        try {
+          await connectPrinter({ allowChooser: true });
+          setPrintStatus("Printer connected. You can print a test or payment receipt.", "success");
+        } catch (error) {
+          const cancelled = error && error.name === "NotFoundError";
+          const message = cancelled ? "Printer selection was cancelled." : (error.message || "Connection failed.");
+          setPrinterStatus("error", "Printer not connected", message);
+          if (!cancelled) Swal.fire({ icon: "error", title: "Connection failed", text: message });
+        }
+      });
+
+      el("testPrintBtn").addEventListener("click", () => sendReceiptToPrinter(createTestReceipt(), { isTest: true }));
+      el("receiptFormat").addEventListener("change", (event) => {
+        state.receiptFormat = event.target.value;
+        updateReceiptFormat();
+      });
+      el("bluetoothPrintBtn").addEventListener("click", () => {
+        if (state.currentReceipt) sendReceiptToPrinter(state.currentReceipt);
+      });
+      el("printAnimDoneBtn").addEventListener("click", hidePrintAnimation);
+
+      el("browserPrintBtn").addEventListener("click", () => {
+        if (!state.currentReceipt) return;
+        window.print();
+      });
+
+      el("copyQrBtn").addEventListener("click", async () => {
+        if (!state.currentReceipt) return;
+        try {
+          await navigator.clipboard.writeText(state.currentReceipt.qrPayload);
+          setPrintStatus("QR receipt details copied to the clipboard.", "success");
+        } catch (_) {
+          setPrintStatus("Clipboard access was blocked. Scan the QR code instead.", "error");
+        }
+      });
+
+      el("lastReceiptBtn").addEventListener("click", async () => {
+        if (!state.lastReceipt) return;
+        await renderReceipt(state.lastReceipt);
+        receiptModal.show();
+      });
+
+      el("addAnotherBtn").addEventListener("click", () => {
+        el("amount").value = "";
+        updateBalanceSummary();
+        window.setTimeout(() => el("amount").focus(), 250);
+      });
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!validatePayment()) return;
+
+        const receipt = collectReceiptData();
+        const result = await Swal.fire({
+          icon: "question",
+          title: "Confirm Payment",
+          html: `<div style="line-height:1.55"><strong>${receipt.customerName.replace(/[<>&]/g, "")}</strong><br><span style="font-size:1.45rem;color:#0d6efd;font-weight:800">GHS ${money(receipt.amount)}</span><br><span style="color:#6b7280">${receipt.paymentType} · ${receipt.method}</span></div>`,
+          showCancelButton: true,
+          confirmButtonText: "Generate Receipt",
+          cancelButtonText: "Cancel",
+          confirmButtonColor: "#0d6efd"
+        });
+        if (!result.isConfirmed) return;
+
+        el("submitBtn").disabled = true;
+        el("submitLabel").textContent = "Processing Payment…";
+        el("submitSpinner").classList.remove("d-none");
+        try {
+          await delay(250);
+          await renderReceipt(receipt);
+          receiptModal.show();
+        } catch (error) {
+          console.error("Could not render receipt", error);
+          await Swal.fire({
+            icon: "error",
+            title: "Could not generate receipt",
+            text: error?.message || "Receipt rendering failed before printing."
+          });
+        } finally {
+          el("submitBtn").disabled = false;
+          el("submitLabel").textContent = "Generate Payment Receipt";
+          el("submitSpinner").classList.add("d-none");
+        }
+      });
+
+      if (navigator.serial) {
+        navigator.serial.addEventListener("disconnect", (event) => {
+          if (!state.port || event.target === state.port || event.port === state.port) {
+            state.port = null;
+            setPrinterStatus("error", "Printer disconnected", "Turn on the MP583 and reconnect before printing.");
+            el("connectPrinterBtn").textContent = "Connect MP583";
+          }
+        });
+      }
+
+      el("paymentDate").value = localDateString(new Date());
+      updateBalanceSummary();
+      restorePrinterPermission();
+    })();
+  </script>
+</body>
+</html>

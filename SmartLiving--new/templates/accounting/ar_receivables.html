@@ -1,0 +1,1000 @@
+﻿
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Accounts Receivable</title>
+
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+  <link rel="icon"
+        href="https://imagedelivery.net/h9fmMoa1o2c2P55TcWJGOg/10283f28-b9a0-4100-b254-19a854386800/public"
+        type="image/png">
+
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: "#0f172a",
+            accent: "#16a34a",
+            soft: "#f9fafb",
+            "neutral-border": "#e5e7eb",
+          },
+          fontFamily: { display: ["Inter", "system-ui", "sans-serif"] },
+          borderRadius: { xl: "1.125rem" },
+          boxShadow: { soft: "0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06)" },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    .material-symbols-outlined{ font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; }
+  </style>
+</head>
+
+<body class="min-h-full font-display bg-soft text-primary">
+  {% include 'accounting/sidebar.html' %}
+
+  <main class="acc-with-sidebar max-w-7xl mx-auto px-4 lg:px-8 py-6 lg:py-8">
+    <!-- Page heading & primary actions -->
+    <header class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
+      <div class="space-y-1">
+        <h1 class="text-3xl lg:text-4xl font-black tracking-tight">Accounts Receivable</h1>
+        <p class="text-sm text-slate-500">Track client invoices, receipts, and outstanding balances.</p>
+      </div>
+
+      <div class="flex flex-wrap gap-3">
+        <button
+          type="button"
+          id="btnReceivableMetrics"
+          class="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-full border border-slate-300 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-colors"
+        >
+          <span class="material-symbols-outlined text-base">monitoring</span>
+          <span>Metrics</span>
+        </button>
+        <button
+          type="button"
+          id="btnNewClient"
+          class="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-full border border-primary text-primary text-sm font-semibold hover:bg-primary/5 transition-colors"
+        >
+          <span class="material-symbols-outlined text-base">person_add</span>
+          <span class="truncate">Add New Client</span>
+        </button>
+
+        <button
+          type="button"
+          id="btnNewInvoice"
+          class="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-accent text-white text-sm font-bold shadow-soft hover:bg-emerald-600 transition-colors"
+        >
+          <span class="material-symbols-outlined text-base">receipt_long</span>
+          <span class="truncate">New / Add Invoice</span>
+        </button>
+
+        <a
+          href="{{ export_url if export_url is defined else '#' }}"
+          class="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-full border border-primary text-primary text-sm font-semibold hover:bg-primary/5 transition-colors"
+        >
+          <span class="material-symbols-outlined text-base">description</span>
+          <span class="truncate">Export CSV</span>
+        </a>
+      </div>
+    </header>
+
+    {% if summary %}
+    <section class="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <article class="rounded-xl bg-white border border-neutral-border shadow-soft px-4 py-4">
+        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Total Outstanding</p>
+        <p class="mt-2 text-2xl font-black text-slate-900">GH&#8373; {{ "{:,.2f}".format(summary.total_outstanding or 0) }}</p>
+        <p class="mt-1 text-xs text-slate-500">Total debt owed by clients.</p>
+      </article>
+
+      <article class="rounded-xl bg-white border border-neutral-border shadow-soft px-4 py-4">
+        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Total Received</p>
+        <p class="mt-2 text-2xl font-black text-emerald-700">GH&#8373; {{ "{:,.2f}".format(summary.total_paid or 0) }}</p>
+        <p class="mt-1 text-xs text-slate-500">Total receipts recorded from clients.</p>
+      </article>
+
+      <article class="rounded-xl bg-white border border-neutral-border shadow-soft px-4 py-4">
+        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Total Invoiced</p>
+        <p class="mt-2 text-2xl font-black text-slate-900">GH&#8373; {{ "{:,.2f}".format(summary.total_invoiced or 0) }}</p>
+        <p class="mt-1 text-xs text-slate-500">Total value billed to clients.</p>
+      </article>
+
+      <article class="rounded-xl bg-white border border-neutral-border shadow-soft px-4 py-4 flex flex-col justify-between">
+        <div>
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Coverage</p>
+          <p class="mt-2 text-2xl font-black text-slate-900">{{ summary.coverage_pct or 0 }}%</p>
+          <p class="mt-1 text-xs text-slate-500">Percentage of invoiced amounts received.</p>
+        </div>
+        <div class="mt-3 h-2 rounded-full bg-slate-100 overflow-hidden">
+          <div class="h-full bg-accent js-ar-progress" data-percent="{{ (summary.coverage_pct or 0) | int }}"></div>
+        </div>
+      </article>
+    </section>
+    {% endif %}
+
+    <!-- Filters -->
+    <section class="mb-6 rounded-xl border border-neutral-border bg-white shadow-soft px-4 py-4 sm:px-5 sm:py-4">
+      <form class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4 items-center" method="get">
+        <div class="relative col-span-1 lg:col-span-4 w-full">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">search</span>
+          <input
+            type="text"
+            name="q"
+            value="{{ request.args.get('q','') }}"
+            placeholder="Search by client, invoice no, receipt…"
+            class="w-full h-10 pl-10 pr-3 rounded-full border border-neutral-border bg-slate-50 text-sm focus:border-accent focus:ring-accent"
+          />
+        </div>
+      </form>
+    </section>
+
+    <!-- Cards -->
+    <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+      {% for c in rows %}
+        <article class="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg">
+          <div class="h-1 {{ 'bg-emerald-500' if c.balance <= 0 else ('bg-amber-500' if c.total_received > 0 else 'bg-rose-500') }}"></div>
+          <div class="p-5">
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex min-w-0 items-center gap-3">
+              <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-base font-black text-white">{{ (c.name or '?')[:1] | upper }}</div>
+              <div class="min-w-0">
+                <p class="font-bold text-slate-900 truncate">{{ c.name }}</p>
+                <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-800">
+                  {{ c.code }}
+                </span>
+              </div>
+            </div>
+
+            <div class="text-right">
+              <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Outstanding</p>
+              <p class="mt-0.5 text-xl font-black {{ 'text-emerald-700' if c.balance <= 0 else 'text-rose-700' }}">
+                GH&#8373; {{ "{:,.2f}".format(c.balance or 0) }}
+              </p>
+              <span class="mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold {{ 'bg-emerald-100 text-emerald-800' if c.balance <= 0 else ('bg-amber-100 text-amber-800' if c.total_received > 0 else 'bg-rose-100 text-rose-800') }}">{{ c.payment_status }}</span>
+            </div>
+          </div>
+
+          <div class="mt-5">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-semibold text-slate-600">Payment progress</span>
+              <span class="font-black text-slate-900">{{ c.coverage_pct }}%</span>
+            </div>
+            <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+              <div class="h-full rounded-full bg-emerald-500 js-ar-progress" data-percent="{{ c.coverage_pct }}"></div>
+            </div>
+          </div>
+
+          <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
+            <div class="rounded-xl bg-slate-50 px-3 py-3">
+              <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Invoiced</p>
+              <p class="mt-1 font-bold text-slate-900">GH&#8373; {{ "{:,.2f}".format(c.total_invoiced or 0) }}</p>
+            </div>
+            <div class="rounded-xl bg-emerald-50 px-3 py-3">
+              <p class="text-[10px] text-emerald-700 font-bold uppercase tracking-wider">Received</p>
+              <p class="mt-1 font-bold text-emerald-800">GH&#8373; {{ "{:,.2f}".format(c.total_received or 0) }}</p>
+            </div>
+          </div>
+
+          <div class="mt-3 flex items-center justify-between rounded-xl border border-slate-100 px-3 py-2 text-xs">
+            <span class="inline-flex items-center gap-1.5 text-slate-500"><span class="material-symbols-outlined text-base">event</span>Next due</span>
+            <span class="font-bold text-slate-800">{{ c.next_due_date or '--' }}</span>
+            <span class="rounded-full px-2 py-0.5 font-semibold {{ c.aging_class }}">{{ c.aging_days or 0 }} days</span>
+          </div>
+
+          <div class="mt-4 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              class="col-span-2 inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 js-open-pay-modal"
+              data-client-code="{{ c.code }}"
+              data-client-name="{{ c.name }}"
+              data-total-invoiced="{{ c.total_invoiced or 0 }}"
+              data-total-received="{{ c.total_received or 0 }}"
+              data-balance="{{ c.balance or 0 }}"
+            >
+              <span class="material-symbols-outlined text-base">payments</span>
+              Record Paid Amount
+            </button>
+
+            <button
+              type="button"
+              class="inline-flex items-center justify-center gap-2 h-9 px-3 rounded-xl border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50 js-open-inv-modal"
+              data-client-code="{{ c.code }}"
+              data-client-name="{{ c.name }}"
+            >
+              <span class="material-symbols-outlined text-base">receipt_long</span>
+              New / Add Invoice
+            </button>
+
+            <button
+              type="button"
+              class="inline-flex items-center justify-center gap-2 h-9 px-3 rounded-xl border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50 js-open-history-modal"
+              data-client-code="{{ c.code }}"
+              data-client-name="{{ c.name }}"
+              data-total-invoiced="{{ c.total_invoiced or 0 }}"
+              data-total-received="{{ c.total_received or 0 }}"
+              data-balance="{{ c.balance or 0 }}"
+            >
+              <span class="material-symbols-outlined text-base">history</span>
+              History
+            </button>
+          </div>
+          </div>
+        </article>
+
+      {% else %}
+        <div class="col-span-full rounded-xl border border-neutral-border bg-white shadow-soft px-6 py-12 text-center text-slate-500">
+          No clients found. Use "New / Add Invoice" to add your first invoice.
+        </div>
+      {% endfor %}
+    </section>
+
+    <!-- Pagination -->
+    {% if pager and pager.pages > 1 %}
+      <nav class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-sm text-slate-600">
+        <a
+          href="{{ pager.prev_url or '#' }}"
+          class="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg border border-neutral-border
+          {{ 'pointer-events-none opacity-50' if not pager.prev_url else 'hover:bg-slate-50' }}"
+        >
+          <span class="material-symbols-outlined text-base">chevron_left</span>
+          <span>Previous</span>
+        </a>
+
+        <p class="text-center">Page {{ pager.page }} of {{ pager.pages }}</p>
+
+        <a
+          href="{{ pager.next_url or '#' }}"
+          class="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg border border-neutral-border
+          {{ 'pointer-events-none opacity-50' if not pager.next_url else 'hover:bg-slate-50' }}"
+        >
+          <span>Next</span>
+          <span class="material-symbols-outlined text-base">chevron_right</span>
+        </a>
+      </nav>
+    {% endif %}
+  </main>
+
+  <!-- RECEIVABLE METRICS -->
+  <div id="metricsModalBackdrop" class="fixed inset-0 z-40 hidden bg-slate-950/50 backdrop-blur-sm"></div>
+  <section id="metricsModal" class="fixed inset-y-0 right-0 z-50 hidden w-full max-w-5xl bg-slate-50 shadow-2xl border-l border-slate-200 flex flex-col" aria-hidden="true">
+    <header class="flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4 sm:px-7">
+      <div>
+        <h2 class="text-lg font-bold text-slate-900">Receivables Metrics</h2>
+        <p class="mt-0.5 text-xs text-slate-500">Live collection performance, risk, aging, and payment intelligence.</p>
+      </div>
+      <button type="button" id="metricsModalClose" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-100">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </header>
+    <div id="metricsContent" class="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+      <div class="flex min-h-[60vh] flex-col items-center justify-center text-slate-500">
+        <span class="material-symbols-outlined animate-spin text-4xl text-emerald-600">progress_activity</span>
+        <p class="mt-3 text-sm font-semibold">Loading receivables metrics…</p>
+        <p class="mt-1 text-xs text-slate-400">Calculating invoices, receipts, aging and trends.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- NEW CLIENT MODAL -->
+  <div id="clientModalBackdrop" class="fixed inset-0 z-40 hidden bg-slate-900/40 backdrop-blur-sm"></div>
+  <section id="clientModal" class="fixed inset-y-0 right-0 z-50 hidden w-full max-w-md bg-white shadow-xl border-l border-neutral-border flex flex-col" aria-hidden="true">
+    <header class="flex items-center justify-between px-5 py-4 border-b border-neutral-border">
+      <div>
+        <h2 class="text-base font-semibold text-slate-900">Add New Client</h2>
+        <p class="text-xs text-slate-500">Create a client without leaving receivables.</p>
+      </div>
+      <button type="button" id="clientModalClose" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-900">
+        <span class="material-symbols-outlined text-base">close</span>
+      </button>
+    </header>
+
+    <form id="clientForm" class="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Client Code (Optional)</label>
+          <input type="text" name="code" placeholder="CL-0001" class="w-full rounded-lg border border-neutral-border px-3 py-2 text-sm focus:border-accent focus:ring-accent"/>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Status</label>
+          <select name="status" class="w-full rounded-lg border border-neutral-border px-3 py-2 text-sm focus:border-accent focus:ring-accent">
+            <option value="active" selected>Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1">Client Name</label>
+        <input type="text" name="name" required placeholder="Client name" class="w-full rounded-lg border border-neutral-border px-3 py-2 text-sm focus:border-accent focus:ring-accent"/>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Phone</label>
+          <input type="text" name="phone" placeholder="+233..." class="w-full rounded-lg border border-neutral-border px-3 py-2 text-sm focus:border-accent focus:ring-accent"/>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Email</label>
+          <input type="email" name="email" placeholder="client@email.com" class="w-full rounded-lg border border-neutral-border px-3 py-2 text-sm focus:border-accent focus:ring-accent"/>
+        </div>
+      </div>
+    </form>
+
+    <footer class="flex items-center justify-between gap-3 border-t border-neutral-border px-5 py-3 bg-slate-50">
+      <button type="button" id="clientModalCancel" class="inline-flex items-center justify-center h-9 px-4 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100">Cancel</button>
+      <button type="submit" form="clientForm" id="clientFormSubmit" class="inline-flex items-center justify-center gap-2 h-9 px-5 rounded-full bg-accent text-white text-sm font-semibold shadow-soft hover:bg-emerald-600 disabled:opacity-60 disabled:cursor-not-allowed">
+        <span class="material-symbols-outlined text-base" id="clientFormSpinner" style="display:none;">sync</span>
+        <span>Save Client</span>
+      </button>
+    </footer>
+  </section>
+
+  <!-- NEW INVOICE SLIDE-OVER -->
+  <div id="invModalBackdrop" class="fixed inset-0 z-40 hidden bg-slate-900/40 backdrop-blur-sm"></div>
+
+  <section id="invModal" class="fixed inset-y-0 right-0 z-50 hidden w-full max-w-lg bg-white shadow-xl border-l border-neutral-border flex flex-col" aria-hidden="true">
+    <header class="flex items-center justify-between px-5 py-4 border-b border-neutral-border">
+      <div>
+        <h2 class="text-base font-semibold text-slate-900">New / Add Invoice</h2>
+        <p class="text-xs text-slate-500">Create a new invoice for a client.</p>
+      </div>
+      <button type="button" id="invModalClose" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-900">
+        <span class="material-symbols-outlined text-base">close</span>
+      </button>
+    </header>
+
+    <form id="invForm" class="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Invoice No</label>
+          <input type="text" name="no" required placeholder="INV-0001" class="w-full rounded-lg border border-neutral-border px-3 py-2 text-sm focus:border-accent focus:ring-accent"/>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Client</label>
+          <select name="customer" id="invClientSelect" required class="w-full rounded-lg border border-neutral-border px-3 py-2 text-sm focus:border-accent focus:ring-accent">
+            <option value="">Select client...</option>
+            {% for c in customers_list %}
+              <option value="{{ c.code }}">{{ c.code }} -- {{ c.name }}</option>
+            {% endfor %}
+          </select>
+          <input type="hidden" id="invClientHidden" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Issue Date</label>
+          <input type="date" name="issue" value="{{ today }}" required class="w-full rounded-lg border border-neutral-border px-3 py-2 text-sm focus:border-accent focus:ring-accent"/>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Due Date</label>
+          <input type="date" name="due" required class="w-full rounded-lg border border-neutral-border px-3 py-2 text-sm focus:border-accent focus:ring-accent"/>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Amount</label>
+          <input type="number" step="0.01" min="0" name="amount" required placeholder="0.00" class="w-full rounded-lg border border-neutral-border px-3 py-2 text-sm focus:border-accent focus:ring-accent"/>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Status</label>
+          <select name="status" class="w-full rounded-lg border border-neutral-border px-3 py-2 text-sm focus:border-accent focus:ring-accent">
+            <option value="draft">Draft</option>
+            <option value="sent">Sent</option>
+            <option value="part">Part-paid</option>
+            <option value="overdue">Overdue</option>
+            <option value="paid">Paid</option>
+          </select>
+        </div>
+      </div>
+    </form>
+
+    <footer class="flex items-center justify-between gap-3 border-t border-neutral-border px-5 py-3 bg-slate-50">
+      <button type="button" id="invModalCancel" class="inline-flex items-center justify-center h-9 px-4 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100">Cancel</button>
+      <button type="submit" form="invForm" id="invFormSubmit" class="inline-flex items-center justify-center gap-2 h-9 px-5 rounded-full bg-accent text-white text-sm font-semibold shadow-soft hover:bg-emerald-600 disabled:opacity-60 disabled:cursor-not-allowed">
+        <span class="material-symbols-outlined text-base" id="invFormSpinner" style="display:none;">sync</span>
+        <span>Save</span>
+      </button>
+    </footer>
+  </section>
+
+  <!-- Record Paid Amount MODAL -->
+  <div id="payModalBackdrop" class="fixed inset-0 z-40 hidden bg-slate-900/40 backdrop-blur-sm"></div>
+  <section id="payModal" class="fixed inset-y-0 right-0 z-50 hidden w-full max-w-md bg-white shadow-xl border-l border-neutral-border flex flex-col" aria-hidden="true">
+    <header class="flex items-center justify-between px-5 py-4 border-b border-neutral-border">
+      <div>
+        <h2 class="text-base font-semibold text-slate-900">Record Receipt</h2>
+        <p class="text-xs text-slate-500">Update this client and view receipt history.</p>
+      </div>
+      <button type="button" id="payModalClose" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-900">
+        <span class="material-symbols-outlined text-base">close</span>
+      </button>
+    </header>
+
+    <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+      <article class="rounded-xl border border-neutral-border bg-slate-50 px-4 py-3">
+        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Client</p>
+        <p class="mt-1 text-sm font-semibold text-slate-900" id="payClientLabel">--</p>
+
+        <div class="mt-3 grid grid-cols-3 gap-3 text-xs">
+          <div>
+            <p class="text-slate-500 uppercase tracking-wide font-semibold">Total</p>
+            <p class="mt-1 text-slate-900 font-bold" id="paySummaryTotal">--</p>
+          </div>
+          <div>
+            <p class="text-slate-500 uppercase tracking-wide font-semibold">Received</p>
+            <p class="mt-1 text-emerald-700 font-bold" id="paySummaryReceived">--</p>
+          </div>
+          <div>
+            <p class="text-slate-500 uppercase tracking-wide font-semibold">Balance</p>
+            <p class="mt-1 text-rose-700 font-bold" id="paySummaryBalance">--</p>
+          </div>
+        </div>
+      </article>
+
+      <article class="rounded-xl border border-neutral-border bg-white px-4 py-3">
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <p class="text-xs font-semibold text-slate-600 uppercase tracking-wide">Receipt Timeline</p>
+          <span class="text-[11px] text-slate-400">Latest first</span>
+        </div>
+
+        <div id="payHistoryList" class="mt-3">
+          <p class="text-slate-400 text-xs">No receipts yet.</p>
+        </div>
+      </article>
+
+      <form id="payForm" class="space-y-3">
+        <input type="hidden" name="customer" id="payCustomerInput"/>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Date</label>
+            <input type="date" name="date" id="payDateInput" value="{{ today }}" required class="w-full rounded-lg border border-neutral-border px-3 py-2 text-sm focus:border-accent focus:ring-accent"/>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Amount</label>
+            <input type="number" step="0.01" min="0" name="amount" id="payAmountInput" placeholder="0.00" required class="w-full rounded-lg border border-neutral-border px-3 py-2 text-sm focus:border-accent focus:ring-accent"/>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Method</label>
+            <input type="text" name="method" id="payMethodInput" placeholder="Cash / Bank / Momo…" class="w-full rounded-lg border border-neutral-border px-3 py-2 text-sm focus:border-accent focus:ring-accent"/>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Reference</label>
+            <input type="text" name="reference" id="payReferenceInput" placeholder="Ref, cheque no, etc." class="w-full rounded-lg border border-neutral-border px-3 py-2 text-sm focus:border-accent focus:ring-accent"/>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <footer class="flex items-center justify-between gap-3 border-t border-neutral-border px-5 py-3 bg-slate-50">
+      <button type="button" id="payModalCancel" class="inline-flex items-center justify-center h-9 px-4 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100">Close</button>
+      <button type="submit" form="payForm" id="payFormSubmit" class="inline-flex items-center justify-center gap-2 h-9 px-5 rounded-full bg-accent text-white text-sm font-semibold shadow-soft hover:bg-emerald-600 disabled:opacity-60 disabled:cursor-not-allowed">
+        <span class="material-symbols-outlined text-base" id="payFormSpinner" style="display:none;">sync</span>
+        <span>Save Receipt</span>
+      </button>
+    </footer>
+  </section>
+
+  <!-- HISTORY MODAL (Invoices + Payments) -->
+  <div id="histModalBackdrop" class="fixed inset-0 z-40 hidden bg-slate-900/40 backdrop-blur-sm"></div>
+  <section id="histModal" class="fixed inset-y-0 right-0 z-50 hidden w-full max-w-md bg-white shadow-xl border-l border-neutral-border flex flex-col" aria-hidden="true">
+    <header class="flex items-center justify-between px-5 py-4 border-b border-neutral-border">
+      <div>
+        <h2 class="text-base font-semibold text-slate-900" id="histModalTitle">Client History</h2>
+        <p class="text-xs text-slate-500" id="histClientLabel">--</p>
+      </div>
+      <button type="button" id="histModalClose" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-900">
+        <span class="material-symbols-outlined text-base">close</span>
+      </button>
+    </header>
+
+    <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+      <article class="rounded-xl border border-neutral-border bg-slate-50 px-4 py-3">
+        <div class="grid grid-cols-3 gap-3 text-xs">
+          <div>
+            <p class="text-slate-500 uppercase tracking-wide font-semibold">Total</p>
+            <p class="mt-1 text-slate-900 font-bold" id="histSummaryTotal">--</p>
+          </div>
+          <div>
+            <p class="text-slate-500 uppercase tracking-wide font-semibold">Received</p>
+            <p class="mt-1 text-emerald-700 font-bold" id="histSummaryReceived">--</p>
+          </div>
+          <div>
+            <p class="text-slate-500 uppercase tracking-wide font-semibold">Balance</p>
+            <p class="mt-1 text-rose-700 font-bold" id="histSummaryBalance">--</p>
+          </div>
+        </div>
+      </article>
+
+      <article class="rounded-xl border border-neutral-border bg-white px-4 py-3">
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <p class="text-xs font-semibold text-slate-600 uppercase tracking-wide">Client Activity</p>
+          <span class="text-[11px] text-slate-400">Latest first</span>
+        </div>
+        <div id="histTimeline" class="mt-3">
+          <p class="text-slate-400 text-xs">No history yet.</p>
+        </div>
+      </article>
+    </div>
+
+    <footer class="flex items-center justify-between gap-3 border-t border-neutral-border px-5 py-3 bg-slate-50">
+      <button type="button" id="histModalCancel" class="inline-flex items-center justify-center h-9 px-4 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100">Close</button>
+    </footer>
+  </section>
+
+  <!-- SUCCESS MODAL -->
+  <div id="successModalBackdrop" class="fixed inset-0 z-[60] hidden bg-slate-900/50"></div>
+  <section id="successModal" class="fixed inset-0 z-[61] hidden p-4" aria-hidden="true">
+    <div class="h-full w-full flex items-center justify-center">
+      <div class="w-full max-w-md rounded-xl border border-neutral-border bg-white shadow-xl">
+        <header class="px-5 py-4 border-b border-neutral-border">
+          <h2 class="text-base font-semibold text-slate-900">Success</h2>
+          <p class="text-xs text-slate-500">Client has been created successfully.</p>
+        </header>
+        <div class="px-5 py-4">
+          <p id="successMessage" class="text-sm text-slate-700">Client created successfully.</p>
+        </div>
+        <footer class="flex items-center justify-end gap-2 px-5 py-3 border-t border-neutral-border bg-slate-50">
+          <button type="button" id="successModalClose" class="inline-flex items-center justify-center h-9 px-4 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100">
+            Close
+          </button>
+          <button type="button" id="successOpenInvoice" class="inline-flex items-center justify-center h-9 px-4 rounded-full bg-accent text-white text-sm font-semibold hover:bg-emerald-600">
+            Create Invoice
+          </button>
+        </footer>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    (function(){
+      document.querySelectorAll('.js-ar-progress').forEach(el => {
+        const raw = el.getAttribute('data-percent') || '0';
+        let pct = parseInt(raw, 10);
+        if (isNaN(pct)) pct = 0;
+        pct = Math.max(0, Math.min(pct, 100));
+        el.style.width = pct + '%';
+      });
+    })();
+
+    const CEDI = "GH\u20B5";
+
+    function fmtMoney(n){
+      return CEDI + ' ' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function esc(value){
+      return String(value ?? '').replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+    }
+
+    function badgeForKind(kind){
+      const k = (kind || '').toLowerCase();
+      if (k === 'payment') return { text: 'PAYMENT', cls: 'bg-emerald-100 text-emerald-800 border-emerald-200', dot: 'bg-emerald-600' };
+      if (k === 'invoice') return { text: 'INVOICE', cls: 'bg-sky-100 text-sky-800 border-sky-200', dot: 'bg-sky-600' };
+      return { text: 'UPDATE', cls: 'bg-slate-100 text-slate-700 border-slate-200', dot: 'bg-slate-400' };
+    }
+
+    function renderTimeline(container, items){
+      if (!container) return;
+      const list = (items || []).filter(x => x && (Number(x.amount || 0) !== 0 || x.kind));
+      if (!list.length) {
+        container.innerHTML = '<p class="text-slate-400 text-xs">No history yet.</p>';
+        return;
+      }
+      container.innerHTML = `
+        <div class="relative pl-6">
+          <div class="absolute left-2 top-1 bottom-1 w-px bg-slate-200"></div>
+          <div class="space-y-3">
+            ${list.map(ev => {
+              const b = badgeForKind(ev.kind);
+              const date = (ev.date || '').toString();
+              const label = (ev.label || '').toString();
+              const note = (ev.note || '').toString();
+              return `
+                <div class="relative">
+                  <div class="absolute left-[-2px] top-3 h-3 w-3 rounded-full ${b.dot} ring-4 ring-white"></div>
+                  <div class="rounded-xl border border-neutral-border bg-white shadow-soft px-4 py-3">
+                    <div class="flex items-start justify-between gap-3">
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                          <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold border ${b.cls}">${b.text}</span>
+                          <span class="text-[11px] text-slate-400">${date}</span>
+                        </div>
+                        <div class="mt-1 text-xs text-slate-600 font-semibold">${label || '--'}</div>
+                        ${note ? `<div class="mt-1 text-xs text-slate-500">${note}</div>` : ''}
+                      </div>
+                      <div class="text-right shrink-0">
+                        <div class="text-[11px] text-slate-500 font-semibold uppercase">
+                          ${ev.kind === 'payment' ? 'Received' : 'Invoiced'}
+                        </div>
+                        <div class="text-sm font-black ${ev.kind === 'payment' ? 'text-emerald-700' : 'text-sky-700'}">
+                          ${fmtMoney(ev.amount)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function openModal(modal, backdrop){
+      modal.classList.remove('hidden');
+      backdrop.classList.remove('hidden');
+      modal.setAttribute('aria-hidden', 'false');
+    }
+    function closeModal(modal, backdrop){
+      modal.classList.add('hidden');
+      backdrop.classList.add('hidden');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+
+    const metricsModal = document.getElementById('metricsModal');
+    const metricsBackdrop = document.getElementById('metricsModalBackdrop');
+    const metricsContent = document.getElementById('metricsContent');
+
+    function metricsLoading(){
+      metricsContent.innerHTML = `<div class="flex min-h-[60vh] flex-col items-center justify-center text-slate-500">
+        <span class="material-symbols-outlined animate-spin text-4xl text-emerald-600">progress_activity</span>
+        <p class="mt-3 text-sm font-semibold">Loading receivables metrics…</p>
+        <p class="mt-1 text-xs text-slate-400">Calculating invoices, receipts, aging and trends.</p>
+      </div>`;
+    }
+
+    function renderMetrics(m){
+      const trendMax = Math.max(1, ...(m.trend || []).map(row => Number(row.amount || 0)));
+      const agingRows = [
+        ['Current · 0–30 days', m.aging?.current, 'bg-emerald-500'],
+        ['31–60 days', m.aging?.['31_60'], 'bg-amber-400'],
+        ['61–90 days', m.aging?.['61_90'], 'bg-orange-500'],
+        ['Over 90 days', m.aging?.['90_plus'], 'bg-rose-600']
+      ];
+      const agingMax = Math.max(1, ...agingRows.map(row => Number(row[1] || 0)));
+      const methodMax = Math.max(1, ...(m.methods || []).map(row => Number(row.amount || 0)));
+      const last = m.last_payment;
+      const oldest = m.oldest_account;
+      metricsContent.innerHTML = `
+        <div class="space-y-5">
+          <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            ${[
+              ['Outstanding', fmtMoney(m.total_outstanding), 'account_balance_wallet', 'text-rose-700 bg-rose-50'],
+              ['Received', fmtMoney(m.total_received), 'payments', 'text-emerald-700 bg-emerald-50'],
+              ['Collection rate', `${Number(m.collection_rate || 0).toFixed(1)}%`, 'donut_large', 'text-indigo-700 bg-indigo-50'],
+              ['Active accounts', m.active_receivables || 0, 'groups', 'text-sky-700 bg-sky-50']
+            ].map(row => `<article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div class="flex items-center justify-between"><p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">${row[0]}</p><span class="material-symbols-outlined rounded-xl p-2 ${row[3]}">${row[2]}</span></div>
+              <p class="mt-3 text-xl font-black text-slate-900 sm:text-2xl">${row[1]}</p>
+            </article>`).join('')}
+          </div>
+
+          <div class="grid gap-4 lg:grid-cols-3">
+            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
+              <div class="flex items-center justify-between"><div><h3 class="font-bold text-slate-900">Receipt trend</h3><p class="text-xs text-slate-500">Last six months</p></div><span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">${fmtMoney(m.total_received)} lifetime</span></div>
+              <div class="mt-6 flex h-48 items-end gap-3 border-b border-slate-200 px-2">
+                ${(m.trend || []).map(row => `<div class="group flex h-full min-w-0 flex-1 flex-col justify-end text-center">
+                  <div class="mb-1 hidden text-[10px] font-bold text-slate-600 sm:block">${fmtMoney(row.amount)}</div>
+                  <div class="mx-auto w-full max-w-14 rounded-t-lg bg-emerald-500 transition-all group-hover:bg-emerald-600" style="height:${Math.max(Number(row.amount) > 0 ? 8 : 2, Number(row.amount || 0) / trendMax * 130)}px"></div>
+                  <div class="py-2 text-[10px] font-semibold text-slate-500 sm:text-xs">${esc(row.label)}</div>
+                </div>`).join('')}
+              </div>
+            </article>
+
+            <article class="rounded-2xl bg-slate-900 p-5 text-white shadow-sm">
+              <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Latest payment</p>
+              ${last ? `<p class="mt-3 text-2xl font-black">${fmtMoney(last.amount)}</p><p class="mt-2 font-semibold">${esc(last.client)}</p><p class="mt-1 text-xs text-slate-400">${esc(last.receipt)} · ${esc(last.method)}</p><p class="mt-4 inline-flex rounded-full bg-white/10 px-3 py-1 text-xs">${esc(last.date)}</p>` : '<p class="mt-8 text-sm text-slate-400">No payments recorded.</p>'}
+            </article>
+          </div>
+
+          <div class="grid gap-4 lg:grid-cols-2">
+            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h3 class="font-bold text-slate-900">Outstanding aging</h3><p class="text-xs text-slate-500">Balance at risk by age</p>
+              <div class="mt-5 space-y-4">${agingRows.map(row => `<div><div class="mb-1.5 flex justify-between text-xs"><span class="font-semibold text-slate-600">${row[0]}</span><span class="font-bold text-slate-900">${fmtMoney(row[1])}</span></div><div class="h-2.5 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full ${row[2]}" style="width:${Number(row[1] || 0) / agingMax * 100}%"></div></div></div>`).join('')}</div>
+            </article>
+            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h3 class="font-bold text-slate-900">Risk signals</h3><p class="text-xs text-slate-500">Accounts requiring attention</p>
+              <div class="mt-4 grid grid-cols-2 gap-3"><div class="rounded-xl bg-rose-50 p-4"><p class="text-2xl font-black text-rose-700">${m.never_paid || 0}</p><p class="mt-1 text-xs font-semibold text-rose-800">Have never paid</p></div><div class="rounded-xl bg-amber-50 p-4"><p class="text-2xl font-black text-amber-700">${m.overdue_accounts || 0}</p><p class="mt-1 text-xs font-semibold text-amber-800">Overdue accounts</p></div></div>
+              <div class="mt-3 rounded-xl border border-slate-200 p-4"><p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Most aged client</p>${oldest ? `<div class="mt-2 flex items-end justify-between gap-3"><div><p class="font-bold text-slate-900">${esc(oldest.name)}</p><p class="text-xs text-slate-500">${esc(oldest.code)} · ${oldest.aging_days} days</p></div><p class="font-black text-rose-700">${fmtMoney(oldest.balance)}</p></div>` : '<p class="mt-2 text-sm text-slate-500">No outstanding accounts.</p>'}</div>
+            </article>
+          </div>
+
+          <div class="grid gap-4 lg:grid-cols-2">
+            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h3 class="font-bold text-slate-900">Largest outstanding balances</h3><div class="mt-4 divide-y divide-slate-100">${(m.top_balances || []).map((row,index) => `<div class="flex items-center gap-3 py-3"><span class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-600">${index+1}</span><div class="min-w-0 flex-1"><p class="truncate text-sm font-semibold text-slate-900">${esc(row.name)}</p><p class="text-xs text-slate-400">${esc(row.code)} · ${row.aging_days} days</p></div><p class="text-sm font-black text-rose-700">${fmtMoney(row.balance)}</p></div>`).join('') || '<p class="py-8 text-center text-sm text-slate-400">No outstanding balances.</p>'}</div></article>
+            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h3 class="font-bold text-slate-900">Payment methods</h3><div class="mt-4 space-y-3">${(m.methods || []).slice(0,6).map(row => `<div><div class="mb-1 flex justify-between text-xs"><span class="font-semibold text-slate-600">${esc(row.name)}</span><span class="font-bold">${fmtMoney(row.amount)}</span></div><div class="h-2 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full bg-indigo-500" style="width:${Number(row.amount || 0)/methodMax*100}%"></div></div></div>`).join('') || '<p class="py-8 text-center text-sm text-slate-400">No payment methods recorded.</p>'}</div></article>
+          </div>
+
+          <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div class="flex items-center justify-between"><h3 class="font-bold text-slate-900">Recent receipts</h3><span class="text-xs text-slate-400">Newest first</span></div><div class="mt-4 overflow-x-auto"><table class="w-full min-w-[600px] text-left text-sm"><thead><tr class="border-b border-slate-200 text-[10px] uppercase tracking-wider text-slate-400"><th class="pb-3">Client</th><th class="pb-3">Receipt</th><th class="pb-3">Method</th><th class="pb-3">Date</th><th class="pb-3 text-right">Amount</th></tr></thead><tbody>${(m.recent_payments || []).map(row => `<tr class="border-b border-slate-100 last:border-0"><td class="py-3 font-semibold text-slate-900">${esc(row.client)}<span class="ml-2 text-xs font-normal text-slate-400">${esc(row.code)}</span></td><td class="py-3 text-slate-600">${esc(row.receipt)}</td><td class="py-3 text-slate-600">${esc(row.method)}</td><td class="py-3 text-slate-600">${esc(row.date)}</td><td class="py-3 text-right font-black text-emerald-700">${fmtMoney(row.amount)}</td></tr>`).join('') || '<tr><td colspan="5" class="py-8 text-center text-slate-400">No receipts recorded.</td></tr>'}</tbody></table></div></article>
+        </div>`;
+    }
+
+    async function loadReceivableMetrics(){
+      metricsLoading();
+      try{
+        const response = await fetch('/accounting/ar/receivables/metrics', {headers:{'Accept':'application/json'}});
+        const data = await response.json();
+        if(!response.ok || !data.ok) throw new Error(data.message || 'Metrics could not load.');
+        renderMetrics(data.metrics || {});
+      }catch(error){
+        metricsContent.innerHTML = `<div class="flex min-h-[50vh] flex-col items-center justify-center"><span class="material-symbols-outlined text-4xl text-rose-500">error</span><p class="mt-3 font-semibold text-slate-800">Metrics could not load</p><p class="mt-1 text-sm text-slate-500">${esc(error.message)}</p><button id="retryMetrics" class="mt-4 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Try again</button></div>`;
+        document.getElementById('retryMetrics')?.addEventListener('click', loadReceivableMetrics);
+      }
+    }
+
+    document.getElementById('btnReceivableMetrics')?.addEventListener('click', () => { openModal(metricsModal, metricsBackdrop); loadReceivableMetrics(); });
+    document.getElementById('metricsModalClose')?.addEventListener('click', () => closeModal(metricsModal, metricsBackdrop));
+    metricsBackdrop?.addEventListener('click', () => closeModal(metricsModal, metricsBackdrop));
+
+    const invModal = document.getElementById('invModal');
+    const invBackdrop = document.getElementById('invModalBackdrop');
+    const invForm = document.getElementById('invForm');
+    const invSubmit = document.getElementById('invFormSubmit');
+    const invSpinner = document.getElementById('invFormSpinner');
+    const invClientSelect = document.getElementById('invClientSelect');
+    const invClientHidden = document.getElementById('invClientHidden');
+    const clientModal = document.getElementById('clientModal');
+    const clientBackdrop = document.getElementById('clientModalBackdrop');
+    const clientForm = document.getElementById('clientForm');
+    const clientSubmit = document.getElementById('clientFormSubmit');
+    const clientSpinner = document.getElementById('clientFormSpinner');
+    const successModal = document.getElementById('successModal');
+    const successBackdrop = document.getElementById('successModalBackdrop');
+    const successMessage = document.getElementById('successMessage');
+    const successOpenInvoiceBtn = document.getElementById('successOpenInvoice');
+    let pendingInvoiceClientCode = '';
+
+    function setInvoiceClient(code, lock){
+      if (!invClientSelect || !invClientHidden) return;
+      if (code) invClientSelect.value = code;
+      if (lock) {
+        invClientSelect.setAttribute('disabled', 'disabled');
+        invClientHidden.setAttribute('name', 'customer');
+        invClientHidden.value = code || '';
+      } else {
+        invClientSelect.removeAttribute('disabled');
+        invClientHidden.removeAttribute('name');
+        invClientHidden.value = '';
+      }
+    }
+
+    document.getElementById('btnNewClient')?.addEventListener('click', () => {
+      clientForm?.reset();
+      openModal(clientModal, clientBackdrop);
+    });
+    document.getElementById('clientModalClose')?.addEventListener('click', () => closeModal(clientModal, clientBackdrop));
+    document.getElementById('clientModalCancel')?.addEventListener('click', () => closeModal(clientModal, clientBackdrop));
+    clientBackdrop?.addEventListener('click', () => closeModal(clientModal, clientBackdrop));
+
+    clientForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clientSubmit.disabled = true;
+      if (clientSpinner) clientSpinner.style.display = 'inline-block';
+      try {
+        const fd = new FormData(clientForm);
+        const resp = await fetch("{{ url_for('acc_clients.quick_create') }}", { method: 'POST', body: fd });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok || !data.ok) {
+          alert(data.message || 'Failed to create client.');
+          return;
+        }
+
+        const code = (data.code || '').toString();
+        const name = (fd.get('name') || '').toString();
+        if (invClientSelect && code) {
+          const existing = Array.from(invClientSelect.options).find(o => o.value === code);
+          if (!existing) {
+            const opt = document.createElement('option');
+            opt.value = code;
+            opt.textContent = `${code} -- ${name}`;
+            invClientSelect.appendChild(opt);
+          }
+        }
+
+        closeModal(clientModal, clientBackdrop);
+        pendingInvoiceClientCode = code;
+        if (successMessage) {
+          successMessage.textContent = `Client created successfully: ${code || name}`;
+        }
+        openModal(successModal, successBackdrop);
+      } catch (err) {
+        console.error(err);
+        alert('An error occurred while creating the client.');
+      } finally {
+        clientSubmit.disabled = false;
+        if (clientSpinner) clientSpinner.style.display = 'none';
+      }
+    });
+
+    document.getElementById('successModalClose')?.addEventListener('click', () => closeModal(successModal, successBackdrop));
+    successBackdrop?.addEventListener('click', () => closeModal(successModal, successBackdrop));
+    successOpenInvoiceBtn?.addEventListener('click', () => {
+      closeModal(successModal, successBackdrop);
+      setInvoiceClient(pendingInvoiceClientCode, false);
+      openModal(invModal, invBackdrop);
+    });
+
+    document.getElementById('btnNewInvoice')?.addEventListener('click', () => {
+      setInvoiceClient('', false);
+      openModal(invModal, invBackdrop);
+    });
+
+    document.querySelectorAll('.js-open-inv-modal').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const code = btn.getAttribute('data-client-code') || '';
+        setInvoiceClient(code, true);
+        openModal(invModal, invBackdrop);
+      });
+    });
+
+    document.getElementById('invModalClose')?.addEventListener('click', () => closeModal(invModal, invBackdrop));
+    document.getElementById('invModalCancel')?.addEventListener('click', () => closeModal(invModal, invBackdrop));
+    invBackdrop?.addEventListener('click', () => closeModal(invModal, invBackdrop));
+
+    invForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      invSubmit.disabled = true;
+      if (invSpinner) invSpinner.style.display = 'inline-block';
+      try {
+        const fd = new FormData(invForm);
+        const resp = await fetch("{{ url_for('ar_invoices.quick_create') }}", { method: 'POST', body: fd });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok || !data.ok) {
+          alert(data.message || 'Failed to save invoice.');
+        } else {
+          closeModal(invModal, invBackdrop);
+          window.location.reload();
+        }
+      } catch (err) {
+        console.error(err);
+        alert('An error occurred while saving the invoice.');
+      } finally {
+        invSubmit.disabled = false;
+        if (invSpinner) invSpinner.style.display = 'none';
+      }
+    });
+
+    const payModal = document.getElementById('payModal');
+    const payBackdrop = document.getElementById('payModalBackdrop');
+    const payForm = document.getElementById('payForm');
+    const paySubmit = document.getElementById('payFormSubmit');
+    const paySpinner = document.getElementById('payFormSpinner');
+    const payClientLabel = document.getElementById('payClientLabel');
+    const paySummaryTotal = document.getElementById('paySummaryTotal');
+    const paySummaryReceived = document.getElementById('paySummaryReceived');
+    const paySummaryBalance = document.getElementById('paySummaryBalance');
+    const payCustomerInput = document.getElementById('payCustomerInput');
+    const payHistoryList = document.getElementById('payHistoryList');
+
+    async function loadClientHistory(clientCode){
+      const resp = await fetch(`/accounting/ar/receivables/${encodeURIComponent(clientCode)}/history`);
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok || !data.ok) {
+        return null;
+      }
+      return data;
+    }
+
+    document.querySelectorAll('.js-open-pay-modal').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const code = btn.getAttribute('data-client-code');
+        const name = btn.getAttribute('data-client-name') || 'Client';
+        const total = parseFloat(btn.getAttribute('data-total-invoiced') || '0');
+        const received = parseFloat(btn.getAttribute('data-total-received') || '0');
+        const balance = parseFloat(btn.getAttribute('data-balance') || '0');
+
+        payClientLabel.textContent = name;
+        paySummaryTotal.textContent = fmtMoney(total);
+        paySummaryReceived.textContent = fmtMoney(received);
+        paySummaryBalance.textContent = fmtMoney(balance);
+        payCustomerInput.value = code || '';
+
+        openModal(payModal, payBackdrop);
+        if (payHistoryList) payHistoryList.innerHTML = '<p class="text-slate-400 text-xs">Loading…</p>';
+
+        const data = await loadClientHistory(code);
+        if (!data) {
+          if (payHistoryList) payHistoryList.innerHTML = '<p class="text-slate-400 text-xs">No history available.</p>';
+          return;
+        }
+        if (data.totals) {
+          paySummaryTotal.textContent = fmtMoney(data.totals.invoiced || 0);
+          paySummaryReceived.textContent = fmtMoney(data.totals.received || 0);
+          paySummaryBalance.textContent = fmtMoney(data.totals.balance || 0);
+        }
+        const payments = (data.items || []).filter(i => i.kind === 'payment');
+        renderTimeline(payHistoryList, payments);
+      });
+    });
+
+    document.getElementById('payModalClose')?.addEventListener('click', () => closeModal(payModal, payBackdrop));
+    document.getElementById('payModalCancel')?.addEventListener('click', () => closeModal(payModal, payBackdrop));
+    payBackdrop?.addEventListener('click', () => closeModal(payModal, payBackdrop));
+
+    payForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      paySubmit.disabled = true;
+      if (paySpinner) paySpinner.style.display = 'inline-block';
+      try {
+        const fd = new FormData(payForm);
+        const resp = await fetch("{{ url_for('ar_payments.quick_create') }}", { method: 'POST', body: fd });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok || !data.ok) {
+          alert(data.message || 'Failed to save receipt.');
+        } else {
+          closeModal(payModal, payBackdrop);
+          window.location.reload();
+        }
+      } catch (err) {
+        console.error(err);
+        alert('An error occurred while saving the receipt.');
+      } finally {
+        paySubmit.disabled = false;
+        if (paySpinner) paySpinner.style.display = 'none';
+      }
+    });
+
+    const histModal = document.getElementById('histModal');
+    const histBackdrop = document.getElementById('histModalBackdrop');
+    const histClientLabel = document.getElementById('histClientLabel');
+    const histSummaryTotal = document.getElementById('histSummaryTotal');
+    const histSummaryReceived = document.getElementById('histSummaryReceived');
+    const histSummaryBalance = document.getElementById('histSummaryBalance');
+    const histTimeline = document.getElementById('histTimeline');
+
+    document.querySelectorAll('.js-open-history-modal').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const code = btn.getAttribute('data-client-code');
+        const name = btn.getAttribute('data-client-name') || 'Client';
+        const total = parseFloat(btn.getAttribute('data-total-invoiced') || '0');
+        const received = parseFloat(btn.getAttribute('data-total-received') || '0');
+        const balance = parseFloat(btn.getAttribute('data-balance') || '0');
+
+        histClientLabel.textContent = name;
+        histSummaryTotal.textContent = fmtMoney(total);
+        histSummaryReceived.textContent = fmtMoney(received);
+        histSummaryBalance.textContent = fmtMoney(balance);
+
+        openModal(histModal, histBackdrop);
+        if (histTimeline) histTimeline.innerHTML = '<p class="text-slate-400 text-xs">Loading…</p>';
+
+        const data = await loadClientHistory(code);
+        if (!data) {
+          if (histTimeline) histTimeline.innerHTML = '<p class="text-slate-400 text-xs">No history available.</p>';
+          return;
+        }
+        if (data.totals) {
+          histSummaryTotal.textContent = fmtMoney(data.totals.invoiced || 0);
+          histSummaryReceived.textContent = fmtMoney(data.totals.received || 0);
+          histSummaryBalance.textContent = fmtMoney(data.totals.balance || 0);
+        }
+        renderTimeline(histTimeline, data.items || []);
+      });
+    });
+
+    document.getElementById('histModalClose')?.addEventListener('click', () => closeModal(histModal, histBackdrop));
+    document.getElementById('histModalCancel')?.addEventListener('click', () => closeModal(histModal, histBackdrop));
+    histBackdrop?.addEventListener('click', () => closeModal(histModal, histBackdrop));
+
+    window.addEventListener('keydown', (e)=>{
+      if(e.key === 'Escape'){
+        closeModal(successModal, successBackdrop);
+        closeModal(clientModal, clientBackdrop);
+        closeModal(invModal, invBackdrop);
+        closeModal(payModal, payBackdrop);
+        closeModal(histModal, histBackdrop);
+      }
+    });
+  </script>
+</body>
+</html>

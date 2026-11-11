@@ -1,0 +1,902 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create Order</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="icon" href="https://imagedelivery.net/h9fmMoa1o2c2P55TcWJGOg/10283f28-b9a0-4100-b254-19a854386800/public" type="image/png"/>
+
+  <style>
+    :root{
+      --bg1:#0b1220;
+      --bg2:#0f172a;
+      --card:#ffffff;
+      --edge:#e5e7eb;
+      --muted:#6b7280;
+      --ink:#0f172a;
+      --brand:#2563eb;
+      --brand2:#7c3aed;
+      --shadow: 0 18px 40px rgba(2,6,23,.12);
+    }
+    body{
+      background:
+        radial-gradient(1200px 500px at 10% -10%, rgba(37,99,235,.12), transparent 55%),
+        radial-gradient(900px 450px at 90% 0%, rgba(124,58,237,.12), transparent 55%),
+        linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+      min-height:100vh;
+      color:var(--ink);
+    }
+
+    .page{
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 18px 12px 28px;
+    }
+    @media (min-width: 992px){
+      .page{ padding: 22px 18px 40px; }
+    }
+
+    .topbar{
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 10px 0 14px;
+      backdrop-filter: blur(10px);
+    }
+    .topbar-inner{
+      background: rgba(255,255,255,.88);
+      border: 1px solid rgba(229,231,235,.9);
+      border-radius: 18px;
+      box-shadow: 0 10px 26px rgba(2,6,23,.08);
+      padding: 12px 14px;
+    }
+
+    .title{
+      font-weight: 800;
+      letter-spacing: -.02em;
+      margin: 0;
+    }
+    .subtitle{
+      color: var(--muted);
+      font-size: .92rem;
+      margin-top: 4px;
+    }
+
+    .glass-card{
+      background: rgba(255,255,255,.92);
+      border: 1px solid rgba(229,231,235,.95);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:.35rem;
+      border-radius: 999px;
+      padding: .15rem .6rem;
+      font-size: .78rem;
+      background: #f1f5f9;
+      color: #0f172a;
+      border: 1px solid rgba(226,232,240,.9);
+      white-space: nowrap;
+    }
+    .pill.qty{
+      background: rgba(37,99,235,.08);
+      border-color: rgba(37,99,235,.18);
+    }
+
+    #alertWrap{ display:none; }
+
+    .grid{
+      display:grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    @media (min-width: 768px){
+      .grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (min-width: 1200px){
+      .grid{ grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+    @media (min-width: 1400px){
+      .grid{ grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    }
+
+    .product-card{
+      border: 1px solid rgba(229,231,235,.95);
+      border-radius: 16px;
+      background: #fff;
+      padding: 10px;
+      box-shadow: 0 12px 26px rgba(2,6,23,.06);
+      display:flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: transform .15s ease, box-shadow .15s ease;
+      min-height: 100%;
+    }
+    .product-card:hover{
+      transform: translateY(-2px);
+      box-shadow: 0 16px 30px rgba(2,6,23,.10);
+    }
+    .product-img{
+      width: 100%;
+      height: 140px;
+      border-radius: 12px;
+      object-fit: cover;
+      background: #f1f5f9;
+      border: 1px solid rgba(226,232,240,.9);
+    }
+    .product-title{
+      font-weight: 700;
+      line-height: 1.2;
+      min-height: 2.4em;
+    }
+    .product-meta{ color: var(--muted); font-size: .85rem; }
+
+    .stepper{
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+    .stepper .btn{
+      width: 34px;
+      height: 34px;
+      padding: 0;
+    }
+
+    .skeleton{
+      background: linear-gradient(90deg, #eef2f7 25%, #f8fafc 37%, #eef2f7 63%);
+      background-size: 400% 100%;
+      animation: shimmer 1.2s ease infinite;
+      border-radius: 12px;
+      border: 1px solid rgba(226,232,240,.9);
+    }
+    @keyframes shimmer{
+      0%{ background-position: 100% 0; }
+      100%{ background-position: 0 0; }
+    }
+
+    .cart-badge{
+      position:absolute;
+      top:-6px;
+      right:-6px;
+      background:#ef4444;
+      color:#fff;
+      border-radius:999px;
+      font-size:.7rem;
+      padding:2px 6px;
+      border:2px solid #fff;
+      min-width: 20px;
+      text-align:center;
+    }
+
+    .offcanvas{ border-radius: 16px 0 0 16px; }
+    .cart-item{
+      border: 1px solid rgba(229,231,235,.9);
+      border-radius: 14px;
+      padding: 10px;
+      background: #fff;
+      display:flex;
+      gap: 10px;
+      align-items:center;
+    }
+    .cart-thumb{
+      width: 54px;
+      height: 54px;
+      border-radius: 12px;
+      object-fit: cover;
+      background: #f1f5f9;
+      border: 1px solid rgba(226,232,240,.9);
+      flex: 0 0 auto;
+    }
+
+    .notes{
+      resize: vertical;
+      min-height: 84px;
+    }
+
+    .btn{ border-radius: 12px; }
+    .form-control{ border-radius: 12px; border-color: rgba(203,213,225,.9); }
+
+    .search-wrap{
+      flex: 1 1 360px;
+      min-width: 220px;
+    }
+    .search-input{
+      height: 42px;
+    }
+    .warehouse-select-invalid{
+      border-color: #dc3545 !important;
+      box-shadow: 0 0 0 .25rem rgba(220,53,69,.25), 0 0 14px rgba(220,53,69,.35) !important;
+    }
+    @keyframes warehouseBlink {
+      0%, 100% {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 .25rem rgba(220,53,69,.25), 0 0 14px rgba(220,53,69,.35);
+      }
+      50% {
+        border-color: #ff6b6b;
+        box-shadow: 0 0 0 .35rem rgba(220,53,69,.35), 0 0 22px rgba(220,53,69,.55);
+      }
+    }
+    .warehouse-select-blink{
+      animation: warehouseBlink .55s ease-in-out 3;
+    }
+
+    .warehouse-hint-invalid{
+      color:#dc3545 !important;
+      font-weight:700;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <div class="topbar">
+      <div class="topbar-inner d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-2">
+        <div class="flex-grow-1">
+          <h1 class="title h4 mb-0">Create Order</h1>
+          <div class="subtitle">Browse products and add to cart. Use search for fast add.</div>
+          <div class="search-wrap mt-3 mt-lg-2">
+            <input id="productSearch" class="form-control search-input" placeholder="Search products...">
+          </div>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+          <a class="btn btn-outline-secondary" href="/manager/orders">Back</a>
+          <button class="btn btn-primary position-relative" data-bs-toggle="offcanvas" data-bs-target="#cartDrawer" id="openCart">
+            <i class="bi bi-cart3"></i>
+            <span class="cart-badge" id="cartBadge">0</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="alertWrap" class="mb-3">
+      <div id="alertBox" class="alert"></div>
+    </div>
+
+    <div class="glass-card p-3 p-lg-4">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+          <div class="fw-bold">Products</div>
+          <div class="text-muted small">Add items to build your order.</div>
+        </div>
+        <span class="pill qty" id="productCount">0 items</span>
+      </div>
+
+      <div id="grid" class="grid"></div>
+      <div class="d-flex justify-content-center mt-3">
+        <button class="btn btn-outline-secondary btn-sm d-none" id="loadMore">Load more</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="cartDrawer">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title">Your Cart</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body d-flex flex-column gap-3">
+      <div id="cartList" class="d-flex flex-column gap-2"></div>
+      <div>
+        <label class="form-label fw-semibold">Order Notes</label>
+        <textarea id="cartNotes" class="form-control notes" rows="3" placeholder="Any extra notes for Inventory..."></textarea>
+      </div>
+      <button class="btn btn-primary" id="submitOrder">
+        <span class="spinner-border spinner-border-sm me-1 d-none" id="submitSpinner"></span>
+        Submit Order
+      </button>
+    </div>
+  </div>
+
+  <div class="modal fade" id="qtyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="qtyModalTitle">Add to Cart</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="fw-semibold mb-2" id="qtyModalProduct">Product</div>
+          <label class="form-label" for="qtyInput">Quantity</label>
+          <input id="qtyInput" type="number" min="1" class="form-control mb-2" value="1">
+          <div class="text-muted small mb-3" id="qtyModalHint"></div>
+          <label class="form-label" for="sourceLocationSelect">Destination Warehouse</label>
+          <select id="sourceLocationSelect" class="form-control mb-2"></select>
+          <div class="text-muted small" id="sourceLocationHint">Select where these product will be kept.</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="qtyConfirm">Add to Cart</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script id="destination-locations-data" type="application/json">
+    {{ (destination_locations or []) | tojson }}
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const destinationLocations = JSON.parse(
+      document.getElementById('destination-locations-data')?.textContent || '[]'
+    );
+    const grid = document.getElementById('grid');
+    const productCount = document.getElementById('productCount');
+    const cartBadge = document.getElementById('cartBadge');
+    const cartList = document.getElementById('cartList');
+    const cartNotes = document.getElementById('cartNotes');
+    const submitOrderBtn = document.getElementById('submitOrder');
+    const submitSpinner = document.getElementById('submitSpinner');
+    const searchInput = document.getElementById('productSearch');
+    const loadMoreBtn = document.getElementById('loadMore');
+    const qtyModalEl = document.getElementById('qtyModal');
+    const qtyModalTitle = document.getElementById('qtyModalTitle');
+    const qtyModalProduct = document.getElementById('qtyModalProduct');
+    const qtyModalHint = document.getElementById('qtyModalHint');
+    const sourceLocationSelect = document.getElementById('sourceLocationSelect');
+    const sourceLocationHint = document.getElementById('sourceLocationHint');
+    const qtyInput = document.getElementById('qtyInput');
+    const qtyConfirm = document.getElementById('qtyConfirm');
+    const qtyModal = new bootstrap.Modal(qtyModalEl);
+    const managerDraftId = "{{ manager_id | default('', true) }}";
+    const orderDraftKey = `manager_create_order_draft_${managerDraftId || 'default'}`;
+    let pendingProduct = null;
+
+    const cart = new Map();
+    let productsCache = [];
+    let totalAvailable = null;
+    let isLoading = false;
+    let currentQuery = '';
+    const PAGE_LIMIT = 200;
+
+    function showAlert(msg, type='danger'){
+      const wrap = document.getElementById('alertWrap');
+      const box = document.getElementById('alertBox');
+      box.className = `alert alert-${type}`;
+      box.textContent = msg;
+      wrap.style.display = '';
+      setTimeout(()=> wrap.style.display='none', 4500);
+    }
+
+    function esc(s){
+      return String(s||'').replace(/[&<>"']/g, m => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[m]));
+    }
+
+    function renderSkeletons(count=8){
+      grid.innerHTML = '';
+      for(let i=0;i<count;i++){
+        const div = document.createElement('div');
+        div.className = 'product-card';
+        div.innerHTML = `
+          <div class="skeleton" style="height:140px;"></div>
+          <div class="skeleton" style="height:16px;width:80%;"></div>
+          <div class="skeleton" style="height:14px;width:60%;"></div>
+          <div class="skeleton" style="height:32px;width:100%;"></div>
+        `;
+        grid.appendChild(div);
+      }
+    }
+
+    function updateBadge(){
+      let total = 0;
+      cart.forEach(v => { total += v.qty; });
+      cartBadge.textContent = String(total);
+    }
+
+    function normalize(value){
+      return String(value || '').toLowerCase();
+    }
+
+    function getProductId(p){
+      const value = p?._id ?? p?.product_id ?? p?.id ?? '';
+      return String(value || '').trim();
+    }
+
+    function getSelectedDestination(product){
+      const selectedId = String(product?.destination_location_id || '');
+      return destinationLocations.find((location) => String(location.id || '') === selectedId) || null;
+    }
+
+    function getProductMaxQty(product){
+      return Number(product?.network_qty_available || product?.qty_available || 0);
+    }
+
+    function saveDraft(){
+      try{
+        const payload = {
+          version: 1,
+          savedAt: new Date().toISOString(),
+          notes: cartNotes.value || '',
+          items: Array.from(cart.values()).map((item) => ({
+            product_id: String(item.product_id || ''),
+            name: item.name || '',
+            image_url: item.image_url || '',
+            qty_available: Number(item.qty_available || 0),
+            network_qty_available: Number(item.network_qty_available || item.qty_available || 0),
+            destination_location_id: item.destination_location_id || '',
+            qty: Number(item.qty || 0),
+          })).filter((item) => item.product_id && item.qty > 0),
+        };
+        localStorage.setItem(orderDraftKey, JSON.stringify(payload));
+      }catch(err){
+        console.warn('Could not save order draft', err);
+      }
+    }
+
+    function clearDraft(){
+      try{
+        localStorage.removeItem(orderDraftKey);
+      }catch(err){
+        console.warn('Could not clear order draft', err);
+      }
+    }
+
+    function restoreDraft(){
+      try{
+        const raw = localStorage.getItem(orderDraftKey);
+        if (!raw) return;
+        const payload = JSON.parse(raw);
+        if (!payload || !Array.isArray(payload.items)) return;
+        cart.clear();
+        payload.items.forEach((item) => {
+          const productId = String(item.product_id || '').trim();
+          const qty = Math.max(0, Math.floor(Number(item.qty || 0)));
+          if (!productId || qty <= 0) return;
+          cart.set(productId, {
+            product_id: productId,
+            name: item.name || 'Product',
+            image_url: item.image_url || '',
+            qty_available: Number(item.qty_available || 0),
+            network_qty_available: Number(item.network_qty_available || item.qty_available || 0),
+            destination_location_id: item.destination_location_id || '',
+            qty,
+          });
+        });
+        cartNotes.value = payload.notes || '';
+        updateBadge();
+        renderCart();
+      }catch(err){
+        console.warn('Could not restore order draft', err);
+      }
+    }
+
+    function setWarehouseFieldState(isValid){
+      sourceLocationSelect.classList.toggle('warehouse-select-invalid', !isValid);
+      sourceLocationHint.classList.toggle('warehouse-hint-invalid', !isValid);
+      if (!isValid) {
+        sourceLocationHint.textContent = 'Select where these product will be kept.';
+      }
+    }
+
+    function blinkWarehouseField(){
+      sourceLocationSelect.classList.remove('warehouse-select-blink');
+      void sourceLocationSelect.offsetWidth;
+      sourceLocationSelect.classList.add('warehouse-select-blink');
+      sourceLocationHint.textContent = 'Select where these product will be kept.';
+      sourceLocationHint.classList.add('warehouse-hint-invalid');
+    }
+
+    function renderSourceLocationOptions(product){
+      sourceLocationSelect.innerHTML = '';
+      if (!destinationLocations.length){
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No destination warehouse available';
+        sourceLocationSelect.appendChild(option);
+        sourceLocationSelect.disabled = true;
+        sourceLocationHint.textContent = 'Select where these product will be kept.';
+        setWarehouseFieldState(false);
+        return;
+      }
+
+      sourceLocationSelect.disabled = false;
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = 'Select destination warehouse';
+      sourceLocationSelect.appendChild(placeholder);
+      destinationLocations.forEach((location, index) => {
+        const option = document.createElement('option');
+        option.value = String(location.id || '');
+        option.textContent = `${location.label || location.name || 'Warehouse'}`;
+        if (product.destination_location_id) {
+          option.selected = String(product.destination_location_id) === String(location.id || '');
+        }
+        sourceLocationSelect.appendChild(option);
+      });
+
+      const selected = destinationLocations.find((location) => String(location.id || '') === sourceLocationSelect.value) || null;
+      sourceLocationHint.textContent = selected
+        ? `${selected.branch ? `${selected.branch} | ` : ''}${selected.label || selected.name || 'Warehouse'}`
+        : 'Select where these product will be kept.';
+      setWarehouseFieldState(!!selected);
+    }
+
+    function matchesQuery(p, q){
+      if (!q) return true;
+      const hay = `${p.name || ''} ${p.sku || ''} ${p.tag || ''}`.toLowerCase();
+      return hay.includes(q);
+    }
+
+    function updateLoadMoreVisibility(){
+      if (currentQuery){
+        loadMoreBtn.classList.add('d-none');
+        return;
+      }
+      if (totalAvailable === null){
+        loadMoreBtn.classList.add('d-none');
+        return;
+      }
+      const hasMore = productsCache.length < totalAvailable;
+      loadMoreBtn.classList.toggle('d-none', !hasMore);
+      loadMoreBtn.disabled = isLoading;
+    }
+
+    function setQty(product, qty){
+      const productId = String(product?.product_id || '').trim();
+      if (!productId){
+        showAlert('This product cannot be added because its product ID is missing.', 'warning');
+        return false;
+      }
+      if (qty <= 0){
+        cart.delete(productId);
+      }else{
+        cart.set(productId, { ...product, product_id: productId, qty });
+      }
+      saveDraft();
+      refreshGrid();
+      renderCart();
+      updateBadge();
+      return true;
+    }
+
+    function addToCart(product){
+      const productId = String(product?.product_id || '').trim();
+      if (!productId){
+        showAlert('This product cannot be added because its product ID is missing.', 'warning');
+        return;
+      }
+      pendingProduct = product;
+      renderSourceLocationOptions(product);
+      const max = getProductMaxQty(pendingProduct);
+      qtyModalTitle.textContent = 'Add to Cart';
+      qtyModalProduct.textContent = product.name || 'Product';
+      qtyModalHint.textContent = max ? `Available stock in network: ${max}` : 'Quantity will be validated when the order is processed.';
+      qtyInput.value = '1';
+      qtyInput.removeAttribute('max');
+      qtyModal.show();
+    }
+
+    function buildCard(p){
+      const card = document.createElement('div');
+      card.className = 'product-card';
+      const productId = getProductId(p);
+      const inCart = productId ? cart.get(productId) : null;
+      const addDisabled = !productId;
+      const img = p.image_url ? `<img class="product-img" src="${esc(p.image_url)}" alt="">` : `<div class="product-img"></div>`;
+      const skuPill = p.sku ? `<span class="pill">${esc(p.sku)}</span>` : '';
+      const tagPill = p.tag ? `<span class="pill">${esc(p.tag)}</span>` : '';
+
+      card.innerHTML = `
+        ${img}
+        <div class="product-title">${esc(p.name || '-')}</div>
+        <div class="product-meta"><span class="pill qty">Qty: ${Number(p.qty_available||0)}</span> ${skuPill} ${tagPill}</div>
+        ${addDisabled ? `<div class="text-warning small mt-1">This product cannot be added because its ID is missing.</div>` : ''}
+        <div class="mt-auto">
+          ${inCart ? `
+            <div class="stepper">
+              <button class="btn btn-outline-secondary btn-sm" data-action="dec">-</button>
+              <div class="form-control text-center" style="width:60px;">${inCart.qty}</div>
+              <button class="btn btn-outline-secondary btn-sm" data-action="inc">+</button>
+            </div>
+          ` : `
+            <button class="btn btn-primary btn-sm" data-action="add" ${addDisabled ? 'disabled' : ''}>Add to Cart</button>
+          `}
+        </div>
+      `;
+
+      const product = {
+        product_id: productId,
+        name: p.name,
+        image_url: p.image_url,
+        qty_available: Number(p.qty_available || 0),
+        network_qty_available: Number(p.network_qty_available || p.qty_available || 0),
+        destination_location_id: inCart?.destination_location_id || '',
+        qty: inCart ? inCart.qty : 0
+      };
+
+      card.querySelectorAll('[data-action]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const action = btn.getAttribute('data-action');
+          if (action === 'add') {
+            if (!productId){
+              showAlert('This product cannot be added because its product ID is missing.', 'warning');
+              return;
+            }
+            addToCart(product);
+          }
+          if (action === 'inc') setQty(product, (cart.get(productId)?.qty || 0) + 1);
+          if (action === 'dec') setQty(product, (cart.get(productId)?.qty || 0) - 1);
+        });
+      });
+      return card;
+    }
+
+    function renderEmptyState(){
+      grid.innerHTML = `
+        <div class="text-muted text-center w-100 py-4">No products found.</div>
+      `;
+    }
+
+    function renderGrid(list){
+      grid.innerHTML = '';
+      let countLabel = `${productsCache.length} items`;
+      if (typeof totalAvailable === 'number' && !currentQuery){
+        countLabel = `${productsCache.length} of ${totalAvailable} items`;
+      }
+      if (currentQuery){
+        countLabel = `${list.length} results`;
+      }
+      productCount.textContent = countLabel;
+
+      if (!list.length){
+        renderEmptyState();
+        return;
+      }
+
+      list.forEach(p => grid.appendChild(buildCard(p)));
+    }
+
+    function appendGrid(list){
+      list.forEach(p => grid.appendChild(buildCard(p)));
+      let countLabel = `${productsCache.length} items`;
+      if (typeof totalAvailable === 'number'){
+        countLabel = `${productsCache.length} of ${totalAvailable} items`;
+      }
+      productCount.textContent = countLabel;
+    }
+
+    function refreshGrid(){
+      if (currentQuery){
+        const filtered = productsCache.filter(p => matchesQuery(p, currentQuery));
+        renderGrid(filtered);
+      }else{
+        renderGrid(productsCache);
+      }
+      updateLoadMoreVisibility();
+    }
+
+    function renderCart(){
+      cartList.innerHTML = '';
+      if (cart.size === 0){
+        cartList.innerHTML = '<div class="text-muted">Cart is empty.</div>';
+        return;
+      }
+      cart.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'cart-item';
+        row.innerHTML = `
+          ${item.image_url ? `<img class="cart-thumb" src="${esc(item.image_url)}" alt="">` : `<div class="cart-thumb"></div>`}
+          <div class="flex-grow-1">
+            <div class="fw-semibold">${esc(item.name)}</div>
+            <div class="small text-muted mt-1">${esc(getSelectedDestination(item)?.label || 'No destination warehouse selected')}</div>
+            <div class="stepper mt-2">
+              <button class="btn btn-outline-secondary btn-sm" data-action="dec">-</button>
+              <div class="form-control text-center" style="width:60px;">${item.qty}</div>
+              <button class="btn btn-outline-secondary btn-sm" data-action="inc">+</button>
+              <button class="btn btn-outline-danger btn-sm ms-2" data-action="remove">Remove</button>
+            </div>
+          </div>
+        `;
+        row.querySelector('[data-action="inc"]').addEventListener('click', () => setQty(item, item.qty + 1));
+        row.querySelector('[data-action="dec"]').addEventListener('click', () => setQty(item, item.qty - 1));
+        row.querySelector('[data-action="remove"]').addEventListener('click', () => setQty(item, 0));
+        cartList.appendChild(row);
+      });
+    }
+
+    async function fetchProductsBatch(skip=0){
+      const r = await fetch(`/manager/orders/products_prefetch?limit=${PAGE_LIMIT}&skip=${skip}`);
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.message || 'Failed to load products');
+      return j;
+    }
+
+    async function loadInitialProducts(){
+      renderSkeletons(10);
+      productsCache = [];
+      totalAvailable = null;
+      isLoading = true;
+      try{
+        const j = await fetchProductsBatch(0);
+        productsCache = j.results || [];
+        totalAvailable = typeof j.total === 'number' ? j.total : null;
+        renderGrid(productsCache);
+      }catch(err){
+        showAlert(err.message || 'Failed to load products.');
+      }finally{
+        isLoading = false;
+        updateLoadMoreVisibility();
+      }
+    }
+
+    async function loadMoreProducts(){
+      if (isLoading) return;
+      isLoading = true;
+      updateLoadMoreVisibility();
+      try{
+        const j = await fetchProductsBatch(productsCache.length);
+        const next = j.results || [];
+        totalAvailable = typeof j.total === 'number' ? j.total : totalAvailable;
+        if (next.length){
+          productsCache = productsCache.concat(next);
+          if (currentQuery){
+            refreshGrid();
+          }else{
+            appendGrid(next);
+          }
+        }
+      }catch(err){
+        showAlert(err.message || 'Failed to load more products.');
+      }finally{
+        isLoading = false;
+        updateLoadMoreVisibility();
+      }
+    }
+
+    let filterTimer = null;
+    searchInput.addEventListener('input', () => {
+      clearTimeout(filterTimer);
+      filterTimer = setTimeout(() => {
+        currentQuery = normalize(searchInput.value.trim());
+        refreshGrid();
+      }, 200);
+    });
+
+    loadMoreBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      loadMoreProducts();
+    });
+
+    qtyConfirm.addEventListener('click', () => {
+      if (!pendingProduct) return;
+      const sourceLocationId = String(sourceLocationSelect.value || '').trim();
+      const resolvedLocationId = sourceLocationId;
+      if (!resolvedLocationId && !destinationLocations.length){
+        showAlert('Select where these product will be kept.', 'warning');
+        setWarehouseFieldState(false);
+        blinkWarehouseField();
+        sourceLocationSelect.focus();
+        return;
+      }
+      if (!resolvedLocationId){
+        showAlert('Select where these product will be kept.', 'warning');
+        setWarehouseFieldState(false);
+        blinkWarehouseField();
+        sourceLocationSelect.focus();
+        return;
+      }
+      const selectedSource = destinationLocations.find((location) => String(location.id || '') === resolvedLocationId);
+      if (!selectedSource){
+        showAlert('Selected destination warehouse is invalid.', 'warning');
+        setWarehouseFieldState(false);
+        blinkWarehouseField();
+        sourceLocationSelect.focus();
+        return;
+      }
+      setWarehouseFieldState(true);
+      sourceLocationSelect.classList.remove('warehouse-select-blink');
+      const value = parseInt(qtyInput.value || '0', 10);
+      if (!value || value <= 0){
+        showAlert('Quantity must be at least 1.', 'warning');
+        return;
+      }
+      const added = setQty({ ...pendingProduct, destination_location_id: resolvedLocationId }, value);
+      if (!added){
+        showAlert('Failed to add product to cart.', 'warning');
+        return;
+      }
+      saveDraft();
+      pendingProduct = null;
+      qtyModal.hide();
+    });
+
+    cartNotes.addEventListener('input', saveDraft);
+
+    sourceLocationSelect.addEventListener('change', () => {
+      if (!pendingProduct) return;
+      const sourceLocationId = String(sourceLocationSelect.value || '').trim();
+      pendingProduct = { ...pendingProduct, destination_location_id: sourceLocationId };
+      const selectedSource = getSelectedDestination(pendingProduct);
+      const max = getProductMaxQty(pendingProduct);
+      qtyInput.removeAttribute('max');
+      setWarehouseFieldState(!!selectedSource);
+      sourceLocationHint.textContent = selectedSource
+        ? `${selectedSource.branch ? `${selectedSource.branch} | ` : ''}${selectedSource.label || selectedSource.name || 'Warehouse'}`
+        : 'Select where these product will be kept.';
+      if (selectedSource){
+        sourceLocationSelect.classList.remove('warehouse-select-blink');
+      }
+      qtyModalHint.textContent = max ? `Available stock in network: ${max}` : 'Quantity will be validated when the order is processed.';
+    });
+
+    qtyModalEl.addEventListener('shown.bs.modal', () => {
+      qtyInput.focus();
+      qtyInput.select();
+      const hasWarehouse = String(sourceLocationSelect.value || '').trim();
+      if (!hasWarehouse) {
+        setWarehouseFieldState(false);
+        sourceLocationHint.textContent = 'Select where these product will be kept.';
+      }
+    });
+    qtyModalEl.addEventListener('hidden.bs.modal', () => {
+      pendingProduct = null;
+      sourceLocationSelect.innerHTML = '';
+      sourceLocationHint.textContent = '';
+      sourceLocationSelect.classList.remove('warehouse-select-blink');
+      sourceLocationHint.classList.remove('warehouse-hint-invalid');
+      setWarehouseFieldState(true);
+    });
+
+    submitOrderBtn.addEventListener('click', async () => {
+      if (cart.size === 0){
+        showAlert('Please add at least one item.', 'danger');
+        return;
+      }
+      const items = [];
+      let missingSourceWarehouse = false;
+      cart.forEach(v => {
+        if (!String(v.destination_location_id || '').trim()){
+          missingSourceWarehouse = true;
+          return;
+        }
+        items.push({
+          product_id: v.product_id,
+          qty: v.qty,
+          expected_date: null,
+          notes: '',
+          destination_location_id: v.destination_location_id
+        });
+      });
+      if (missingSourceWarehouse){
+        showAlert('Each warehouse item must have a selected destination warehouse.', 'danger');
+        return;
+      }
+
+      submitOrderBtn.disabled = true;
+      submitSpinner.classList.remove('d-none');
+      try{
+        const r = await fetch('/manager/orders/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notes: cartNotes.value.trim(), items })
+        });
+        const j = await r.json();
+        if (!j.ok) throw new Error(j.message || 'Failed to create order');
+        cart.clear();
+        cartNotes.value = '';
+        clearDraft();
+        updateBadge();
+        refreshGrid();
+        renderCart();
+        showAlert('Order submitted successfully.', 'success');
+        setTimeout(()=>{ window.location.href = '/manager/orders'; }, 700);
+      }catch(err){
+        showAlert(err.message || 'Failed to submit order.', 'danger');
+      }finally{
+        submitOrderBtn.disabled = false;
+        submitSpinner.classList.add('d-none');
+      }
+    });
+
+    restoreDraft();
+    loadInitialProducts();
+  </script>
+  {% include 'app_footer.html' %}
+</body>
+</html>

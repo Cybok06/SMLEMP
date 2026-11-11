@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Accounting Overview - TRUEtype Services</title>
+  <link rel="icon" href="https://static.wixstatic.com/media/13bf20_85bc952de62849e895a80e274750784b~mv2.png/v1/fill/w_392,h_146,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/13bf20_85bc952de62849e895a80e274750784b~mv2.png" type="image/png">
+
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#16a34a",
+            "background-light": "#f9fafb",
+            "background-dark": "#020617",
+            "navy": "#0f172a",
+            "emerald": "#16a34a",
+            "medium-gray": "#e5e7eb",
+            "dark-gray": "#111827",
+          },
+          fontFamily: {
+            "display": ["Inter", "sans-serif"]
+          },
+          borderRadius: {
+            "DEFAULT": "0.75rem",
+            "lg": "1.25rem",
+            "xl": "1.5rem",
+            "full": "9999px"
+          },
+          boxShadow: {
+            'soft': '0 6px 20px rgba(15,23,42,0.08)',
+          }
+        },
+      },
+    }
+  </script>
+
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings:
+        'FILL' 0,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24;
+    }
+
+    @media print {
+      #accSidebar,
+      #accSidebarToggle,
+      #accSidebarBackdrop,
+      #dashboardToolbar,
+      #quickActions {
+        display: none !important;
+      }
+      body {
+        background: #ffffff !important;
+      }
+      main {
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-1px);
+    }
+
+    .page-loader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      z-index: 2000;
+      background: transparent;
+      pointer-events: none;
+      opacity: 1;
+      transition: opacity 0.35s ease;
+    }
+    .page-loader__swipe {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(22,163,74,0.95), rgba(2,132,199,0.95), rgba(22,163,74,0.95));
+      background-size: 220% 100%;
+      animation: loaderSwipe 1.1s linear infinite;
+      box-shadow: 0 2px 10px rgba(2,132,199,0.35);
+    }
+    .page-loader__content {
+      position: fixed;
+      top: 10px;
+      right: 14px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #0f172a;
+      background: rgba(255,255,255,0.9);
+      border: 1px solid rgba(148,163,184,0.35);
+      border-radius: 9999px;
+      padding: 4px 10px;
+      backdrop-filter: blur(3px);
+    }
+    .dark .page-loader__content {
+      color: #e2e8f0;
+      background: rgba(15,23,42,0.85);
+      border-color: rgba(148,163,184,0.35);
+    }
+    .page-loader--hide {
+      opacity: 0;
+    }
+    .page-loader--hide .page-loader__content {
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    @keyframes loaderSwipe {
+      from { background-position: 0% 0; }
+      to { background-position: 100% 0; }
+    }
+    .page-ready { visibility: visible; }
+    @media print {
+      .page-loader { display: none !important; }
+    }
+  </style>
+</head>
+
+<body class="bg-background-light dark:bg-background-dark font-display text-dark-gray dark:text-gray-100"
+      data-acc-api-base="{{ url_for('acc_dashboard.accounting_dashboard') }}">
+  <div id="pageLoader" class="page-loader">
+    <div class="page-loader__swipe"></div>
+    <div class="page-loader__content">
+      <div>Loading Data</div>
+    </div>
+  </div>
+  {% include 'accounting/sidebar.html' %}
+
+  <main class="min-h-screen p-4 sm:p-6 lg:p-10 acc-with-sidebar">
+{% include 'work_time_summary.html' %}
+    <div class="mx-auto max-w-7xl space-y-6">
+
+      <!-- Header & Filters -->
+      <header class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <h1 class="text-navy dark:text-white text-3xl sm:text-4xl font-extrabold tracking-tight flex items-center gap-2">
+            <span class="material-symbols-outlined text-emerald text-3xl">space_dashboard</span>
+            <span>Accounting Overview</span>
+          </h1>
+          <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            High-level overview of cash, receivables, payables, expenses and key accounting activity.
+          </p>
+        </div>
+
+        <div id="dashboardToolbar" class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-end">
+          <!-- Date range selector -->
+          <div class="inline-flex items-center gap-2 rounded-full border border-medium-gray/80 dark:border-gray-700 bg-white dark:bg-slate-900 px-3 py-1.5 shadow-soft"
+               title="Change reporting period for charts and KPIs">
+            <span class="material-symbols-outlined text-base text-navy dark:text-gray-100">calendar_month</span>
+            <select
+              id="rangeSelector"
+              class="border-0 bg-transparent text-sm text-navy dark:text-gray-100 focus:ring-0 focus:outline-none"
+            >
+              <option value="this_month" {% if dashboard_data.range_key == 'this_month' %}selected{% endif %}>This month</option>
+              <option value="last_30" {% if dashboard_data.range_key == 'last_30' %}selected{% endif %}>Last 30 days</option>
+              <option value="last_90" {% if dashboard_data.range_key == 'last_90' %}selected{% endif %}>Last 90 days</option>
+              <option value="this_year" {% if dashboard_data.range_key == 'this_year' %}selected{% endif %}>Year to date</option>
+            </select>
+          </div>
+
+          <!-- Range label + info -->
+          <div class="inline-flex items-center gap-2 rounded-full border border-transparent bg-emerald/5 dark:bg-emerald/10 px-3 py-1.5">
+            <span class="material-symbols-outlined text-sm text-emerald">insights</span>
+            <span id="rangeLabel" class="text-xs font-medium text-emerald">
+              {{ dashboard_data.range_label }}
+            </span>
+          </div>
+
+          <a href="{{ url_for('login.logout') }}"
+             class="inline-flex items-center gap-2 rounded-full border border-medium-gray/80 dark:border-gray-700 bg-white dark:bg-slate-900 px-4 py-2 text-xs font-semibold text-navy dark:text-gray-100 shadow-soft hover:bg-gray-50 dark:hover:bg-slate-800">
+            <span class="material-symbols-outlined text-sm">logout</span>
+            <span>Logout</span>
+          </a>
+        </div>
+      </header>
+
+      <!-- KPI Cards -->
+      <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <!-- Cash & Bank -->
+        <a href="{{ url_for('acc_bank_accounts.list_accounts') }}"
+           class="kpi-card rounded-xl bg-white dark:bg-slate-900 shadow-soft border border-medium-gray/60 dark:border-gray-800 p-4 transition-transform"
+           title="View bank, mobile money and cash accounts details">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Cash, Bank &amp; MoMo</p>
+            <span class="material-symbols-outlined text-emerald text-lg">account_balance</span>
+          </div>
+          <p class="mt-2 text-2xl font-extrabold text-navy dark:text-white tracking-tight">
+            GH₵ <span data-acc-kpi="cash_balance">--</span>
+          </p>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Bank: GH₵ <span data-acc-bank="bank">--</span>
+            -  MoMo: GH₵ <span data-acc-bank="mobile_money">--</span>
+          </p>
+        </a>
+
+        <!-- Receivables -->
+        <a href="{{ url_for('ar_aging.aging_report') }}"
+           class="kpi-card rounded-xl bg-white dark:bg-slate-900 shadow-soft border border-medium-gray/60 dark:border-gray-800 p-4 transition-transform"
+           title="View detailed accounts receivable and aging report">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Receivables</p>
+            <span class="material-symbols-outlined text-sky-600 text-lg">request_quote</span>
+          </div>
+          <p class="mt-2 text-2xl font-extrabold text-navy dark:text-white tracking-tight">
+            GH₵ <span data-acc-kpi="ar_total">--</span>
+          </p>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            <span data-acc-kpi="ar_overdue_pct">--</span>% overdue
+          </p>
+        </a>
+
+        <!-- Payables -->
+        <a href="{{ url_for('ap_bills.bills') }}"
+           class="kpi-card rounded-xl bg-white dark:bg-slate-900 shadow-soft border border-medium-gray/60 dark:border-gray-800 p-4 transition-transform"
+           title="View outstanding supplier bills and due dates">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Payables</p>
+            <span class="material-symbols-outlined text-amber-500 text-lg">receipt_long</span>
+          </div>
+          <p class="mt-2 text-2xl font-extrabold text-navy dark:text-white tracking-tight">
+            GH₵ <span data-acc-kpi="ap_total">--</span>
+          </p>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Outstanding to suppliers</p>
+        </a>
+
+        <!-- Net Profit -->
+        <div class="kpi-card rounded-xl bg-white dark:bg-slate-900 shadow-soft border border-medium-gray/60 dark:border-gray-800 p-4 transition-transform"
+             title="Approximate profit using sales and expenses from the tracker">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Net Profit (Current Year)</p>
+            <span class="material-symbols-outlined text-emerald text-lg">trending_up</span>
+          </div>
+            <p class="mt-2 text-2xl font-extrabold tracking-tight text-navy dark:text-white">
+            GH₵ <span data-acc-kpi="net_profit">--</span>
+          </p>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Sales minus expenses</p>
+        </div>
+
+        <!-- Total Expenses -->
+        <a href="{{ url_for('acc_expenses.expenses_page') }}"
+           class="kpi-card rounded-xl bg-white dark:bg-slate-900 shadow-soft border border-medium-gray/60 dark:border-gray-800 p-4 transition-transform"
+           title="Open the detailed expense tracker for this period">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Expenses (Period)</p>
+            <span class="material-symbols-outlined text-rose-500 text-lg">money_off</span>
+          </div>
+          <p class="mt-2 text-2xl font-extrabold text-navy dark:text-white tracking-tight">
+            GH₵ <span data-acc-kpi="expenses_total">--</span>
+          </p>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Total operating expenses</p>
+        </a>
+
+        <!-- Fixed Assets -->
+        <a href="{{ url_for('fixed_assets.register') }}"
+           class="kpi-card rounded-xl bg-white dark:bg-slate-900 shadow-soft border border-medium-gray/60 dark:border-gray-800 p-4 transition-transform"
+           title="View fixed asset register and net book value">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Fixed Assets (NBV)</p>
+            <span class="material-symbols-outlined text-indigo-500 text-lg">inventory_2</span>
+          </div>
+          <p class="mt-2 text-2xl font-extrabold text-navy dark:text-white tracking-tight">
+            GH₵ <span data-acc-kpi="net_book_value">--</span>
+          </p>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Net book value</p>
+        </a>
+
+        <!-- Unreconciled -->
+        <a href="{{ url_for('bank_recon.bank_recon_index') }}"
+           class="kpi-card rounded-xl bg-white dark:bg-slate-900 shadow-soft border border-medium-gray/60 dark:border-gray-800 p-4 transition-transform"
+           title="Open bank reconciliation to clear unmatched items">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Unreconciled Items</p>
+            <span class="material-symbols-outlined text-orange-500 text-lg">account_balance_wallet</span>
+          </div>
+          <p class="mt-2 text-2xl font-extrabold text-navy dark:text-white tracking-tight">
+            <span data-acc-kpi="unreconciled_count">--</span>
+          </p>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Need reconciliation</p>
+        </a>
+
+        <!-- Draft Journals -->
+        <a href="{{ url_for('journals.journals') }}"
+           class="kpi-card rounded-xl bg-white dark:bg-slate-900 shadow-soft border border-medium-gray/60 dark:border-gray-800 p-4 transition-transform"
+           title="Review and post pending journal entries">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Draft Journals</p>
+            <span class="material-symbols-outlined text-amber-600 text-lg">menu_book</span>
+          </div>
+          <p class="mt-2 text-2xl font-extrabold text-navy dark:text-white tracking-tight">
+            <span data-acc-kpi="draft_journals">--</span>
+          </p>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Awaiting review</p>
+        </a>
+      </section>
+      <p class="text-xs text-rose-600 hidden" data-acc-error="kpis">Unable to load KPI data.</p>
+
+      <!-- Bank & Cash (including Mobile Money) -->
+      <section class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <!-- Chart -->
+        <div class="xl:col-span-2 rounded-xl bg-white dark:bg-slate-900 shadow-soft border border-medium-gray/60 dark:border-gray-800 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h2 class="text-sm font-semibold text-navy dark:text-white tracking-wide uppercase flex items-center gap-2">
+                <span class="material-symbols-outlined text-emerald text-base">account_balance_wallet</span>
+                <span>Bank, Mobile Money &amp; Cash</span>
+              </h2>
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Split of total liquid balances across bank accounts, mobile money wallets and cash-on-hand.
+              </p>
+            </div>
+            <a href="{{ url_for('acc_bank_accounts.list_accounts') }}"
+               class="hidden sm:inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs text-gray-600 dark:text-gray-300 border border-medium-gray/70 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-slate-800">
+              <span class="material-symbols-outlined text-xs">open_in_new</span>
+              <span>Open accounts</span>
+            </a>
+          </div>
+          <div class="h-72 flex items-center justify-center">
+            <canvas id="bankCashChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Account list -->
+        <div class="rounded-xl bg-white dark:bg-slate-900 shadow-soft border border-medium-gray/60 dark:border-gray-800 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-semibold text-navy dark:text-white tracking-wide uppercase flex items-center gap-2">
+              <span class="material-symbols-outlined text-base text-sky-600">list_alt</span>
+              <span>Bank &amp; MoMo Accounts</span>
+            </h2>
+          </div>
+
+          <div id="bankAccountsList" class="space-y-2 max-h-72 overflow-auto">
+            <div class="flex items-center justify-between rounded-lg px-3 py-2 bg-gray-50/70 dark:bg-slate-900/60">
+              <div class="flex flex-col">
+                <span class="text-sm font-medium text-navy dark:text-white">Loading account...</span>
+                <span class="text-[11px] text-gray-500 dark:text-gray-400">Loading details</span>
+              </div>
+              <span class="text-sm font-semibold text-navy dark:text-gray-100">GH₵ --</span>
+            </div>
+            <div class="flex items-center justify-between rounded-lg px-3 py-2 bg-gray-50/70 dark:bg-slate-900/60">
+              <div class="flex flex-col">
+                <span class="text-sm font-medium text-navy dark:text-white">Loading account...</span>
+                <span class="text-[11px] text-gray-500 dark:text-gray-400">Loading details</span>
+              </div>
+              <span class="text-sm font-semibold text-navy dark:text-gray-100">GH₵ --</span>
+            </div>
+          </div>
+          <p class="mt-2 text-xs text-rose-600 hidden" data-acc-error="bank-cash">Unable to load bank accounts.</p>
+
+          <div class="mt-3 border-t border-dashed border-medium-gray/70 dark:border-gray-700 pt-2 text-[11px] text-gray-600 dark:text-gray-400 space-y-1.5">
+            <p>Total liquid balance:
+              <span class="font-semibold text-navy dark:text-white">
+                GH₵ <span data-acc-bank="total_balance">--</span>
+              </span>
+            </p>
+            <p>Bank:
+              <span class="font-semibold">GH₵ <span data-acc-bank="bank_total">--</span></span>
+              -  MoMo:
+              <span class="font-semibold">GH₵ <span data-acc-bank="mobile_money_total">--</span></span>
+              -  Cash:
+              <span class="font-semibold">GH₵ <span data-acc-bank="cash_total">--</span></span>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Charts: Sales vs Expenses vs Stock vs Profit vs Active Liability & Cash Flow -->
+      <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <!-- Sales vs Expenses vs Stock vs Profit vs Active Liability -->
+        <div class="rounded-xl bg-white dark:bg-slate-900 shadow-soft border border-medium-gray/60 dark:border-gray-800 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h2 class="text-sm font-semibold text-navy dark:text-white tracking-wide uppercase flex items-center gap-2">
+                <span class="material-symbols-outlined text-emerald text-base">show_chart</span>
+                <span>Sales vs Expenses vs Stock vs Profit vs Active Liability</span>
+              </h2>
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Trend over last 6 months including active liability.
+              </p>
+            </div>
+            <button
+              type="button"
+              class="hidden sm:inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs text-gray-600 dark:text-gray-300 border border-medium-gray/70 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-slate-800"
+              title="This chart compares monthly sales, monthly expenses, current stock cost, outflow-profit, and active liability"
+            >
+              <span class="material-symbols-outlined text-xs">info</span>
+              <span>Explanation</span>
+            </button>
+          </div>
+          <div class="h-96">
+            <canvas id="revenueExpensesChart"></canvas>
+          </div>
+          <p class="mt-2 text-xs text-rose-600 hidden" data-acc-error="sales-expense">Unable to load sales and expense data.</p>
+        </div>
+
+        <!-- Cash In vs Cash Out -->
+        <div class="rounded-xl bg-white dark:bg-slate-900 shadow-soft border border-medium-gray/60 dark:border-gray-800 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h2 class="text-sm font-semibold text-navy dark:text-white tracking-wide uppercase flex items-center gap-2">
+                <span class="material-symbols-outlined text-sky-600 text-base">compare_arrows</span>
+                <span>Cash In vs Cash Out</span>
+              </h2>
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Cash In from Sales + Investment + Discount vs Cash Out from Expenses + Withdrawals.
+              </p>
+            </div>
+          </div>
+          <div class="h-72">
+            <canvas id="cashFlowChart"></canvas>
+          </div>
+          <p class="mt-2 text-xs text-rose-600 hidden" data-acc-error="cash-flow">Unable to load cash flow data.</p>
+        </div>
+      </section>
+
+      <!-- AR Aging + AP Due -->
+      <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <!-- AR Aging -->
+        <div class="rounded-xl bg-white dark:bg-slate-900 shadow-soft border border-medium-gray/60 dark:border-gray-800 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-semibold text-navy dark:text-white tracking-wide uppercase flex items-center gap-2">
+              <span class="material-symbols-outlined text-rose-500 text-base">schedule</span>
+              <span>AR Aging</span>
+            </h2>
+            <span class="text-xs text-gray-500 dark:text-gray-400" title="Distribution of receivables by number of days overdue">
+              Aging buckets of outstanding receivables
+            </span>
+          </div>
+          <div class="h-64">
+            <canvas id="arAgingChart"></canvas>
+          </div>
+          <p class="mt-2 text-xs text-rose-600 hidden" data-acc-error="ar-aging">Unable to load AR aging data.</p>
+        </div>
+
+        <!-- AP Due -->
+        <div class="rounded-xl bg-white dark:bg-slate-900 shadow-soft border border-medium-gray/60 dark:border-gray-800 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-semibold text-navy dark:text-white tracking-wide uppercase flex items-center gap-2">
+              <span class="material-symbols-outlined text-amber-500 text-base">event_upcoming</span>
+              <span>AP Due</span>
+            </h2>
+            <span class="text-xs text-gray-500 dark:text-gray-400" title="Bills that are due today, in the next 7/30 days, or already overdue">
+              Short-term obligations to suppliers
+            </span>
+          </div>
+          <div class="h-64">
+            <canvas id="apDueChart"></canvas>
+          </div>
+          <p class="mt-2 text-xs text-rose-600 hidden" data-acc-error="ap-due">Unable to load AP due data.</p>
+        </div>
+      </section>
+
+      <!-- Top Customers / Suppliers + Quick Actions -->
+      <section class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <!-- Top Customers -->
+        <div class="rounded-xl bg-white dark:bg-slate-900 shadow-soft border border-medium-gray/60 dark:border-gray-800 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-semibold text-navy dark:text-white tracking-wide uppercase flex items-center gap-2">
+              <span class="material-symbols-outlined text-sky-600 text-base">group</span>
+              <span>Top Customers (by AR)</span>
+            </h2>
+          </div>
+          <div id="topCustomersList" class="space-y-2">
+            <div class="flex items-center justify-between rounded-lg px-3 py-2 bg-gray-50/70 dark:bg-slate-900/60">
+              <div class="flex flex-col">
+                <span class="text-sm font-medium text-navy dark:text-white">Loading customer...</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Outstanding receivable</span>
+              </div>
+              <span class="text-sm font-semibold text-navy dark:text-gray-100">GH₵ --</span>
+            </div>
+            <div class="flex items-center justify-between rounded-lg px-3 py-2 bg-gray-50/70 dark:bg-slate-900/60">
+              <div class="flex flex-col">
+                <span class="text-sm font-medium text-navy dark:text-white">Loading customer...</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Outstanding receivable</span>
+              </div>
+              <span class="text-sm font-semibold text-navy dark:text-gray-100">GH₵ --</span>
+            </div>
+          </div>
+          <p class="mt-2 text-xs text-rose-600 hidden" data-acc-error="top-customers">Unable to load top customers.</p>
+        </div>
+
+        <!-- Top Suppliers -->
+        <div class="rounded-xl bg-white dark:bg-slate-900 shadow-soft border border-medium-gray/60 dark:border-gray-800 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-semibold text-navy dark:text-white tracking-wide uppercase flex items-center gap-2">
+              <span class="material-symbols-outlined text-amber-600 text-base">storefront</span>
+              <span>Top Suppliers (by AP)</span>
+            </h2>
+          </div>
+          <div id="topSuppliersList" class="space-y-2">
+            <div class="flex items-center justify-between rounded-lg px-3 py-2 bg-gray-50/70 dark:bg-slate-900/60">
+              <div class="flex flex-col">
+                <span class="text-sm font-medium text-navy dark:text-white">Loading supplier...</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Outstanding payable</span>
+              </div>
+              <span class="text-sm font-semibold text-navy dark:text-gray-100">GH₵ --</span>
+            </div>
+            <div class="flex items-center justify-between rounded-lg px-3 py-2 bg-gray-50/70 dark:bg-slate-900/60">
+              <div class="flex flex-col">
+                <span class="text-sm font-medium text-navy dark:text-white">Loading supplier...</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Outstanding payable</span>
+              </div>
+              <span class="text-sm font-semibold text-navy dark:text-gray-100">GH₵ --</span>
+            </div>
+          </div>
+          <p class="mt-2 text-xs text-rose-600 hidden" data-acc-error="top-suppliers">Unable to load top suppliers.</p>
+        </div>
+
+        <!-- Quick Actions -->
+        <div id="quickActions" class="rounded-xl bg-white dark:bg-slate-900 shadow-soft border border-medium-gray/60 dark:border-gray-800 p-4">
+          <h2 class="text-sm font-semibold text-navy dark:text-white tracking-wide uppercase mb-3 flex items-center gap-2">
+            <span class="material-symbols-outlined text-emerald text-base">flash_on</span>
+            <span>Quick Actions</span>
+          </h2>
+          <div class="grid grid-cols-2 gap-2">
+            <a href="{{ url_for('ar_invoices.invoices') }}"
+               class="inline-flex items-center justify-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold text-navy dark:text-gray-100 bg-emerald/10 hover:bg-emerald/20"
+               title="Create or manage customer invoices">
+              <span class="material-symbols-outlined text-sm">request_quote</span>
+              <span>New Invoice</span>
+            </a>
+            <a href="{{ url_for('ap_bills.bills') }}"
+               class="inline-flex items-center justify-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold text-navy dark:text-gray-100 bg-amber-100/70 hover:bg-amber-200/80 dark:bg-amber-900/30 dark:hover:bg-amber-900/50"
+               title="Create or manage supplier bills">
+              <span class="material-symbols-outlined text-sm">receipt_long</span>
+              <span>New Bill</span>
+            </a>
+            <a href="{{ url_for('acc_expenses.expenses_page') }}"
+               class="inline-flex items-center justify-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold text-navy dark:text-gray-100 bg-rose-100/80 hover:bg-rose-200/80 dark:bg-rose-900/30 dark:hover:bg-rose-900/50"
+               title="Log an operating expense quickly">
+              <span class="material-symbols-outlined text-sm">money_off</span>
+              <span>Quick Expense</span>
+            </a>
+            <a href="{{ url_for('journals.journal_new') }}"
+               class="inline-flex items-center justify-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold text-navy dark:text-gray-100 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700"
+               title="Post a manual journal entry">
+              <span class="material-symbols-outlined text-sm">menu_book</span>
+              <span>New Journal</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Recent Activity -->
+      <section class="rounded-xl bg-white dark:bg-slate-900 shadow-soft border border-medium-gray/60 dark:border-gray-800 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-semibold text-navy dark:text-white tracking-wide uppercase flex items-center gap-2">
+            <span class="material-symbols-outlined text-navy text-base">history</span>
+            <span>Recent Accounting Activity</span>
+          </h2>
+          <span class="text-xs text-gray-500 dark:text-gray-400">
+            Last <span id="recentActivityCount">--</span> events
+          </span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-slate-950/60">
+              <tr>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Type</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Description</th>
+                <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Amount</th>
+                <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Date</th>
+              </tr>
+            </thead>
+            <tbody id="recentActivityBody" class="divide-y divide-medium-gray/70 dark:divide-gray-800">
+              <tr class="hover:bg-gray-50/80 dark:hover:bg-slate-800/60">
+                <td class="px-4 py-2">
+                  <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-200">
+                    <span class="material-symbols-outlined text-xs">info</span>
+                    <span class="capitalize">loading</span>
+                  </span>
+                </td>
+                <td class="px-4 py-2 text-gray-800 dark:text-gray-100">
+                  Loading recent activity...
+                </td>
+                <td class="px-4 py-2 text-right text-gray-800 dark:text-gray-100">
+                  GH₵ --
+                </td>
+                <td class="px-4 py-2 text-right text-gray-500 dark:text-gray-400 text-xs">
+                  --
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="mt-2 text-xs text-rose-600 hidden" data-acc-error="recent-activity">Unable to load recent activity.</p>
+      </section>
+    </div>
+
+  </main>
+
+  <script src="{{ url_for('static', filename='js/ui-utils.js') }}"></script>
+  <script>
+    (function(){
+      function showLoader() {
+        var loader = document.getElementById("pageLoader");
+        if (!loader) return;
+        loader.classList.remove("page-loader--hide");
+      }
+      function hideLoader() {
+        var loader = document.getElementById("pageLoader");
+        if (!loader) return;
+        loader.classList.add("page-loader--hide");
+        document.body.classList.add("page-ready");
+        window.setTimeout(function(){
+          if (loader && loader.parentNode) loader.parentNode.removeChild(loader);
+        }, 450);
+      }
+      window.showPageLoader = showLoader;
+      window.hidePageLoader = hideLoader;
+      showLoader();
+      window.addEventListener("load", function(){ hideLoader(); }, { once: true });
+    })();
+  </script>
+  <script src="{{ url_for('static', filename='js/accounting-dashboard.js') }}"></script>
+    {% include 'app_footer.html' %}
+
+</body>
+</html>

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Activation Customer Runtime</title>
+  <link rel="icon" href="https://imagedelivery.net/h9fmMoa1o2c2P55TcWJGOg/10283f28-b9a0-4100-b254-19a854386800/public" type="image/png" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <style>
+    body { background: #f5f7fb; }
+    .page-wrap { margin-left: 260px; padding: 20px; }
+    @media (max-width: 991px) { .page-wrap { margin-left: 0; } }
+    .card-soft { border: 1px solid #e6ebf2; border-radius: 14px; box-shadow: 0 8px 24px rgba(15,23,42,.05); }
+    .metric-box { border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; padding: 14px; }
+    .runtime-table th { font-size: .76rem; text-transform: uppercase; letter-spacing: .04em; color: #64748b; white-space: nowrap; }
+    .runtime-table td { vertical-align: top; }
+    .product-cell { min-width: 240px; white-space: normal; }
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; }
+    @media (max-width: 575px) {
+      .metric-box { padding: 12px; }
+      .toolbar > * { width: 100%; max-width: none !important; }
+    }
+  </style>
+</head>
+<body>
+  {% if role_base == 'admin' %}
+    {% include 'admin_sidebar.html' %}
+  {% elif role_base == 'manager' %}
+    {% include 'manager_sidebar.html' %}
+  {% else %}
+    {% include 'side_bar.html' %}
+  {% endif %}
+
+  <div class="page-wrap">
+    <div class="container-fluid">
+      <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+        <div>
+          <h4 class="mb-1">Activation Customer Table</h4>
+          <div class="text-muted small">{{ activation.title }} - {{ activation.location }}</div>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          {% if role_base == 'admin' %}
+            <a class="btn btn-outline-secondary" href="/admin/activations/{{ activation.id }}">Back to activation</a>
+          {% elif role_base == 'manager' %}
+            <a class="btn btn-outline-secondary" href="{{ url_for('activations.manager_activations_page') }}">Back to activations</a>
+          {% else %}
+            <a class="btn btn-outline-secondary" href="{{ url_for('activations.agent_activations_page') }}">Back to activations</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div id="errorBox" class="alert alert-danger d-none"></div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-md-4">
+          <div class="metric-box">
+            <div class="small text-muted">Customers</div>
+            <div class="h4 mb-0" id="totalCustomers">0</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="metric-box">
+            <div class="small text-muted">Products Taken</div>
+            <div class="h4 mb-0" id="totalProducts">0</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="metric-box">
+            <div class="small text-muted">Sub Total</div>
+            <div class="h4 mb-0" id="totalAmount">GHS 0.00</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-soft mb-3">
+        <div class="card-body">
+          <div class="toolbar">
+            <div style="max-width: 340px;" class="flex-grow-1">
+              <label class="form-label form-label-sm mb-1" for="searchInput">Search</label>
+              <input id="searchInput" class="form-control form-control-sm" placeholder="Customer, phone, agent, product" />
+            </div>
+            <div style="max-width: 280px;" class="flex-grow-1">
+              <label class="form-label form-label-sm mb-1" for="agentFilter">Agent</label>
+              <select id="agentFilter" class="form-select form-select-sm">
+                <option value="">All agents</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-soft">
+        <div class="table-responsive">
+          <table class="table table-sm align-middle runtime-table mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Customer Name</th>
+                <th>Phone Number</th>
+                <th>Product Taken</th>
+                <th>Amount</th>
+                <th>Agent Registered</th>
+              </tr>
+            </thead>
+            <tbody id="runtimeBody">
+              <tr><td colspan="5" class="text-center text-muted py-4">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card-body border-top d-flex justify-content-between align-items-center gap-2 flex-wrap">
+          <div class="small text-muted" id="pageMeta">Loading records...</div>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-secondary" id="prevBtn" type="button">Prev</button>
+            <button class="btn btn-outline-secondary" id="nextBtn" type="button">View Next</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const activationId = '{{ activation.id }}';
+    const isAdmin = '{{ role_base }}' === 'admin';
+    const rowsPerPage = 30;
+    let rows = [];
+    let page = 1;
+
+    function money(value){
+      return `GHS ${Number(value || 0).toFixed(2)}`;
+    }
+
+    function filteredRows(){
+      const q = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+      const agentId = document.getElementById('agentFilter').value || '';
+      return rows.filter(row => {
+        const haystack = `${row.customerName || ''} ${row.phoneNumber || ''} ${row.productsLabel || ''} ${row.agentName || ''}`.toLowerCase();
+        return (!q || haystack.includes(q)) && (!agentId || row.agentId === agentId);
+      });
+    }
+
+    function renderTotals(items){
+      const totalProducts = items.reduce((sum, row) => sum + Number(row.productTotal || 0), 0);
+      const totalAmount = items.reduce((sum, row) => sum + Number(row.amountPaid || 0), 0);
+      document.getElementById('totalCustomers').textContent = items.length.toLocaleString();
+      document.getElementById('totalProducts').textContent = totalProducts.toLocaleString();
+      document.getElementById('totalAmount').textContent = money(totalAmount);
+    }
+
+    function renderRows(){
+      const body = document.getElementById('runtimeBody');
+      const meta = document.getElementById('pageMeta');
+      const prevBtn = document.getElementById('prevBtn');
+      const nextBtn = document.getElementById('nextBtn');
+      const items = filteredRows();
+      const totalPages = Math.max(1, Math.ceil(items.length / rowsPerPage));
+      page = Math.min(Math.max(page, 1), totalPages);
+      renderTotals(items);
+
+      if(!items.length){
+        body.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No customer records found.</td></tr>';
+        meta.textContent = 'Showing 0 customers';
+        prevBtn.disabled = true;
+        nextBtn.disabled = true;
+        return;
+      }
+
+      const start = (page - 1) * rowsPerPage;
+      const shown = items.slice(start, start + rowsPerPage);
+      body.innerHTML = shown.map(row => `
+        <tr>
+          <td>${row.customerName || 'Unnamed Customer'}</td>
+          <td>${row.phoneNumber || '--'}</td>
+          <td class="product-cell">${row.productsLabel || 'No product assigned'}<div class="small text-muted">Qty: ${Number(row.productTotal || 0).toLocaleString()}</div></td>
+          <td>${money(row.amountPaid || 0)}</td>
+          <td>${row.agentName || 'Unknown Agent'}</td>
+        </tr>
+      `).join('');
+
+      meta.textContent = `Showing ${start + 1}-${start + shown.length} of ${items.length} customers`;
+      prevBtn.disabled = page <= 1;
+      nextBtn.disabled = page >= totalPages;
+    }
+
+    function renderAgentFilter(agents){
+      const select = document.getElementById('agentFilter');
+      select.innerHTML = '<option value="">All agents</option>';
+      (agents || []).forEach(agent => {
+        const opt = document.createElement('option');
+        opt.value = agent.userId || '';
+        opt.textContent = agent.name || 'Unknown Agent';
+        select.appendChild(opt);
+      });
+    }
+
+    async function loadReport(){
+      try{
+        const qs = isAdmin ? '' : '';
+        const res = await fetch(`/api/activations/${activationId}/leader-runtime${qs}`, { credentials: 'same-origin' });
+        const data = await res.json();
+        if(!res.ok || !data.ok) throw new Error(data.message || 'Failed to load runtime report.');
+        const report = data.report || {};
+        if(report.kind === 'personal'){
+          document.querySelector('h4').textContent = 'My Activation Customers';
+        }else{
+          document.querySelector('h4').textContent = 'Leader Runtime Customers';
+        }
+        rows = report.items || [];
+        renderAgentFilter(report.agents || []);
+        renderRows();
+      }catch(err){
+        document.getElementById('errorBox').textContent = err.message || 'Failed to load runtime report.';
+        document.getElementById('errorBox').classList.remove('d-none');
+        document.getElementById('runtimeBody').innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Report unavailable.</td></tr>';
+      }
+    }
+
+    document.getElementById('searchInput').addEventListener('input', () => { page = 1; renderRows(); });
+    document.getElementById('agentFilter').addEventListener('change', () => { page = 1; renderRows(); });
+    document.getElementById('prevBtn').addEventListener('click', () => { page -= 1; renderRows(); });
+    document.getElementById('nextBtn').addEventListener('click', () => { page += 1; renderRows(); });
+    document.addEventListener('DOMContentLoaded', loadReport);
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

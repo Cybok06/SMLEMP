@@ -1,0 +1,11 @@
+{
+  "indexes": [
+    {
+      "collection": "payments",
+      "keys": [["printer_feature_enabled", 1], ["payment_recorded_at", -1]],
+      "options": {"name": "printer_analysis_eligible_date"},
+      "source": "services/printer_analysis.py"
+    }
+  ],
+  "unresolved": []
+}

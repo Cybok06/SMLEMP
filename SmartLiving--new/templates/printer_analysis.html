@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Printer Analysis</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+body{background:#f4f7fb;padding-left:270px;color:#172438}main{max-width:1450px;margin:auto;padding:30px 20px}.card{border:0;border-radius:16px;box-shadow:0 6px 24px #10233f0b}.metric{font-size:1.7rem;font-weight:750}.chart-box{height:290px}.table th{white-space:nowrap}.status{font-weight:600;text-transform:capitalize}.status.printed{color:#137a44}.status.missed{color:#c23838}.status.uncertain{color:#986300}.status.waiting{color:#2465b3}@media(max-width:768px){body{padding-left:0}main{padding:20px 12px}}
+</style></head><body>{% include 'executive_sidebar.html' %}<main>
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3"><div><h1 class="h2 mb-1"><i class="bi bi-bar-chart"></i> Printer Analysis</h1><p class="text-secondary mb-0">Receipt rollout for payments that required printing when recorded.</p></div><span class="badge text-bg-light border p-2">Missed = no confirmed print after 15 minutes</span></div>
+<form id="filters" class="card p-3 mb-4"><div class="row g-3 align-items-end">
+<div class="col-sm-6 col-lg-2"><label class="form-label" for="start">From</label><input class="form-control" id="start" name="start" type="date" required></div>
+<div class="col-sm-6 col-lg-2"><label class="form-label" for="end">Through</label><input class="form-control" id="end" name="end" type="date" required></div>
+<div class="col-sm-6 col-lg-2"><label class="form-label" for="branch">Branch</label><select class="form-select" id="branch" name="branch"><option value="">All branches</option></select></div>
+<div class="col-sm-6 col-lg-3"><label class="form-label" for="agentSearch">Agent</label><input class="form-control" id="agentSearch" type="search" placeholder="Search agent name" autocomplete="off"><input id="agent" name="agent" type="hidden"><div id="agentMatches" class="list-group position-absolute shadow-sm" style="z-index:10;max-height:220px;overflow:auto"></div></div>
+<div class="col-sm-6 col-lg-2"><label class="form-label" for="status">Status</label><select class="form-select" id="status" name="status"><option value="">All statuses</option><option value="printed">Printed</option><option value="waiting">Waiting</option><option value="missed">Missed</option><option value="uncertain">Uncertain</option></select></div>
+<div class="col-sm-6 col-lg-1"><button class="btn btn-primary w-100" type="submit">Apply</button></div></div></form>
+<div id="message" class="alert alert-info" role="status" aria-live="polite">Loading analysis…</div>
+<section class="row g-3 mb-4" aria-label="Summary">
+<div class="col-sm-6 col-xl-3"><div class="card p-3"><div class="text-secondary">Payments requiring receipts</div><div id="required" class="metric">—</div></div></div>
+<div class="col-sm-6 col-xl-3"><div class="card p-3"><div class="text-secondary">Payments printed</div><div id="printed_payments" class="metric">—</div></div></div>
+<div class="col-sm-6 col-xl-3"><div class="card p-3"><div class="text-secondary">Print coverage</div><div id="coverage_percent" class="metric">—</div></div></div>
+<div class="col-sm-6 col-xl-3"><div class="card p-3"><div class="text-secondary">Receipts sent</div><div id="receipts_sent" class="metric">—</div><small class="text-secondary"><span id="short_sent">—</span> short · <span id="full_sent">—</span> long; legacy formats unclassified</small></div></div>
+<div class="col-sm-6 col-xl-3"><div class="card p-3"><div class="text-secondary">Missed prints</div><div id="missed" class="metric text-danger">—</div></div></div>
+<div class="col-sm-6 col-xl-3"><div class="card p-3"><div class="text-secondary">Awaiting grace period</div><div id="waiting" class="metric">—</div></div></div>
+<div class="col-sm-6 col-xl-3"><div class="card p-3"><div class="text-secondary">Delivery uncertain</div><div id="uncertain" class="metric">—</div></div></div>
+<div class="col-sm-6 col-xl-3"><div class="card p-3"><div class="text-secondary">Median time to first print</div><div id="median_interval_seconds" class="metric">—</div><small id="late_prints" class="text-secondary"></small></div></div>
+</section>
+<section class="row g-3 mb-4" aria-label="Charts">
+<div class="col-xl-8"><div class="card p-3"><h2 class="h5">Daily payments and prints</h2><div class="chart-box"><canvas id="dailyChart"></canvas></div></div></div>
+<div class="col-xl-4"><div class="card p-3"><h2 class="h5">Current status</h2><div class="chart-box"><canvas id="statusChart"></canvas></div></div></div>
+<div class="col-xl-6"><div class="card p-3"><h2 class="h5">Branch coverage</h2><div class="chart-box"><canvas id="branchChart"></canvas></div></div></div>
+<div class="col-xl-6"><div class="card p-3"><h2 class="h5">Time to first print</h2><div class="chart-box"><canvas id="intervalChart"></canvas></div></div></div>
+</section>
+<section class="card p-3"><div class="d-flex justify-content-between align-items-center gap-2"><h2 class="h5 mb-0">Recent eligible payments</h2><small class="text-secondary">Latest 100 matching payments</small></div><div class="table-responsive mt-3"><table class="table table-hover align-middle"><thead><tr><th>Payment ID</th><th>Recorded</th><th>Agent</th><th>Branch</th><th>Amount</th><th>Status</th><th>Printed at</th><th>Interval</th><th>Short</th><th>Long</th></tr></thead><tbody id="paymentRows"></tbody></table></div></section>
+<p class="small text-secondary mt-3">“Printed” means receipt bytes were reported sent to the printer. Physical paper output cannot be verified by the application. Historical access is determined at payment creation.</p>
+</main>
+<script id="analysisConfig" type="application/json">{{ {'dataUrl': url_for('printer_analysis.data'), 'agentsUrl': url_for('printer_access.agents'), 'branchesUrl': url_for('printer_access.branches')}|tojson }}</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/printer_analysis.js', v='20261028-1') }}" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script></body></html>

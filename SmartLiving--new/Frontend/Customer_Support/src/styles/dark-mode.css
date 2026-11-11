@@ -1,0 +1,210 @@
+/*
+ * SCOS 2026 — Comprehensive Dark Mode Overrides
+ * Catches every hardcoded inline hex value across all pages.
+ * Works alongside the useTheme() hook for structural backgrounds.
+ */
+
+html[data-theme="dark"] { color-scheme: dark; }
+
+/* ══════════════════════════════════════════════════
+   PAGE & LAYOUT BACKGROUNDS
+══════════════════════════════════════════════════ */
+html[data-theme="dark"] body,
+html[data-theme="dark"] main {
+  background-color: #0E1117 !important;
+}
+
+/* ══════════════════════════════════════════════════
+   WHITE SURFACES → DARK CARD
+══════════════════════════════════════════════════ */
+html[data-theme="dark"] [style*="background: #FFFFFF"],
+html[data-theme="dark"] [style*="background: #ffffff"],
+html[data-theme="dark"] [style*="background: #FFF"],
+html[data-theme="dark"] [style*="background: #fff"],
+html[data-theme="dark"] [style*="background-color: #FFFFFF"],
+html[data-theme="dark"] [style*="background-color: #ffffff"] {
+  background-color: #161C26 !important;
+}
+
+/* ══════════════════════════════════════════════════
+   LIGHT GRAY PAGE BACKGROUNDS → DARK PAGE
+══════════════════════════════════════════════════ */
+html[data-theme="dark"] [style*="background: #F7F9F8"],
+html[data-theme="dark"] [style*="background: #F7F8FA"],
+html[data-theme="dark"] [style*="background: #F2F4F7"],
+html[data-theme="dark"] [style*="background: #F2FCF9"],
+html[data-theme="dark"] [style*="background: #F5F7FB"],
+html[data-theme="dark"] [style*="background: #F5FAF8"],
+html[data-theme="dark"] [style*="background: #F3F6F5"],
+html[data-theme="dark"] [style*="background: #F4F6F5"] {
+  background-color: #0E1117 !important;
+}
+
+/* ══════════════════════════════════════════════════
+   OFF-WHITE SUBTLE SURFACES → DARK SUBTLE
+══════════════════════════════════════════════════ */
+html[data-theme="dark"] [style*="background: #FAFBFB"],
+html[data-theme="dark"] [style*="background: #FAFBFC"],
+html[data-theme="dark"] [style*="background: #F9FAFB"],
+html[data-theme="dark"] [style*="background: #F9FAFC"],
+html[data-theme="dark"] [style*="background: #F8FAFC"],
+html[data-theme="dark"] [style*="background: #F8F9FA"],
+html[data-theme="dark"] [style*="background: #F8FAFC"],
+html[data-theme="dark"] [style*="background: #FAFAFA"] {
+  background-color: #111620 !important;
+}
+
+/* ══════════════════════════════════════════════════
+   TABLE HEADERS
+══════════════════════════════════════════════════ */
+html[data-theme="dark"] thead tr,
+html[data-theme="dark"] [style*="background: #F8FAFC"],
+html[data-theme="dark"] [style*="background: #F8FAFC"],
+html[data-theme="dark"] [style*="background: #FAFBFB"] {
+  background-color: #111620 !important;
+}
+
+/* ══════════════════════════════════════════════════
+   ROW HOVER / ACTIVE STATES
+══════════════════════════════════════════════════ */
+html[data-theme="dark"] tbody tr:hover {
+  background-color: #1C2535 !important;
+}
+html[data-theme="dark"] [style*="background: #FAFBFF"],
+html[data-theme="dark"] [style*="background: #F0F6FF"],
+html[data-theme="dark"] [style*="background: #EFF6FF"],
+html[data-theme="dark"] [style*="background: #F5FAF8"] {
+  background-color: rgba(34,199,169,0.07) !important;
+}
+
+/* ══════════════════════════════════════════════════
+   SIDEBAR / NAV — teal bg is managed by JS, skip CSS
+══════════════════════════════════════════════════ */
+/* Sidebar and TopNav backgrounds are set via useTheme() in components. */
+
+/* ══════════════════════════════════════════════════
+   TEXT COLOURS
+══════════════════════════════════════════════════ */
+/* Primary text */
+html[data-theme="dark"] [style*="color: #111827"],
+html[data-theme="dark"] [style*="color: #101828"],
+html[data-theme="dark"] [style*="color: #0D0F14"],
+html[data-theme="dark"] [style*="color: #1F2937"],
+html[data-theme="dark"] [style*="color: #18181B"] { color: #E8EEF0 !important; }
+
+/* Secondary text */
+html[data-theme="dark"] [style*="color: #374151"],
+html[data-theme="dark"] [style*="color: #344054"],
+html[data-theme="dark"] [style*="color: #1E293B"] { color: #B8CCC8 !important; }
+
+/* Tertiary text */
+html[data-theme="dark"] [style*="color: #6B7280"],
+html[data-theme="dark"] [style*="color: #667085"],
+html[data-theme="dark"] [style*="color: #64748B"] { color: #5E7A75 !important; }
+
+/* Muted text */
+html[data-theme="dark"] [style*="color: #9CA3AF"],
+html[data-theme="dark"] [style*="color: #98A2B3"],
+html[data-theme="dark"] [style*="color: #94A3B8"] { color: #3A5550 !important; }
+
+/* ══════════════════════════════════════════════════
+   BORDERS
+══════════════════════════════════════════════════ */
+html[data-theme="dark"] [style*="border: 1px solid #EEF2F1"],
+html[data-theme="dark"] [style*="border: 1px solid #EEF2F0"],
+html[data-theme="dark"] [style*="border: 1px solid #E5E7EB"],
+html[data-theme="dark"] [style*="border: 1px solid #E8ECEF"],
+html[data-theme="dark"] [style*="border: 1px solid #EAECF0"],
+html[data-theme="dark"] [style*="border: 1px solid #DCE5E2"],
+html[data-theme="dark"] [style*="border: 1.5px solid #DCE5E2"],
+html[data-theme="dark"] [style*="border: 1.5px solid #E5E7EB"],
+html[data-theme="dark"] [style*="border: 1.5px solid #EAECF0"] { border-color: #1E2A3A !important; }
+
+html[data-theme="dark"] [style*="border-bottom: 1px solid #EEF2F1"],
+html[data-theme="dark"] [style*="border-bottom: 1px solid #E5E7EB"],
+html[data-theme="dark"] [style*="border-bottom: 1px solid #EAECF0"],
+html[data-theme="dark"] [style*="border-bottom: 1px solid #E8ECEF"],
+html[data-theme="dark"] [style*="border-bottom: 1px solid #F2F4F7"],
+html[data-theme="dark"] [style*="border-bottom: 1px solid #F3F4F6"],
+html[data-theme="dark"] [style*="border-bottom: 1px solid #F9FAFB"],
+html[data-theme="dark"] [style*="border-bottom: 1px solid #F3F6F5"] { border-bottom-color: #1E2A3A !important; }
+
+html[data-theme="dark"] [style*="border-top: 1px solid #EEF2F1"],
+html[data-theme="dark"] [style*="border-top: 1px solid #E5E7EB"],
+html[data-theme="dark"] [style*="border-top: 1px solid #EAECF0"],
+html[data-theme="dark"] [style*="border-top: 1px solid #F2F4F7"],
+html[data-theme="dark"] [style*="border-top: 1px solid #F3F4F6"],
+html[data-theme="dark"] [style*="border-top: 1px solid #F3F6F5"] { border-top-color: #1E2A3A !important; }
+
+html[data-theme="dark"] [style*="border-left: 1px solid #EEF2F1"],
+html[data-theme="dark"] [style*="border-left: 1px solid #E8ECEF"],
+html[data-theme="dark"] [style*="border-right: 1px solid #EEF2F1"],
+html[data-theme="dark"] [style*="border-right: 1px solid #E8ECEF"] { border-color: #1E2A3A !important; }
+
+/* ══════════════════════════════════════════════════
+   INPUTS, TEXTAREAS, SELECTS
+══════════════════════════════════════════════════ */
+html[data-theme="dark"] input,
+html[data-theme="dark"] textarea,
+html[data-theme="dark"] select {
+  background-color: #1C2535 !important;
+  color: #E8EEF0 !important;
+  border-color: #2D3F4A !important;
+}
+html[data-theme="dark"] input::placeholder,
+html[data-theme="dark"] textarea::placeholder { color: #3A5550 !important; }
+html[data-theme="dark"] select option { background: #161C26; color: #E8EEF0; }
+
+/* ══════════════════════════════════════════════════
+   SHADOWS — lighten for dark bg
+══════════════════════════════════════════════════ */
+html[data-theme="dark"] [style*="box-shadow: 0px 4px 20px rgba(0,0,0,0.04)"] {
+  box-shadow: 0px 4px 24px rgba(0,0,0,0.35) !important;
+}
+html[data-theme="dark"] [style*="box-shadow: 0 1px 2px rgba(16,24,40,0.05)"] {
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3) !important;
+}
+
+/* ══════════════════════════════════════════════════
+   SCROLLBAR
+══════════════════════════════════════════════════ */
+html[data-theme="dark"] ::-webkit-scrollbar-thumb { background: #2D3F4A !important; }
+html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #3A5560 !important; }
+
+/* ══════════════════════════════════════════════════
+   TEAL ACCENT SURFACES — keep teal in dark mode
+══════════════════════════════════════════════════ */
+html[data-theme="dark"] [style*="background: #DDF7F1"] {
+  background-color: rgba(34,199,169,0.12) !important;
+}
+html[data-theme="dark"] [style*="background: #F2FCF9"] {
+  background-color: rgba(34,199,169,0.06) !important;
+}
+
+/* ══════════════════════════════════════════════════
+   STATUS BADGE BACKGROUNDS — adjust opacity in dark
+══════════════════════════════════════════════════ */
+html[data-theme="dark"] [style*="background: #DBEAFE"] { background-color: rgba(59,130,246,0.12) !important; }
+html[data-theme="dark"] [style*="background: #FEE2E2"] { background-color: rgba(239,68,68,0.12) !important; }
+html[data-theme="dark"] [style*="background: #DCFCE7"] { background-color: rgba(34,197,94,0.12) !important; }
+html[data-theme="dark"] [style*="background: #FEF3C7"] { background-color: rgba(252,211,77,0.10) !important; }
+html[data-theme="dark"] [style*="background: #FFEDD5"] { background-color: rgba(251,146,60,0.10) !important; }
+html[data-theme="dark"] [style*="background: #EDE9FE"] { background-color: rgba(139,92,246,0.12) !important; }
+html[data-theme="dark"] [style*="background: #F5F3FF"] { background-color: rgba(139,92,246,0.10) !important; }
+html[data-theme="dark"] [style*="background: #CFFAFE"] { background-color: rgba(6,182,212,0.10) !important; }
+html[data-theme="dark"] [style*="background: #F3F4F6"] { background-color: rgba(107,114,128,0.12) !important; }
+
+/* ══════════════════════════════════════════════════
+   HEADER GRADIENT PANELS — used in section headers
+══════════════════════════════════════════════════ */
+html[data-theme="dark"] [style*="background: linear-gradient(135deg,#EFF6FF"],
+html[data-theme="dark"] [style*="background: linear-gradient(135deg, #EFF6FF"] {
+  background: linear-gradient(135deg,#1A2535,#1E2A3A) !important;
+}
+html[data-theme="dark"] [style*="background: linear-gradient(135deg,#F8FAFC"],
+html[data-theme="dark"] [style*="background: linear-gradient(135deg, #F8FAFC"] {
+  background: #161C26 !important;
+}
+html[data-theme="dark"] [style*="background: linear-gradient(135deg,#FAFBFC"] {
+  background: #161C26 !important;
+}

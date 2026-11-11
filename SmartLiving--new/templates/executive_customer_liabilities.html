@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ page_title }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    body { background:#f6f8fb; font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    .page-shell { margin-left:260px; padding:20px; }
+    @media (max-width: 991px) { .page-shell { margin-left:0; padding-top:72px; } }
+    .page-card { background:#fff; border:1px solid rgba(226,232,240,.95); border-radius:16px; box-shadow:0 10px 28px rgba(15,23,42,.05); }
+    .page-header h1 { font-size:1.55rem; font-weight:700; color:#0f172a; margin:0; }
+    .page-header p { margin:.35rem 0 0; color:#64748b; }
+    .filter-grid { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px; }
+    @media (max-width: 1200px) { .filter-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+    @media (max-width: 767px) { .filter-grid { grid-template-columns:1fr; } }
+    .filter-grid .form-label { font-size:.76rem; text-transform:uppercase; letter-spacing:.05em; color:#64748b; font-weight:700; }
+    .kpi-card { height:100%; padding:16px; border-radius:16px; border:1px solid rgba(226,232,240,.95); background:linear-gradient(180deg,#fff 0%,#f8fbff 100%); }
+    .kpi-label { display:flex; align-items:center; gap:8px; font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#475569; }
+    .kpi-amount { font-size:1.55rem; font-weight:800; color:#0f172a; margin-top:12px; }
+    .kpi-meta { color:#64748b; font-size:.9rem; margin-top:6px; }
+    .risk-danger { color:#b91c1c; }
+    .risk-warning { color:#b45309; }
+    .risk-success { color:#047857; }
+    .risk-info { color:#1d4ed8; }
+    .chart-wrap { height:320px; }
+    .chart-panel { position:relative; min-height:320px; }
+    @media (max-width: 991px) { .chart-panel { min-height:280px; } }
+    @media (max-width: 575px) { .chart-panel { min-height:240px; } }
+    .chart-state {
+      position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      text-align:center; color:#64748b; background:rgba(248,250,252,.92); border-radius:12px; padding:16px;
+    }
+    .chart-state.hidden { display:none; }
+    .chart-skeleton {
+      width:100%; height:100%;
+      background:linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 37%,#f1f5f9 63%);
+      background-size:400% 100%;
+      animation:shimmer 1.25s ease-in-out infinite;
+      border-radius:12px;
+    }
+    @keyframes shimmer { 0% { background-position:-400px 0; } 100% { background-position:400px 0; } }
+    .section-title { font-size:.85rem; font-weight:800; color:#475569; text-transform:uppercase; letter-spacing:.08em; }
+    .table thead th { font-size:.78rem; text-transform:uppercase; letter-spacing:.04em; color:#64748b; border-bottom-width:1px; white-space:nowrap; }
+    .table tbody td { vertical-align:middle; white-space:nowrap; }
+    .tab-pane-inner { padding:18px; }
+    .pill { border-radius:999px; }
+    .register-table-wrap { overflow:auto; }
+    .drawer-metric { border:1px solid rgba(226,232,240,.95); border-radius:12px; padding:12px; background:#f8fafc; }
+    .small-muted { color:#64748b; font-size:.82rem; }
+    .status-chip { display:inline-flex; align-items:center; gap:6px; padding:.25rem .55rem; border-radius:999px; font-size:.75rem; font-weight:700; }
+    .status-high { background:#fef2f2; color:#b91c1c; }
+    .status-medium { background:#fffbeb; color:#b45309; }
+    .status-low { background:#ecfdf5; color:#047857; }
+    .liability-card { border:1px solid #e2e8f0; border-radius:16px; background:#fff; padding:18px; height:100%; box-shadow:0 6px 18px rgba(15,23,42,.04); }
+    .liability-card:hover { border-color:#a5b4fc; box-shadow:0 10px 24px rgba(79,70,229,.08); }
+    .liability-card-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    @media (max-width: 991px) { .liability-card-grid { grid-template-columns:1fr; } }
+    .page-interaction-locked { cursor:wait; }
+    .page-interaction-locked #filtersForm button,
+    .page-interaction-locked #filtersForm input,
+    .page-interaction-locked #filtersForm select,
+    .page-interaction-locked #filtersForm a,
+    .page-interaction-locked .customer-register-launcher {
+      pointer-events:none !important;
+      opacity:.5 !important;
+      cursor:not-allowed !important;
+    }
+    #pageLoadingNotice { display:none; }
+    .page-interaction-locked #pageLoadingNotice { display:flex; }
+    {% if register_only %}
+    .page-shell { margin-left:0; max-width:1500px; margin-right:auto; margin-left:auto; }
+    {% endif %}
+  </style>
+</head>
+<body class="page-interaction-locked">
+  {% include 'executive_sidebar.html' %}
+  <div class="page-shell">
+    <div id="pageLoadingNotice" class="alert alert-primary align-items-center gap-2 mb-3" role="status" aria-live="polite">
+      <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+      <span>Loading customer liability data. Actions will be available when loading is complete.</span>
+    </div>
+    <div class="page-card p-4 mb-4 page-header">
+      <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+        <div>
+          <h1>{{ page_title }}</h1>
+          <p>{{ page_subtitle }}</p>
+        </div>
+        <div class="d-flex flex-wrap align-items-center justify-content-end gap-3">
+          <div class="text-end">
+            <div class="small text-uppercase fw-bold text-secondary">As of date</div>
+            <div class="fw-semibold">{{ filters.as_of_date }}</div>
+          </div>
+          {% if not register_only %}
+          <a class="btn btn-primary btn-lg customer-register-launcher" target="_blank" rel="noopener" href="{{ url_for('executive_customer_liabilities.register_page') }}">
+            <i class="bi bi-people me-2"></i>Customer Register
+            <i class="bi bi-box-arrow-up-right ms-2"></i>
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <form class="page-card p-4 mb-4" id="filtersForm">
+      {% if register_only %}<input type="hidden" name="view" value="register">{% endif %}
+      <div class="filter-grid">
+        <div>
+          <label class="form-label">As-of Date</label>
+          <input class="form-control" type="date" name="as_of_date" value="{{ filters.as_of_date }}">
+        </div>
+        <div>
+          <label class="form-label">Start Date</label>
+          <input class="form-control" type="date" name="start_date" value="{{ filters.start_date }}">
+        </div>
+        <div>
+          <label class="form-label">End Date</label>
+          <input class="form-control" type="date" name="end_date" value="{{ filters.end_date }}">
+        </div>
+        <div>
+          <label class="form-label">Branch</label>
+          <input class="form-control" name="branch" value="{{ filters.branch }}" placeholder="Branch">
+        </div>
+        <div>
+          <label class="form-label">Agent Id</label>
+          <input class="form-control" name="agent_id" value="{{ filters.agent_id }}" placeholder="Agent id">
+        </div>
+        <div>
+          <label class="form-label">Product or SKU</label>
+          <input class="form-control" name="product" value="{{ filters.product_query }}" placeholder="Product or sku">
+        </div>
+        <div>
+          <label class="form-label">Customer or Phone</label>
+          <input class="form-control" name="search" value="{{ filters.search }}" placeholder="Search">
+        </div>
+        <div>
+          <label class="form-label">Liability Category</label>
+          <select class="form-select" name="liability_category">
+            <option value="">All</option>
+            <option value="partially-paid" {% if filters.liability_category == 'partially-paid' %}selected{% endif %}>Partially Paid</option>
+            <option value="fully-paid-awaiting-delivery" {% if filters.liability_category == 'fully-paid-awaiting-delivery' %}selected{% endif %}>Fully Paid Awaiting Delivery</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Payment Stage</label>
+          <select class="form-select" name="payment_stage">
+            <option value="">All</option>
+            <option value="partially-paid" {% if filters.payment_stage == 'partially-paid' %}selected{% endif %}>Partially Paid</option>
+            <option value="fully-paid" {% if filters.payment_stage == 'fully-paid' %}selected{% endif %}>Fully Paid</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Delivery Stage</label>
+          <select class="form-select" name="delivery_stage">
+            <option value="">All</option>
+            <option value="awaiting-delivery" {% if filters.delivery_stage == 'awaiting-delivery' %}selected{% endif %}>Awaiting Delivery</option>
+            <option value="packaging" {% if filters.delivery_stage == 'packaging' %}selected{% endif %}>Packaging</option>
+            <option value="delivering" {% if filters.delivery_stage == 'delivering' %}selected{% endif %}>Delivering</option>
+            <option value="delivered" {% if filters.delivery_stage == 'delivered' %}selected{% endif %}>Delivered</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Risk Level</label>
+          <select class="form-select" name="risk_level">
+            <option value="">All</option>
+            <option value="high" {% if filters.risk_level == 'high' %}selected{% endif %}>High</option>
+            <option value="medium" {% if filters.risk_level == 'medium' %}selected{% endif %}>Medium</option>
+            <option value="low" {% if filters.risk_level == 'low' %}selected{% endif %}>Low</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">SLA Status</label>
+          <select class="form-select" name="sla_status">
+            <option value="">All</option>
+            <option value="breached" {% if filters.sla_status == 'breached' %}selected{% endif %}>Breached</option>
+            <option value="within-sla" {% if filters.sla_status == 'within-sla' %}selected{% endif %}>Within SLA</option>
+          </select>
+        </div>
+      </div>
+      <div class="d-flex flex-wrap gap-2 mt-3">
+        <button class="btn btn-primary pill" type="submit"><i class="bi bi-funnel me-1"></i>Apply Filters</button>
+        <a class="btn btn-outline-secondary pill" href="{{ url_for('executive_customer_liabilities.page', view='register') if register_only else url_for('executive_customer_liabilities.page') }}">Reset Filters</a>
+        <a class="btn btn-outline-success pill" id="csvExport" href="{{ url_for('executive_customer_liabilities.export_csv', **request.args) }}"><i class="bi bi-filetype-csv me-1"></i>CSV</a>
+        <a class="btn btn-outline-success pill" id="xlsxExport" href="{{ url_for('executive_customer_liabilities.export_xlsx', **request.args) }}"><i class="bi bi-file-earmark-excel me-1"></i>Excel</a>
+        <a class="btn btn-outline-success pill" id="pdfExport" href="{{ url_for('executive_customer_liabilities.export_pdf', **request.args) }}"><i class="bi bi-filetype-pdf me-1"></i>PDF</a>
+        {% if not register_only %}<a class="btn btn-dark pill customer-register-launcher" target="_blank" rel="noopener" href="{{ url_for('executive_customer_liabilities.register_page') }}"><i class="bi bi-box-arrow-up-right me-1"></i>Open Customer Register</a>{% endif %}
+      </div>
+    </form>
+
+    {% if not register_only %}
+    <div class="row g-3 mb-4" id="cardsRow">
+      <div class="col-12 col-md-6 col-xl-3">
+        <div class="kpi-card"><div class="chart-skeleton" style="height:144px;"></div></div>
+      </div>
+      <div class="col-12 col-md-6 col-xl-3"><div class="kpi-card"><div class="chart-skeleton" style="height:144px;"></div></div></div>
+      <div class="col-12 col-md-6 col-xl-3"><div class="kpi-card"><div class="chart-skeleton" style="height:144px;"></div></div></div>
+      <div class="col-12 col-md-6 col-xl-3"><div class="kpi-card"><div class="chart-skeleton" style="height:144px;"></div></div></div>
+      <div class="col-12 col-md-6 col-xl-3"><div class="kpi-card"><div class="chart-skeleton" style="height:144px;"></div></div></div>
+      <div class="col-12 col-md-6 col-xl-3"><div class="kpi-card"><div class="chart-skeleton" style="height:144px;"></div></div></div>
+      <div class="col-12 col-md-6 col-xl-3"><div class="kpi-card"><div class="chart-skeleton" style="height:144px;"></div></div></div>
+      <div class="col-12 col-md-6 col-xl-3"><div class="kpi-card"><div class="chart-skeleton" style="height:144px;"></div></div></div>
+    </div>
+
+    <div class="row g-4 mb-4">
+      <div class="col-12 col-xl-8">
+        <div class="page-card p-4">
+          <div class="section-title mb-3">Liability Trend</div>
+          <div class="chart-panel">
+            <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+            <div class="chart-state" id="trendState"><div class="chart-skeleton"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-xl-4">
+        <div class="page-card p-4 h-100">
+          <div class="section-title mb-3">Urgent Risk</div>
+          <div id="urgentRiskList" class="d-grid gap-2"></div>
+        </div>
+      </div>
+      <div class="col-12 col-lg-6">
+        <div class="page-card p-4">
+          <div class="section-title mb-3">Aging Analysis</div>
+          <div class="chart-panel">
+            <div class="chart-wrap"><canvas id="agingChart"></canvas></div>
+            <div class="chart-state" id="agingState"><div class="chart-skeleton"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-lg-6">
+        <div class="page-card p-4">
+          <div class="section-title mb-3">Branch Exposure</div>
+          <div class="chart-panel">
+            <div class="chart-wrap"><canvas id="branchChart"></canvas></div>
+            <div class="chart-state" id="branchState"><div class="chart-skeleton"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-card">
+      <ul class="nav nav-tabs px-3 pt-3" id="liabilityTabs" role="tablist">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#overviewTab" type="button">Overview</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#registerTab" type="button">Customer Register</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#productTab" type="button">Product & Stock Exposure</button></li>
+      </ul>
+      <div class="tab-content">
+        <div class="tab-pane fade show active" id="overviewTab">
+          <div class="tab-pane-inner">
+            <div class="row g-3">
+              <div class="col-12 col-lg-6">
+                <div class="drawer-metric">
+                  <div class="small-muted">Payment to Delivery Funnel</div>
+                  <div class="mt-2 fw-semibold" id="funnelSummary"></div>
+                </div>
+              </div>
+              <div class="col-12 col-lg-6">
+                <div class="drawer-metric">
+                  <div class="small-muted">Configured Delivery SLA</div>
+                  <div class="mt-2 fw-semibold">{{ settings.delivery_sla_days }} days</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tab-pane fade" id="registerTab">
+          <div class="tab-pane-inner">
+            <div id="registerBody" class="liability-card-grid"><div class="text-center py-4 text-muted">Open this tab to load customer cards.</div></div>
+            <div class="d-flex justify-content-between align-items-center pt-2">
+              <div class="small-muted" id="registerMeta"></div>
+              <div class="btn-group">
+                <button class="btn btn-outline-secondary btn-sm" id="prevPageBtn" type="button">Previous</button>
+                <button class="btn btn-outline-secondary btn-sm" id="nextPageBtn" type="button">Next</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tab-pane fade" id="productTab">
+          <div class="tab-pane-inner">
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Liability</th>
+                    <th>Fully Paid Customers</th>
+                    <th>Qty Required</th>
+                    <th>Available</th>
+                    <th>Shortage</th>
+                    <th>Cost To Fulfil</th>
+                    <th>Coverage</th>
+                    <th>Margin At Risk</th>
+                  </tr>
+                </thead>
+                <tbody id="productExposureBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="page-card p-4">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div><div class="section-title">Customer Register</div><div class="small-muted mt-1">Customer products currently included in active liability.</div></div>
+        <button class="btn btn-outline-secondary" type="button" onclick="window.close()"><i class="bi bi-x-lg me-1"></i>Close Tab</button>
+      </div>
+      <div id="registerBody" class="liability-card-grid"><div class="text-center py-4 text-muted">Loading customer cards...</div></div>
+      <div class="d-flex justify-content-between align-items-center pt-4">
+        <div class="small-muted" id="registerMeta"></div>
+        <div class="btn-group"><button class="btn btn-outline-secondary btn-sm" id="prevPageBtn" type="button">Previous</button><button class="btn btn-outline-secondary btn-sm" id="nextPageBtn" type="button">Next</button></div>
+      </div>
+    </div>
+    <div id="cardsRow" class="d-none"></div><div id="urgentRiskList" class="d-none"></div><div id="productExposureBody" class="d-none"></div><div id="funnelSummary" class="d-none"></div>
+    {% endif %}
+  </div>
+
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="detailDrawer" style="width:min(720px,100vw);">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title">Liability Detail</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body" id="detailDrawerBody">
+      <div class="text-muted">Select a register row.</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const filtersForm = document.getElementById('filtersForm');
+    const cardsRow = document.getElementById('cardsRow');
+    const registerBody = document.getElementById('registerBody');
+    const registerMeta = document.getElementById('registerMeta');
+    const urgentRiskList = document.getElementById('urgentRiskList');
+    const productExposureBody = document.getElementById('productExposureBody');
+    const funnelSummary = document.getElementById('funnelSummary');
+    const detailDrawerBody = document.getElementById('detailDrawerBody');
+    const prevPageBtn = document.getElementById('prevPageBtn');
+    const nextPageBtn = document.getElementById('nextPageBtn');
+    const detailDrawer = new bootstrap.Offcanvas(document.getElementById('detailDrawer'));
+    const registerOnly = {{ register_only|tojson }};
+    let currentPage = 1;
+    let currentTotalPages = 1;
+    let currentSummary = {{ summary|tojson }};
+    let trendChart;
+    let agingChart;
+    let branchChart;
+    let registerLoaded = false;
+    const requestControllers = {};
+    let reloadTimer = null;
+
+    function setPageInteractionLocked(locked) {
+      document.body.classList.toggle('page-interaction-locked', locked);
+      document.querySelectorAll('#filtersForm button, #filtersForm input, #filtersForm select, .customer-register-launcher').forEach(control => {
+        control.setAttribute('aria-disabled', locked ? 'true' : 'false');
+        if (locked) control.setAttribute('tabindex', '-1');
+        else control.removeAttribute('tabindex');
+      });
+      document.querySelectorAll('#filtersForm a, .customer-register-launcher').forEach(link => {
+        link.setAttribute('aria-disabled', locked ? 'true' : 'false');
+        if (locked) link.setAttribute('tabindex', '-1');
+        else link.removeAttribute('tabindex');
+      });
+      if (!locked && registerLoaded) {
+        prevPageBtn.disabled = currentPage <= 1;
+        nextPageBtn.disabled = currentPage >= currentTotalPages;
+      }
+    }
+
+    document.querySelector('.page-shell')?.addEventListener('click', event => {
+      if (document.body.classList.contains('page-interaction-locked')) {
+        const blockedTarget = event.target.closest('#filtersForm, .customer-register-launcher');
+        if (blockedTarget) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      }
+    }, true);
+
+    function safeNumber(value) {
+      const num = Number(value);
+      return Number.isFinite(num) ? num : 0;
+    }
+
+    async function fetchJson(url, key) {
+      if (requestControllers[key]) requestControllers[key].abort();
+      const controller = new AbortController();
+      requestControllers[key] = controller;
+      const res = await fetch(url, { signal: controller.signal, headers: { Accept: 'application/json' } });
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+      return res.json();
+    }
+
+    function setChartState(stateId, kind, retryFn) {
+      const el = document.getElementById(stateId);
+      if (!el) return;
+      if (kind === 'hidden') {
+        el.classList.add('hidden');
+        el.innerHTML = '';
+        return;
+      }
+      el.classList.remove('hidden');
+      if (kind === 'loading') {
+        el.innerHTML = '<div class="chart-skeleton"></div>';
+        return;
+      }
+      if (kind === 'empty') {
+        el.innerHTML = '<div><div class="fw-semibold">No matching records</div><div class="small-muted mt-1">Adjust filters and try again.</div></div>';
+        return;
+      }
+      el.innerHTML = `<div><div class="text-danger fw-semibold mb-2">Failed to load chart</div><button class="btn btn-outline-secondary btn-sm" type="button">Retry</button></div>`;
+      el.querySelector('button')?.addEventListener('click', retryFn);
+    }
+
+    function renderLineChart(canvasId, stateId, labels, datasets, retryFn) {
+      const hasData = datasets.some(ds => ds.data.some(value => safeNumber(value) > 0));
+      if (!labels.length || !hasData) {
+        setChartState(stateId, 'empty', retryFn);
+        return null;
+      }
+      setChartState(stateId, 'hidden', retryFn);
+      return new Chart(document.getElementById(canvasId), {
+        type: 'line',
+        data: { labels, datasets },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    function renderBarChart(canvasId, stateId, labels, datasets, retryFn, indexAxis = 'x') {
+      const hasData = datasets.some(ds => ds.data.some(value => safeNumber(value) > 0));
+      if (!labels.length || !hasData) {
+        setChartState(stateId, 'empty', retryFn);
+        return null;
+      }
+      setChartState(stateId, 'hidden', retryFn);
+      return new Chart(document.getElementById(canvasId), {
+        type: 'bar',
+        data: { labels, datasets },
+        options: { responsive: true, maintainAspectRatio: false, indexAxis }
+      });
+    }
+
+    function paramsWithPage(page) {
+      const params = new URLSearchParams(new FormData(filtersForm));
+      params.set('page', String(page));
+      params.set('page_size', '15');
+      return params;
+    }
+
+    function money(value) {
+      const num = Number(value || 0);
+      return `GHS ${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    function riskBadge(level) {
+      const css = level === 'high' ? 'status-high' : level === 'medium' ? 'status-medium' : 'status-low';
+      return `<span class="status-chip ${css}">${level}</span>`;
+    }
+
+    async function resolveLiability(customerId, productIndex, resolution, button) {
+      const label = resolution === 'delivered' ? 'Mark as Delivered' : 'Mark as Closed';
+      const warning = resolution === 'delivered'
+        ? 'Confirm that this customer has received this product. It will be removed from active liability calculations.'
+        : 'Close this liability without marking the product as delivered. It will be removed from active liability calculations.';
+      if (!window.confirm(`${warning}\n\nContinue with ${label}?`)) return;
+      const reason = window.prompt('Optional audit note or reason:', '') ?? '';
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = 'Saving...';
+      try {
+        const resolveBase = `{{ url_for('executive_customer_liabilities.api_resolve', customer_id='CUSTOMER_ID_PLACEHOLDER', product_index=999999) }}`;
+        const resolveUrl = resolveBase
+          .replace('CUSTOMER_ID_PLACEHOLDER', customerId)
+          .replace('/999999/', `/${productIndex}/`);
+        const response = await fetch(resolveUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ resolution, reason: reason.trim() }),
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) throw new Error(payload.error || 'Unable to update liability.');
+        detailDrawer.hide();
+        await loadRegister(currentPage);
+        if (!registerOnly) await loadSummary();
+      } catch (error) {
+        window.alert(error.message || 'Unable to update liability.');
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    }
+
+    function renderSummary(summary) {
+      currentSummary = summary;
+      cardsRow.innerHTML = summary.cards.map(card => `
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="kpi-card">
+            <div class="kpi-label risk-${card.risk_color}">
+              <i class="bi bi-shield-exclamation"></i>
+              <span>${card.label}</span>
+            </div>
+            <div class="kpi-amount">${card.amount_label}</div>
+            <div class="kpi-meta">${card.count} records</div>
+            <div class="small-muted mt-2">${card.tooltip}</div>
+          </div>
+        </div>
+      `).join('');
+      urgentRiskList.innerHTML = summary.urgent_risk.length ? summary.urgent_risk.map(item => `
+        <div class="drawer-metric">
+          <div class="d-flex justify-content-between gap-2">
+            <div>
+              <div class="fw-semibold">${item.customer_name}</div>
+              <div class="small-muted">${item.product_name} · ${item.branch}</div>
+            </div>
+            ${riskBadge(item.risk_level)}
+          </div>
+          <div class="small-muted mt-2">${money(item.liability)} · ${item.days_awaiting_delivery} days</div>
+        </div>
+      `).join('') : '<div class="text-muted">No urgent risks under current filters.</div>';
+
+      funnelSummary.textContent = `Partial: ${safeNumber(summary.funnel.partial)} | Fully paid: ${safeNumber(summary.funnel.fully_paid)} | Delivered: ${safeNumber(summary.funnel.delivered)}`;
+
+      productExposureBody.innerHTML = summary.product_exposure.map(row => `
+        <tr>
+          <td>${row.product}</td>
+          <td>${money(row.liability)}</td>
+          <td>${row.fully_paid_customer_count}</td>
+          <td>${row.quantity_required}</td>
+          <td>${row.available_quantity}</td>
+          <td>${row.shortage}</td>
+          <td>${money(row.estimated_fulfilment_cost)}</td>
+          <td>${row.stock_coverage_pct}%</td>
+          <td>${money(row.margin_at_risk)}</td>
+        </tr>
+      `).join('') || '<tr><td colspan="9" class="text-center text-muted py-4">No product exposure found.</td></tr>';
+
+      const trendLabels = (summary.trend || []).map(item => item.date);
+      const partialValues = (summary.trend || []).map(item => safeNumber(item.partially_paid));
+      const fullValues = (summary.trend || []).map(item => safeNumber(item.fully_paid));
+      if (trendChart) trendChart.destroy();
+      trendChart = renderLineChart('trendChart', 'trendState', trendLabels, [
+        { label: 'Partially paid undelivered', data: partialValues, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,.15)', fill: true, tension: .25 },
+        { label: 'Fully paid awaiting delivery', data: fullValues, borderColor: '#d97706', backgroundColor: 'rgba(217,119,6,.12)', fill: true, tension: .25 },
+      ], loadSummary);
+
+      if (agingChart) agingChart.destroy();
+      agingChart = renderBarChart('agingChart', 'agingState',
+        (summary.aging?.all_undelivered_deposits || []).map(item => item.bucket),
+        [{ label: 'Ongoing undelivered payments', data: (summary.aging?.all_undelivered_deposits || []).map(item => safeNumber(item.amount)), backgroundColor: '#0ea5e9' }],
+        loadSummary
+      );
+
+      if (branchChart) branchChart.destroy();
+      branchChart = renderBarChart('branchChart', 'branchState',
+        (summary.branch_exposure || []).map(item => item.branch),
+        [
+          { label: 'Ongoing undelivered amount', data: (summary.branch_exposure || []).map(item => safeNumber(item.liability)), backgroundColor: '#10b981' },
+          { label: 'Fully paid awaiting delivery', data: (summary.branch_exposure || []).map(item => safeNumber(item.fully_paid_amount)), backgroundColor: '#f59e0b' },
+        ],
+        loadSummary,
+        'y'
+      );
+    }
+
+    async function loadSummary() {
+      setChartState('trendState', 'loading', loadSummary);
+      setChartState('agingState', 'loading', loadSummary);
+      setChartState('branchState', 'loading', loadSummary);
+      try {
+        const payload = await fetchJson(`{{ url_for('executive_customer_liabilities.api_summary') }}?${new URLSearchParams(new FormData(filtersForm)).toString()}`, 'summary');
+        if (!payload.ok) throw new Error('Summary payload failed');
+        renderSummary(payload.data);
+      } catch (error) {
+        if (error.name === 'AbortError') return;
+        setChartState('trendState', 'error', loadSummary);
+        setChartState('agingState', 'error', loadSummary);
+        setChartState('branchState', 'error', loadSummary);
+      }
+    }
+
+    async function loadRegister(page = 1) {
+      currentPage = page;
+      prevPageBtn.disabled = true;
+      nextPageBtn.disabled = true;
+      registerBody.innerHTML = '<div class="text-center py-4 text-muted">Loading customer cards...</div>';
+      if (requestControllers.register) requestControllers.register.abort();
+      const controller = new AbortController();
+      requestControllers.register = controller;
+      let payload;
+      try {
+        const res = await fetch(`{{ url_for('executive_customer_liabilities.api_register') }}?${paramsWithPage(page).toString()}`, { signal: controller.signal, headers: { Accept: 'application/json' } });
+        payload = await res.json();
+      } catch (error) {
+        if (error.name === 'AbortError') return;
+        registerBody.innerHTML = '<div class="text-center py-4 text-danger">Failed to load register. Please retry.</div>';
+        return;
+      }
+      if (!payload.ok) {
+        registerBody.innerHTML = `<div class="text-center py-4 text-danger"><div>${payload.error || 'Failed to load register.'}</div><button type="button" class="btn btn-outline-danger btn-sm mt-2" id="retryRegisterBtn">Retry</button></div>`;
+        document.getElementById('retryRegisterBtn')?.addEventListener('click', () => loadRegister(page));
+        return;
+      }
+      const data = payload.data;
+      registerLoaded = true;
+      currentTotalPages = data.pagination.pages;
+      registerMeta.textContent = `Page ${data.pagination.page} of ${data.pagination.pages} · ${data.pagination.total} total records`;
+      prevPageBtn.disabled = data.pagination.page <= 1;
+      nextPageBtn.disabled = data.pagination.page >= data.pagination.pages;
+      registerBody.innerHTML = data.rows.length ? data.rows.map(row => `
+        <article data-customer-id="${row.customer_id}" data-product-index="${row.purchase_index}" class="liability-card register-row">
+          <div class="d-flex justify-content-between align-items-start gap-3">
+            <div><h3 class="h6 fw-bold mb-1">${row.customer_name}</h3><div class="small-muted"><i class="bi bi-telephone me-1"></i>${row.customer_phone || 'No phone number'}</div></div>
+            ${riskBadge(row.risk_level)}
+          </div>
+          <div class="mt-3 p-3 rounded bg-light border">
+            <div class="small-muted text-uppercase fw-bold">Product</div>
+            <div class="fw-semibold mt-1">${row.product_name}</div>
+            <div class="mt-2"><span class="small-muted">Current status:</span> <span class="badge text-bg-light border text-capitalize">${String(row.effective_purchase_status || row.purchase_status || 'ongoing').replaceAll('_', ' ').replaceAll('-', ' ')}</span></div>
+            <div class="small-muted mt-1">${row.purchase_ref} · ${row.branch || '--'} · ${row.agent_name || 'Unassigned'}</div>
+          </div>
+          <div class="row g-2 mt-2">
+            <div class="col-6"><div class="small-muted">Amount paid</div><div class="fw-semibold">${money(row.verified_amount_paid)}</div></div>
+            <div class="col-6"><div class="small-muted">Current liability</div><div class="fw-semibold">${money(row.current_liability)}</div></div>
+            <div class="col-6"><div class="small-muted">First payment</div><div class="fw-semibold">${row.first_payment_date || '--'}</div></div>
+            <div class="col-6"><div class="small-muted">Last payment</div><div class="fw-semibold">${row.last_payment_date || '--'}</div></div>
+          </div>
+          <div class="mt-3 d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-success btn-sm liability-action" data-resolution="delivered"><i class="bi bi-truck me-1"></i>Mark as Delivered</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm liability-action" data-resolution="closed"><i class="bi bi-check-circle me-1"></i>Mark as Closed</button>
+            <button type="button" class="btn btn-outline-primary btn-sm ms-auto view-detail-btn"><i class="bi bi-eye me-1"></i>View Details</button>
+          </div>
+        </article>
+      `).join('') : '<div class="text-center py-4 text-muted">No liability records found.</div>';
+      document.querySelectorAll('.liability-action').forEach(button => {
+        button.addEventListener('click', event => {
+          event.stopPropagation();
+          const card = button.closest('.register-row');
+          resolveLiability(
+            card.getAttribute('data-customer-id'),
+            Number(card.getAttribute('data-product-index')),
+            button.getAttribute('data-resolution'),
+            button,
+          );
+        });
+      });
+      document.querySelectorAll('.register-row').forEach(row => {
+        row.querySelector('.view-detail-btn')?.addEventListener('click', async () => {
+          const customerId = row.getAttribute('data-customer-id');
+          const productIndex = row.getAttribute('data-product-index');
+          detailDrawerBody.innerHTML = '<div class="text-muted">Loading detail...</div>';
+          detailDrawer.show();
+          const params = new URLSearchParams(new FormData(filtersForm));
+          const detailBase = `{{ url_for('executive_customer_liabilities.api_detail', customer_id='CUSTOMER_ID_PLACEHOLDER', product_index=999999) }}`;
+          const detailUrl = detailBase
+            .replace('CUSTOMER_ID_PLACEHOLDER', customerId)
+            .replace('/999999', `/${productIndex}`);
+          const res = await fetch(`${detailUrl}?${params.toString()}`);
+          const payload = await res.json();
+          if (!payload.ok) {
+            detailDrawerBody.innerHTML = '<div class="text-danger">Failed to load detail.</div>';
+            return;
+          }
+          const data = payload.data;
+          detailDrawerBody.innerHTML = `
+            <div class="d-flex flex-wrap gap-2 mb-3">
+              <button type="button" class="btn btn-success" id="markDeliveredBtn"><i class="bi bi-truck me-1"></i>Mark as Delivered</button>
+              <button type="button" class="btn btn-outline-secondary" id="markClosedBtn"><i class="bi bi-check-circle me-1"></i>Mark as Closed</button>
+            </div>
+            <div class="alert alert-light border small mb-3">Both actions remove this product from future active liability calculations. Mark as Delivered also updates its delivery records.</div>
+            <div class="row g-3 mb-3">
+              <div class="col-12 col-md-6"><div class="drawer-metric"><div class="small-muted">Customer</div><div class="fw-semibold mt-2">${data.customer.name}</div><div class="small-muted">${data.customer.phone_number || ''}</div></div></div>
+              <div class="col-12 col-md-6"><div class="drawer-metric"><div class="small-muted">Current Liability</div><div class="fw-semibold mt-2">${money(data.summary.current_liability)}</div></div></div>
+            </div>
+            <div class="drawer-metric mb-3">
+              <div class="small-muted mb-2">Purchase Details</div>
+              <div>${data.summary.product_name} · ${data.summary.purchase_ref}</div>
+              <div class="small-muted mt-1">Order value ${money(data.summary.agreed_order_value)} | Paid ${money(data.summary.verified_amount_paid)} | Delivery ${data.summary.delivery_status}</div>
+            </div>
+            <div class="drawer-metric mb-3">
+              <div class="small-muted mb-2">Payment Ledger</div>
+              ${data.payment_ledger.length ? data.payment_ledger.map(item => `<div class="d-flex justify-content-between border-top pt-2 mt-2"><div>${item.date} · ${item.method} · ${item.payment_type}</div><div>${money(item.amount)}</div></div>`).join('') : '<div class="text-muted">No ledger entries.</div>'}
+            </div>
+            <div class="drawer-metric">
+              <div class="small-muted mb-2">Audit Trail</div>
+              ${data.audit_trail.length ? data.audit_trail.map(item => `<div class="border-top pt-2 mt-2">${item.timestamp} · ${item.actor} · ${item.label}</div>`).join('') : '<div class="text-muted">No audit events found.</div>'}
+            </div>
+          `;
+          document.getElementById('markDeliveredBtn')?.addEventListener('click', event => {
+            resolveLiability(customerId, Number(productIndex), 'delivered', event.currentTarget);
+          });
+          document.getElementById('markClosedBtn')?.addEventListener('click', event => {
+            resolveLiability(customerId, Number(productIndex), 'closed', event.currentTarget);
+          });
+        });
+      });
+    }
+
+    filtersForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const params = new URLSearchParams(new FormData(filtersForm));
+      setPageInteractionLocked(true);
+      history.replaceState({}, '', `?${params.toString()}`);
+      document.getElementById('csvExport').href = `{{ url_for('executive_customer_liabilities.export_csv') }}?${params.toString()}`;
+      document.getElementById('xlsxExport').href = `{{ url_for('executive_customer_liabilities.export_xlsx') }}?${params.toString()}`;
+      document.getElementById('pdfExport').href = `{{ url_for('executive_customer_liabilities.export_pdf') }}?${params.toString()}`;
+      try {
+        if (!registerOnly) await loadSummary();
+        await loadRegister(1);
+      } finally {
+        setPageInteractionLocked(false);
+      }
+    });
+
+    filtersForm.querySelectorAll('input, select').forEach(el => {
+      el.addEventListener('change', () => {
+        clearTimeout(reloadTimer);
+        reloadTimer = setTimeout(() => filtersForm.requestSubmit(), 300);
+      });
+    });
+
+    prevPageBtn.addEventListener('click', () => loadRegister(Math.max(currentPage - 1, 1)));
+    nextPageBtn.addEventListener('click', () => loadRegister(currentPage + 1));
+    document.querySelector('[data-bs-target="#registerTab"]')?.addEventListener('shown.bs.tab', () => {
+      if (!registerLoaded) loadRegister(1);
+    });
+    window.addEventListener('resize', () => {
+      clearTimeout(reloadTimer);
+      reloadTimer = setTimeout(() => renderSummary(currentSummary), 150);
+    });
+    setPageInteractionLocked(true);
+    if (registerOnly) {
+      loadRegister(1).finally(() => setPageInteractionLocked(false));
+    } else if (currentSummary) {
+      renderSummary(currentSummary);
+      setPageInteractionLocked(false);
+    } else {
+      loadSummary().finally(() => setPageInteractionLocked(false));
+    }
+  </script>
+</body>
+</html>

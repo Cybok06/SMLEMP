@@ -1,0 +1,27 @@
+﻿<section class="card p-3 mb-4" aria-label="Repeat-purchase opportunities">
+  <h2 class="h5">Repeat-purchase opportunities</h2>
+  <p class="muted">Customers requesting another item after delivery confirmation. Follow up and record the purchase or closure.</p>
+  <div id="rp-counts" class="muted mb-2"></div>
+  <form id="rp-filter" class="d-flex flex-wrap gap-2 mb-3">
+    <input id="rp-search" class="form-control" style="max-width:300px" placeholder="Search customer or requested product" aria-label="Search repeat purchases">
+    <select id="rp-filter-status" class="form-select" style="max-width:230px" aria-label="Opportunity status"><option value="open">Open opportunities</option><option value="all">All opportunities</option><option>Assigned</option><option>In Progress</option><option>Waiting for Customer</option><option>Purchased</option><option>Closed</option></select>
+    <button class="btn btn-outline-primary">Search / refresh</button>
+  </form>
+  <p id="rp-error" class="text-danger" role="alert"></p>
+  <div id="rp-rows" class="table-responsive"></div>
+  <div class="d-flex justify-content-end gap-3 align-items-center"><button id="rp-prev" class="btn btn-sm btn-outline-secondary">Previous</button><span id="rp-page"></span><button id="rp-next" class="btn btn-sm btn-outline-secondary">Next</button></div>
+</section>
+<dialog id="rp-dialog" style="width:min(620px,95vw);max-height:90vh;border:1px solid #ddd;border-radius:18px;padding:24px;overflow:auto">
+  <div class="d-flex justify-content-between"><h2 id="rp-title" class="h5"></h2><button id="rp-close" class="btn btn-sm btn-light" aria-label="Close opportunity">✕</button></div>
+  <p id="rp-summary"></p><p id="rp-current-notes" style="white-space:pre-wrap"></p><p id="rp-outcome"></p><p id="rp-modal-error" class="text-danger" role="alert"></p>
+  <form id="rp-update">
+    <label class="form-label w-100">Opportunity status<select id="rp-status" aria-label="Opportunity status" class="form-select"><option>Assigned</option><option>In Progress</option><option>Waiting for Customer</option><option>Purchased</option><option>Closed</option></select></label>
+    <label id="rp-due-wrap" class="form-label w-100">Next follow-up date<input id="rp-due" type="date" class="form-control"></label>
+    <label id="rp-purchase-wrap" class="form-label w-100" hidden>Link customer's new purchase<select id="rp-purchase" class="form-select"></select><span class="muted">Create the purchase on the customer's account first, then refresh this opportunity.</span></label>
+    <label id="rp-reason-wrap" class="form-label w-100" hidden>Closure reason<textarea id="rp-reason" maxlength="1000" class="form-control"></textarea></label>
+    <label class="form-label w-100">Follow-up notes<textarea id="rp-notes" required maxlength="2000" class="form-control" rows="3"></textarea></label>
+    <button id="rp-save" class="btn btn-primary">Save follow-up</button>
+  </form>
+  <h3 class="h6 mt-4">Follow-up history</h3><div id="rp-history"></div>
+</dialog>
+<script src="{{ url_for('static', filename='js/agent_repeat_purchases.js') }}" defer></script>
